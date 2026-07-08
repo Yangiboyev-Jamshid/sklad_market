@@ -1,66 +1,129 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Star1 } from "iconsax-reactjs";
 import { AnimatePresence, motion } from "framer-motion";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useTheme } from "../../context/ThemeContext";
 
-// Real map (OpenStreetMap tiles via Leaflet) as the background, with the
-// same percentage-based pin overlay API as before (pin.x / pin.y are 0-100).
-// The base map view (center + zoom) is fixed and non-interactive so that the
-// percentage-positioned pins stay visually stable on top of it.
-
 const TASHKENT_CENTER = [41.2995, 69.2401];
 const DEFAULT_ZOOM = 13;
+const SINGLE_POINT_ZOOM = 15;
+const FIT_MAX_ZOOM = 15;
 
 const TILE_URLS = {
-  light: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  light: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
   dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
 };
 
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors';
 
+function hasCoords(p) {
+  return !!p && typeof p.lat === "number" && typeof p.lng === "number";
+}
+
 export default function MapView({ pins = [], height = "h-[460px]", center }) {
   const { theme } = useTheme();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const tileLayerRef = useRef(null);
+  const pinsRef = useRef(pins);
+  const centerRef = useRef(center);
+  const myLocationRef = useRef(null);
   const [active, setActive] = useState(null);
   const [ready, setReady] = useState(false);
+  const [positions, setPositions] = useState({});
+  const [myLocation, setMyLocation] = useState(null);
 
-  // Initialize the Leaflet map once
+  useEffect(() => {
+    pinsRef.current = pins;
+    centerRef.current = center;
+  }, [pins, center]);
+
+  useEffect(() => {
+    myLocationRef.current = myLocation;
+  }, [myLocation]);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => { },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  }, []);
+
+  const recomputePositions = useCallback(() => {
+    const map = mapRef.current;
+    const el = containerRef.current;
+    if (!map || !el) return;
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    if (!w || !h) return;
+
+    const next = {};
+    (pinsRef.current || []).forEach((pin, i) => {
+      const key = pin.id ?? i;
+      if (hasCoords(pin)) {
+        const point = map.latLngToContainerPoint([pin.lat, pin.lng]);
+        next[key] = { x: (point.x / w) * 100, y: (point.y / h) * 100 };
+      } else if (typeof pin.x === "number" && typeof pin.y === "number") {
+        next[key] = { x: pin.x, y: pin.y };
+      }
+    });
+
+    const c = centerRef.current;
+    if (hasCoords(c)) {
+      const point = map.latLngToContainerPoint([c.lat, c.lng]);
+      next.__center = { x: (point.x / w) * 100, y: (point.y / h) * 100 };
+    } else if (c && typeof c.x === "number" && typeof c.y === "number") {
+      next.__center = { x: c.x, y: c.y };
+    }
+
+    const me = myLocationRef.current;
+    if (hasCoords(me)) {
+      const point = map.latLngToContainerPoint([me.lat, me.lng]);
+      next.__me = { x: (point.x / w) * 100, y: (point.y / h) * 100 };
+    }
+
+    setPositions(next);
+  }, []);
+
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
     const map = L.map(containerRef.current, {
       center: TASHKENT_CENTER,
       zoom: DEFAULT_ZOOM,
-      zoomControl: false,
+      zoomControl: true,
       attributionControl: true,
-      dragging: false,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
-      boxZoom: false,
-      keyboard: false,
-      touchZoom: false,
-      tap: false,
+      dragging: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      boxZoom: true,
+      keyboard: true,
+      touchZoom: true,
     });
+    map.zoomControl.setPosition("bottomright");
 
     mapRef.current = map;
     setReady(true);
 
-    const onResize = () => map.invalidateSize();
+    map.on("move zoom", recomputePositions);
+    const onResize = () => {
+      map.invalidateSize();
+      recomputePositions();
+    };
     window.addEventListener("resize", onResize);
 
     return () => {
       window.removeEventListener("resize", onResize);
+      map.off("move zoom", recomputePositions);
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [recomputePositions]);
 
-  // Swap tile layer when the theme changes
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -75,54 +138,105 @@ export default function MapView({ pins = [], height = "h-[460px]", center }) {
       subdomains: "abcd",
     });
 
+    layer.on("tileerror", (e) => {
+      if (e.tile.dataset.retried) return;
+      e.tile.dataset.retried = "1";
+      const original = e.tile.src;
+      setTimeout(() => {
+        e.tile.src = `${original}${original.includes("?") ? "&" : "?"}retry=${Date.now()}`;
+      }, 800);
+    });
+
     layer.addTo(mapRef.current);
     tileLayerRef.current = layer;
   }, [theme, ready]);
 
-  // Keep the map sized correctly if the container becomes visible later
-  // (e.g. switching from grid view to map view)
   useEffect(() => {
-    if (!mapRef.current) return;
-    const id = requestAnimationFrame(() => mapRef.current?.invalidateSize());
+    const map = mapRef.current;
+    if (!map || !ready) return;
+
+    const points = [];
+    pins.forEach((p) => {
+      if (hasCoords(p)) points.push([p.lat, p.lng]);
+    });
+    if (hasCoords(center)) points.push([center.lat, center.lng]);
+    if (hasCoords(myLocation)) points.push([myLocation.lat, myLocation.lng]);
+
+    if (points.length === 1) {
+      map.setView(points[0], SINGLE_POINT_ZOOM, { animate: false });
+    } else if (points.length > 1) {
+      map.fitBounds(L.latLngBounds(points), { padding: [56, 56], maxZoom: FIT_MAX_ZOOM, animate: false });
+    }
+
+    const id = requestAnimationFrame(() => {
+      map.invalidateSize();
+      recomputePositions();
+    });
     return () => cancelAnimationFrame(id);
-  }, [ready, height]);
+  }, [pins, center, myLocation, ready, height, recomputePositions]);
 
   return (
     <div className={`relative w-full ${height} rounded-2xl overflow-hidden transition-colors`}>
       <div ref={containerRef} className="absolute inset-0 z-0" />
 
-      {center && (
+      {center && positions.__center && (
         <div
           className="absolute w-8 h-8 rounded-full bg-brand-400/30 flex items-center justify-center z-10"
-          style={{ left: `${center.x}%`, top: `${center.y}%`, transform: "translate(-50%,-50%)" }}
+          style={{ left: `${positions.__center.x}%`, top: `${positions.__center.y}%`, transform: "translate(-50%,-50%)" }}
         >
           <div className="w-3.5 h-3.5 rounded-full bg-brand-600 border-2 border-white dark:border-ink-900" />
         </div>
       )}
 
+      {positions.__me && (
+        <div
+          className="absolute w-6 h-6 flex items-center justify-center z-10 pointer-events-none"
+          style={{ left: `${positions.__me.x}%`, top: `${positions.__me.y}%`, transform: "translate(-50%,-50%)" }}
+        >
+          <span className="absolute inline-flex h-full w-full rounded-full bg-sky-400/50 animate-ping" />
+          <span className="relative w-3.5 h-3.5 rounded-full bg-sky-500 border-2 border-white dark:border-ink-900 shadow" />
+        </div>
+      )}
+
       {pins.map((pin, i) => {
-        const isActive = active === (pin.id || i);
-        const openLeft = pin.x > 62;
-        const openTop = pin.y < 30;
+        const key = pin.id ?? i;
+        const pos = positions[key];
+        if (!pos) return null;
+
+        const isActive = active === key;
+        const openLeft = pos.x > 62;
+        const openTop = pos.y < 30;
 
         return (
           <button
-            key={pin.id || i}
-            onMouseEnter={() => setActive(pin.id || i)}
+            key={key}
+            onMouseEnter={() => setActive(key)}
             onMouseLeave={() => setActive(null)}
-            style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
+            style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
             className="absolute -translate-x-1/2 -translate-y-full flex flex-col items-center group z-10"
           >
             <motion.div
               whileHover={{ scale: 1.15 }}
-              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-popover border-2 border-white dark:border-ink-900 ${pin.color === "red" ? "bg-danger-500" : "bg-brand-500"
-                }`}
-              style={{ borderBottomLeftRadius: "2px" }}
+              className="relative flex items-center justify-center shadow-lg"
             >
-              {pin.label ?? i + 1}
+              <div
+                className={`w-8 h-8 sm:w-9 sm:h-9 dark:border-ink-900 ${pin.color === "red" ? "bg-danger-500" : "bg-brand-500"
+                  }`}
+                style={{
+                  borderRadius: "50% 50% 50% 0",
+                  transform: "rotate(-45deg)",
+                }}
+              />
+              <span
+                className="absolute text-white text-xs font-bold"
+                style={{
+                  marginLeft: "1px",
+                  marginTop: "-2px",
+                }}
+              >
+                {pin.label ?? i + 1}
+              </span>
             </motion.div>
-            <div className="w-2 h-2 rotate-45 bg-current -mt-1.5" style={{ color: pin.color === "red" ? "#F04438" : "#3B6FF6" }} />
-
             <AnimatePresence>
               {isActive && pin.popover && (
                 <motion.div
@@ -136,19 +250,25 @@ export default function MapView({ pins = [], height = "h-[460px]", center }) {
                   `}
                 >
                   {pin.popover.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-ink-50 dark:hover:bg-[#171717] rounded-lg">
+                    <div
+                      key={idx}
+                      onClick={item.onClick}
+                      className={`flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-ink-50 dark:hover:bg-[#171717] rounded-lg ${item.onClick ? "cursor-pointer" : ""}`}
+                    >
                       <div>
                         <p className="text-xs font-semibold text-ink-900 dark:text-white flex items-center gap-1">
                           {item.name}
-                          <span className="text-brand-500">✓</span>
+                          {item.verified !== false && <span className="text-brand-500">✓</span>}
                         </p>
                         <p className="text-[11px] text-ink-400">{item.company}</p>
                       </div>
-                      <div className="flex items-center gap-0.5">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star1 key={s} size={11} variant="Bold" className={s <= item.rating ? "text-amber-400" : "text-ink-200 dark:text-ink-700"} />
-                        ))}
-                      </div>
+                      {item.rating != null && (
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star1 key={s} size={11} variant="Bold" className={s <= item.rating ? "text-amber-400" : "text-ink-200 dark:text-ink-700"} />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </motion.div>

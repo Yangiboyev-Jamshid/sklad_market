@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { getChatUnreadCount, getNotifications, getNotificationsUnreadCount, markNotificationsRead } from "../../api/api";
 import {
   Notification,
   Heart,
@@ -9,8 +10,6 @@ import {
   Sun1,
   Moon,
   HamburgerMenu,
-  CloseCircle,
-  SearchNormal1,
   Messages1,
   Messages2,
   Profile,
@@ -18,6 +17,7 @@ import {
   ElementPlus,
   Buildings,
   Setting,
+  TickCircle,
 } from "iconsax-reactjs";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
@@ -25,23 +25,133 @@ import { useCart } from "../../context/CartContext";
 import { useTheme } from "../../context/ThemeContext";
 import MobileMenu from "./MobileMenu";
 
+const NOTIF_LABELS = {
+  PRODUCT_CREATED: "Новый товар добавлен",
+  COMPANY_CREATED: "Компания создана",
+};
+
+function notifLabel(type) {
+  return NOTIF_LABELS[type] ?? type?.replace(/_/g, " ") ?? "Уведомление";
+}
+
+const PAGE_TITLES = [
+  { test: (p) => p === "/", title: "Главная" },
+  { test: (p) => p.startsWith("/catalog"), title: "Каталог" },
+  { test: (p) => p.startsWith("/products-explore"), title: "Продукты" },
+  { test: (p) => p.startsWith("/product/"), title: "Товар" },
+  { test: (p) => p.startsWith("/favorites"), title: "Фавориты" },
+  { test: (p) => p.startsWith("/cart"), title: "Корзина" },
+  { test: (p) => p.startsWith("/ai-agent"), title: "Ai agent" },
+  { test: (p) => p.startsWith("/companies"), title: "Компании" },
+  { test: (p) => p.startsWith("/company/"), title: "Профиль" },
+  { test: (p) => p.startsWith("/profile"), title: "Профиль" },
+  { test: (p) => p.startsWith("/seller"), title: "Панель продавца" },
+  { test: (p) => p.startsWith("/moderator"), title: "Панель модератора" },
+  { test: (p) => p.startsWith("/tariffs"), title: "Тарифы" },
+];
+
+function getPageTitle(pathname) {
+  return PAGE_TITLES.find(({ test }) => test(pathname))?.title ?? "Sklad Market";
+}
+
+function notifBody(item) {
+  const p = item.payload ?? {};
+  return (
+    p.message ?? p.text ?? p.description ?? p.product_name ?? p.company_name ?? ""
+  );
+}
+
+function timeAgo(iso) {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "только что";
+  if (m < 60) return `${m} мин назад`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} ч назад`;
+  return `${Math.floor(h / 24)} д назад`;
+}
+
 export default function Header() {
   const { user, logout } = useAuth();
   const { items, favorites } = useCart();
   const { theme, toggleTheme } = useTheme();
-  const [open, setOpen] = useState(false);
+
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const ref = useRef(null);
+  const [cartMenuOpen, setCartMenuOpen] = useState(false);
+
+  const [chatUnread, setChatUnread] = useState(0);
+  const [notifUnread, setNotifUnread] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  const profileRef = useRef(null);
+  const notifRef = useRef(null);
+  const cartMenuRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const pageTitle = getPageTitle(location.pathname);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchCounts = () => {
+      getChatUnreadCount().then(setChatUnread);
+      getNotificationsUnreadCount().then(setNotifUnread);
+    };
+    fetchCounts();
+    const id = setInterval(fetchCounts, 30000);
+    return () => clearInterval(id);
+  }, [user]);
+
+  const loadNotifications = useCallback(async () => {
+    setNotifLoading(true);
+    try {
+      const data = await getNotifications({ per_page: 20 });
+      setNotifications(data?.items ?? []);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setNotifLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (notifOpen) loadNotifications();
+  }, [notifOpen, loadNotifications]);
 
   useEffect(() => {
     const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+      if (cartMenuRef.current && !cartMenuRef.current.contains(e.target)) setCartMenuOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  const handleMarkAll = async () => {
+    try {
+      await markNotificationsRead({ mark_all: true });
+      setNotifications((prev) => prev.map((n) => ({ ...n, read_at: new Date().toISOString() })));
+      setNotifUnread(0);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleMarkOne = async (id) => {
+    try {
+      await markNotificationsRead({ notification_ids: [id] });
+      setNotifications((prev) =>
+        prev.map((n) => n.id === id ? { ...n, read_at: new Date().toISOString() } : n)
+      );
+      setNotifUnread((c) => Math.max(0, c - 1));
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <>
@@ -56,11 +166,14 @@ export default function Header() {
 
         <Link
           to="/"
-          className="text-base sm:text-2xl font-extrabold text-ink-900 dark:text-white tracking-tight shrink-0"
+          className="hidden sm:block text-2xl font-extrabold text-ink-900 dark:text-white tracking-tight shrink-0"
         >
-          <span className="sm:hidden">SX</span>
-          <span className="hidden sm:inline">Sklad Market</span>
+          Sklad Market
         </Link>
+
+        <p className="sm:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-base font-semibold text-ink-900 dark:text-white">
+          {pageTitle}
+        </p>
 
         <div className="flex items-center gap-1.5 sm:gap-3 md:gap-4 shrink-0">
           <button
@@ -73,18 +186,10 @@ export default function Header() {
               ⌘ K
             </kbd>
           </button>
-          <button
-            onClick={() => setMobileSearchOpen((v) => !v)}
-            className="sm:hidden text-ink-500 dark:text-ink-400 hover:text-ink-900 dark:hover:text-white transition-colors p-1"
-            aria-label="Поиск"
-          >
-            <SearchNormal1 size={21} variant="Linear" />
-          </button>
 
-          {/* theme toggle */}
           <button
             onClick={toggleTheme}
-            className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-ink-100 dark:bg-[#1C1C1C] flex items-center justify-center text-ink-600 dark:text-amber-300 hover:bg-ink-200 dark:hover:bg-[#1E1E1E] transition-colors shrink-0"
+            className="hidden sm:flex relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-ink-100 dark:bg-[#1C1C1C] items-center justify-center text-ink-600 dark:text-amber-300 hover:bg-ink-200 dark:hover:bg-[#1E1E1E] transition-colors shrink-0"
             aria-label="Переключить тему"
             title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
           >
@@ -102,12 +207,116 @@ export default function Header() {
             </AnimatePresence>
           </button>
 
-          <button className="hidden xs:inline-flex text-ink-500 dark:text-[#CDD1D6] hover:text-ink-900 dark:hover:text-white transition-colors">
-            <Notification size={24} variant="Linear" />
-          </button>
+          <div className="relative" ref={notifRef}>
+            <button
+              onClick={() => setNotifOpen((v) => !v)}
+              className="hidden sm:inline-flex relative text-ink-500 dark:text-[#CDD1D6] hover:text-ink-900 dark:hover:text-white transition-colors"
+            >
+              <Notification size={24} variant={notifOpen ? "Bold" : "Linear"} />
+              {notifUnread > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-brand-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                  {notifUnread > 9 ? "9+" : notifUnread}
+                </span>
+              )}
+            </button>
+
+            <AnimatePresence>
+              {notifOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                  transition={{ duration: 0.15 }}
+                  className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 w-auto sm:w-80 bg-[#FAFAFA] dark:bg-[#121212] rounded-2xl shadow-popover border border-ink-100 dark:border-[#1C1C1C] z-50 overflow-hidden"
+                >
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-ink-100 dark:border-[#1C1C1C]">
+                    <span className="font-semibold text-sm text-ink-900 dark:text-white">
+                      Уведомления
+                      {notifUnread > 0 && (
+                        <span className="ml-2 bg-danger-500 text-white text-[10px] rounded-full px-1.5 py-0.5">
+                          {notifUnread}
+                        </span>
+                      )}
+                    </span>
+                    {notifUnread > 0 && (
+                      <button
+                        onClick={handleMarkAll}
+                        className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline"
+                      >
+                        <TickCircle size={13} />
+                        Прочитать все
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-[360px] overflow-y-auto">
+                    {notifLoading ? (
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="flex gap-3 px-4 py-3 border-b border-ink-50 dark:border-[#1C1C1C]">
+                          <div className="w-8 h-8 rounded-full bg-ink-100 dark:bg-[#1C1C1C] animate-pulse shrink-0" />
+                          <div className="flex-1 flex flex-col gap-2">
+                            <div className="h-3 bg-ink-100 dark:bg-[#1C1C1C] rounded animate-pulse w-3/4" />
+                            <div className="h-2.5 bg-ink-100 dark:bg-[#1C1C1C] rounded animate-pulse w-1/2" />
+                          </div>
+                        </div>
+                      ))
+                    ) : notifications.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-10 gap-2 text-ink-400 dark:text-ink-500">
+                        <Notification size={28} variant="Linear" />
+                        <p className="text-sm">Нет уведомлений</p>
+                      </div>
+                    ) : (
+                      notifications.map((n) => {
+                        const isUnread = !n.read_at;
+                        return (
+                          <button
+                            key={n.id}
+                            onClick={() => !n.read_at && handleMarkOne(n.id)}
+                            className={`w-full flex gap-3 px-4 py-3 border-b border-ink-50 dark:border-[#1C1C1C] hover:bg-ink-50 dark:hover:bg-[#171717] transition-colors text-left ${isUnread ? "bg-brand-50/60 dark:bg-[#0D1B3E]/60" : ""
+                              }`}
+                          >
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isUnread
+                                ? "bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400"
+                                : "bg-ink-100 dark:bg-[#1C1C1C] text-ink-400 dark:text-ink-500"
+                                }`}
+                            >
+                              <Notification size={14} variant={isUnread ? "Bold" : "Linear"} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p
+                                className={`text-xs leading-snug ${isUnread
+                                  ? "font-semibold text-ink-900 dark:text-white"
+                                  : "font-medium text-ink-600 dark:text-ink-300"
+                                  }`}
+                              >
+                                {notifLabel(n.type)}
+                              </p>
+                              {notifBody(n) && (
+                                <p className="text-[11px] text-ink-400 dark:text-ink-500 truncate mt-0.5">
+                                  {notifBody(n)}
+                                </p>
+                              )}
+                              <p className="text-[10px] text-ink-300 dark:text-ink-600 mt-1">
+                                {timeAgo(n.sent_at)}
+                              </p>
+                            </div>
+                            {isUnread && (
+                              <span className="w-2 h-2 rounded-full bg-brand-600 self-center shrink-0" />
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           <Link
             to="/favorites"
-            className="relative text-ink-500 dark:text-[#CDD1D6] hover:text-ink-900 dark:hover:text-white transition-colors hidden xs:inline-flex"
+            className="relative text-ink-500 dark:text-[#CDD1D6] hover:text-ink-900 dark:hover:text-white transition-colors hidden sm:inline-flex"
           >
             <Heart size={24} variant="Linear" />
             {favorites?.size > 0 && (
@@ -116,13 +325,23 @@ export default function Header() {
               </span>
             )}
           </Link>
+
           <Link
             to="/seller?tab=messages"
-            className="hidden md:inline-flex text-ink-500 dark:text-[#CDD1D6] hover:text-ink-900 dark:hover:text-white transition-colors"
+            className="relative hidden md:inline-flex text-ink-500 dark:text-[#CDD1D6] hover:text-ink-900 dark:hover:text-white transition-colors"
           >
             <Messages2 size={24} variant="Linear" />
+            {chatUnread > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-brand-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                {chatUnread > 9 ? "9+" : chatUnread}
+              </span>
+            )}
           </Link>
-          <Link to="/cart" className="relative text-ink-500 dark:text-[#CDD1D6] hover:text-ink-900 dark:hover:text-white transition-colors">
+
+          <Link
+            to="/cart"
+            className="relative hidden sm:inline-flex text-ink-500 dark:text-[#CDD1D6] hover:text-ink-900 dark:hover:text-white transition-colors"
+          >
             <ShoppingCart size={22} variant="Linear" />
             {items?.length > 0 && (
               <span className="absolute -top-1.5 -right-1.5 bg-brand-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
@@ -131,10 +350,67 @@ export default function Header() {
             )}
           </Link>
 
+          <div className="relative sm:hidden" ref={cartMenuRef}>
+            <button
+              onClick={() => setCartMenuOpen((v) => !v)}
+              className="relative text-ink-500 dark:text-[#CDD1D6] hover:text-ink-900 dark:hover:text-white transition-colors"
+              aria-label="Быстрые действия"
+            >
+              <ShoppingCart size={22} variant="Linear" />
+              {items?.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-brand-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                  {items.length}
+                </span>
+              )}
+            </button>
+
+            <AnimatePresence>
+              {cartMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-11 w-60 bg-[#FAFAFA] dark:bg-[#121212] rounded-2xl shadow-popover border border-ink-100 dark:border-[#1C1C1C] p-2 z-50"
+                >
+                  <DropdownItem
+                    icon={Notification}
+                    label="Уведомления"
+                    badge={notifUnread}
+                    onClick={() => { setCartMenuOpen(false); setNotifOpen(true); }}
+                  />
+                  <DropdownItem
+                    icon={Heart}
+                    label="Фавориты"
+                    badge={favorites?.size}
+                    onClick={() => { setCartMenuOpen(false); navigate("/favorites"); }}
+                  />
+                  <DropdownItem
+                    icon={Messages2}
+                    label="Чат"
+                    badge={chatUnread}
+                    onClick={() => { setCartMenuOpen(false); navigate("/seller?tab=messages"); }}
+                  />
+                  <DropdownItem
+                    icon={ShoppingCart}
+                    label="Корзина"
+                    badge={items?.length}
+                    onClick={() => { setCartMenuOpen(false); navigate("/cart"); }}
+                  />
+                  <DropdownItem
+                    icon={Messages1}
+                    label="Ai agent"
+                    onClick={() => { setCartMenuOpen(false); navigate("/ai-agent"); }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           {user ? (
-            <div className="relative hidden sm:block" ref={ref}>
+            <div className="relative hidden sm:block" ref={profileRef}>
               <button
-                onClick={() => setOpen((v) => !v)}
+                onClick={() => setProfileOpen((v) => !v)}
                 className="flex items-center gap-2 pl-2 dark:border-[#1C1C1C]"
               >
                 <div className="w-9 h-9 rounded-full border border-ink-100 dark:bg-[#0D0D0D] flex items-center justify-center text-ink-500 dark:text-ink-300">
@@ -144,11 +420,11 @@ export default function Header() {
                   <p className="text-[14px] text-nowrap font-semibold text-ink-900 dark:text-white leading-tight">{user.name}</p>
                   <p className="text-[13px] text-nowrap text-ink-400 leading-tight">{user.role}</p>
                 </div>
-                <ArrowDown2 size={16} className={`text-ink-400 ml-4 transition-transform ${open ? "rotate-180" : ""}`} />
+                <ArrowDown2 size={16} className={`text-ink-400 ml-4 transition-transform ${profileOpen ? "rotate-180" : ""}`} />
               </button>
 
               <AnimatePresence>
-                {open && (
+                {profileOpen && (
                   <motion.div
                     initial={{ opacity: 0, y: -8, scale: 0.97 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -162,13 +438,13 @@ export default function Header() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-ink-900 dark:text-white">{user.name}</p>
-                        <p className="text-xs text-ink-400">{user.company}</p>
+                        <p className="text-xs text-ink-400">{user.username}</p>
                       </div>
                     </div>
-                    <DropdownItem icon={Element3} label="Панель продавца" onClick={() => { navigate("/seller"); setOpen(false); }} />
-                    <DropdownItem icon={ElementPlus} label="Панель модератора" onClick={() => { navigate("/moderator"); setOpen(false); }} />
-                    <DropdownItem icon={Buildings} label="Профиль компании" onClick={() => { navigate("/profile"); setOpen(false); }} />
-                    <DropdownItem icon={Setting} label="Настройка" onClick={() => { navigate("/seller?tab=settings"); setOpen(false); }} />
+                    <DropdownItem icon={Element3} label="Панель продавца" onClick={() => { navigate("/seller"); setProfileOpen(false); }} />
+                    <DropdownItem icon={ElementPlus} label="Панель модератора" onClick={() => { navigate("/moderator"); setProfileOpen(false); }} />
+                    <DropdownItem icon={Buildings} label="Профиль компании" onClick={() => { navigate("/profile"); setProfileOpen(false); }} />
+                    <DropdownItem icon={Setting} label="Настройка" onClick={() => { navigate("/seller?tab=settings"); setProfileOpen(false); }} />
                     <div className="h-px bg-ink-100 dark:bg-[#1C1C1C] my-1" />
                     <DropdownItem
                       icon={Logout}
@@ -176,7 +452,7 @@ export default function Header() {
                       danger
                       onClick={() => {
                         logout();
-                        setOpen(false);
+                        setProfileOpen(false);
                         navigate("/login");
                       }}
                     />
@@ -187,58 +463,35 @@ export default function Header() {
           ) : (
             <Link
               to="/login"
-              className="hover:bg-gray-300 dark:text-white dark:hover:bg-gray-800 border border-gray-300 text-xs sm:text-sm font-semibold px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-colors whitespace-nowrap"
+              className="hidden sm:inline-block hover:bg-gray-300 dark:text-white dark:hover:bg-gray-800 border border-gray-300 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap"
             >
-              <span className="hidden sm:inline">Зарегистрироваться</span>
-              <span className="sm:hidden">Войти</span>
+              Зарегистрироваться
             </Link>
           )}
         </div>
       </header>
-
-      {/* mobile search bar (expands below header) */}
-      <AnimatePresence>
-        {mobileSearchOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="sm:hidden bg-white dark:bg-[#0D0D0D] border-b border-ink-200/70 dark:border-[#1C1C1C] overflow-hidden relative z-20"
-          >
-            <div className="flex items-center gap-2 px-3 py-3">
-              <div className="flex-1 flex items-center gap-2 bg-ink-50 dark:bg-[#171717] rounded-full px-4 py-2.5">
-                <SearchNormal1 size={16} className="text-ink-400" />
-                <input
-                  autoFocus
-                  placeholder="Поиск товара"
-                  className="flex-1 bg-transparent outline-none text-sm placeholder:text-ink-400 dark:text-white"
-                />
-              </div>
-              <button onClick={() => setMobileSearchOpen(false)} className="text-ink-400 p-1">
-                <CloseCircle size={20} />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <MobileMenu open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
     </>
   );
 }
 
-function DropdownItem({ icon: Icon, label, onClick, danger }) {
+function DropdownItem({ icon: Icon, label, onClick, danger, badge }) {
   return (
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${danger
-          ? "text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
-          : "text-ink-700 dark:text-ink-200 hover:bg-ink-50 dark:hover:bg-[#171717]"
+        ? "text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
+        : "text-ink-700 dark:text-ink-200 hover:bg-ink-50 dark:hover:bg-[#171717]"
         }`}
     >
       <Icon size={18} variant="Linear" />
-      {label}
+      <span className="flex-1 text-left">{label}</span>
+      {badge > 0 && (
+        <span className="bg-brand-600 text-white text-[10px] rounded-full min-w-4 h-4 px-1 flex items-center justify-center">
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
     </button>
   );
 }

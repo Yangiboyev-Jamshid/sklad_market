@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { logout as apiLogout, getAccessToken } from "../data/api";
+import { logout as apiLogout, getAccessToken } from "../api/api";
 
 const AuthContext = createContext(null);
 
@@ -23,16 +23,15 @@ export function AuthProvider({ children }) {
    * @param {Object} data — данные от сервера или mock
    */
   const login = (data = {}) => {
-    // Нормализуем структуру пользователя
+    // data is the unwrapped payload from /auth/registration/login:
+    // { firstName, lastName, username, role, accessToken, refreshToken, expiresIn }
+    const fullName = [data.firstName, data.lastName].filter(Boolean).join(" ");
     const userData = {
-      name: data.name || data.full_name || data.username || "Пользователь",
+      name: fullName || data.username || "Пользователь",
       role: data.role || "user",
-      company: data.company || data.company_name || "",
-      accountType: data.accountType || data.user_type || "buyer",
-      email: data.email || "",
-      phone: data.phone || "",
-      id: data.id || data.user_id || null,
-      // сохраняем весь raw ответ для удобства
+      username: data.username || "",
+      accountType: (data.role || "buyer").toLowerCase(),
+      id: data.id || null,
       raw: data,
     };
 

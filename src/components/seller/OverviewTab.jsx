@@ -1,9 +1,15 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Box, I3DSquare } from "iconsax-reactjs";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { trendData } from "../../data/mockData";
 import ProductThumb from "../ui/ProductThumb";
 import { useTheme } from "../../context/ThemeContext";
+import { getMyProducts, getSellerLeads, getChats } from "../../api/api";
+
+function totalOf(data) {
+  return data?.meta?.total ?? data?.items?.length ?? 0;
+}
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -34,17 +40,36 @@ export default function OverviewTab() {
   const tickColor = theme === "dark" ? "#565C66" : "#667085";
   const gridColor = theme === "dark" ? "#20242A" : "#E5E7EB";
 
+  const [stats, setStats] = useState({ activeProducts: 0, requests: 0, contacts: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      getMyProducts({ page: 1, per_page: 1, status: "ACTIVE" }).catch(() => null),
+      getSellerLeads({ page: 1, perPage: 1 }).catch(() => null),
+      getChats({ page: 1, per_page: 1 }).catch(() => null),
+    ])
+      .then(([products, leads, chats]) => {
+        setStats({
+          activeProducts: totalOf(products),
+          requests: totalOf(leads),
+          contacts: totalOf(chats),
+        });
+      })
+      .finally(() => setStatsLoading(false));
+  }, []);
+
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-1.5">
-        <StatCard label="Активные товары" value="1 326" icon={Box} color="brand" />
-        <StatCard label="Запросы" value="23" icon={I3DSquare} color="purple" />
-        <StatCard label="Контакты" value="7" icon={I3DSquare} color="purple" />
+        <StatCard label="Активные товары" value={statsLoading ? "…" : stats.activeProducts} icon={Box} color="brand" />
+        <StatCard label="Запросы" value={statsLoading ? "…" : stats.requests} icon={I3DSquare} color="purple" />
+        <StatCard label="Контакты" value={statsLoading ? "…" : stats.contacts} icon={I3DSquare} color="purple" />
       </div>
 
       <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] px-4 py-5 sm:px-9 sm:py-7 transition-colors">
         <p className="mb-5 text-2xl font-bold text-ink-900 dark:text-white">Тренд</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-10 mb-3">
+        <div className="hidden sm:grid sm:grid-cols-3 gap-4 sm:gap-10 mb-3">
           <div>
             <p className="text-sm font-medium text-[#9AA4B2]">Запасы</p>
             <p className="text-3xl font-medium text-ink-900 dark:text-white">1500</p>
@@ -85,18 +110,18 @@ export default function OverviewTab() {
       </div>
 
       <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-6 transition-colors">
-        <div className="flex items-center justify-between mb-4">
-          <p className="font-semibold text-ink-900 dark:text-white">Последние проданые товары</p>
-          <button className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline">Все товары</button>
+        <div className="flex items-start sm:items-center justify-between mb-4 gap-5">
+          <p className="font-semibold text-[20px] sm:text-[24px] text-ink-900 dark:text-white">Последние проданые товары</p>
+          <button className="text-[20px] font-medium text-brand-600 text-nowrap dark:text-brand-400 hover:underline">Все товары</button>
         </div>
         <div className="flex flex-col gap-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center gap-3 sm:gap-4 border border-ink-100 dark:border-[#1C1C1C] rounded-xl p-3">
-              <div className="w-12 h-12 flex items-center justify-center sm:w-[126px] sm:h-[66px] bg-[#E2E2E2] dark:bg-[#2A2A2A] overflow-hidden">
-                <ProductThumb shape="coil" width="21" height="8"/>
+              <div className="w-[126px] h-[66px] flex items-center justify-center sm:w-[126px] sm:h-[66px] bg-[#E2E2E2] dark:bg-[#2A2A2A] overflow-hidden">
+                <ProductThumb width="21" height="8"/>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-ink-900 dark:text-white truncate">Оцинкованный рулон</p>
+                <p className="text-sm font-semibold text-ink-900 dark:text-white">Оцинкованный рулон</p>
                 <p className="text-[8.25px] text-ink-400 dark:text-ink-500 mt-1">Asia Steel Group</p>
                 <p className="text-[8.25px] text-ink-400 dark:text-ink-500 mt-3">от 610 $ / тонна</p>
               </div>
@@ -117,7 +142,7 @@ function StatCard({ label, value, icon: Icon, color }) {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#F5F5F5] dark:bg-[#171717] rounded-2xl p-4 sm:p-5 flex items-center justify-between">
       <div>
-        <p className="text-sm text-ink-500 dark:text-ink-400">{label}</p>
+        <p className="text-sm text-[#8A8A8A]">{label}</p>
         <p className="text-xl sm:text-2xl font-bold text-ink-900 dark:text-white mt-1">{value}</p>
       </div>
       <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-white dark:text-[#0D0D0D] shrink-0 ${colorMap[color]}`}>

@@ -1,59 +1,183 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  addFavorite, removeFavorite, getFavorites, getAccessToken,
+  getCart, addCartItem, updateCartItem, removeCartItem as apiRemoveCartItem, clearCart as apiClearCart,
+  addCompanyFavorite, removeCompanyFavorite, getCompanyFavorites,
+} from "../api/api";
+import { useAuth } from "./AuthContext";
 
 const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
-  const [items, setItems] = useState([
-    { id: "p2-cart", name: "Оцинкованный рулон", company: "Asia Steel Group", price: 850, pricePerTon: 85, qty: 10 },
-    { id: "p5-cart", name: "Хлопковая пряжа №30/1", company: "TextilGroup", price: 850, pricePerTon: 85, qty: 10 },
-  ]);
-  const [favorites, setFavorites] = useState(new Set(["p1-0", "p2-1"]));
+  const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
+  const [items, setItems] = useState([]);
+  const [cartLoading, setCartLoading] = useState(false);
+  const [favorites, setFavorites] = useState(new Set());
 
-  const addToCart = (product) => {
-    setItems((prev) => {
-      const existing = prev.find((i) => i.name === product.name);
-      if (existing) {
-        return prev.map((i) =>
-          i.name === product.name ? { ...i, qty: i.qty + (product.qty || 1) } : i
-        );
+  // ── Cart ──────────────────────────────────────────────────────────────────
+  const reloadCart = useCallback(async () => {
+    if (!getAccessToken()) return;
+    setCartLoading(true);
+    try {
+      const data = await getCart();
+      setItems(data?.items ?? []);
+    } catch {
+      setItems([]);
+    } finally {
+      setCartLoading(false);
+    }
+  }, []);
+
+  // Re-fetch whenever login state flips (login populates the cart, logout clears it) —
+  // CartProvider mounts once for the whole session, so this can't just be a mount-time effect.
+  useEffect(() => {
+    if (isLoggedIn) reloadCart();
+    else setItems([]);
+  }, [isLoggedIn, reloadCart]);
+
+  const addToCart = useCallback(async (product) => {
+    if (!getAccessToken()) { navigate("/login"); return; }
+    try {
+      const newItem = await addCartItem({ productId: product.id, quantity: product.qty || 1 });
+      if (newItem) {
+        setItems((prev) => {
+          const idx = prev.findIndex((i) => i.productId === newItem.productId);
+          if (idx !== -1) {
+            const next = [...prev];
+            next[idx] = newItem;
+            return next;
+          }
+          return [...prev, newItem];
+        });
       }
-      return [
-        ...prev,
-        {
-          id: product.id + "-cart",
-          name: product.name,
-          company: product.company,
-          price: product.price,
-          pricePerTon: Math.round(product.price / 10),
-          qty: product.qty || product.minOrder || 1,
-        },
-      ];
-    });
-  };
+    } catch (err) {
+      console.error(err.message);
+    }
+  }, [navigate]);
 
-  const updateQty = (id, qty) => {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, qty: Math.max(1, qty) } : i)));
-  };
+  const updateQty = useCallback(async (id, qty) => {
+    const safeQty = Math.max(1, qty);
+    // Optimistic
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, quantity: safeQty } : i)));
+    try {
+      const updated = await updateCartItem(id, { quantity: safeQty });
+      if (updated) setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
+    } catch (err) {
+      console.error(err.message);
+    }
+  }, []);
 
-  const removeFromCart = (id) => {
+  const removeFromCart = useCallback(async (id) => {
+    // Optimistic
     setItems((prev) => prev.filter((i) => i.id !== id));
-  };
+    try {
+      await apiRemoveCartItem(id);
+    } catch (err) {
+      console.error(err.message);
+      reloadCart();
+    }
+  }, [reloadCart]);
 
-  const toggleFavorite = (id) => {
+  const emptyCart = useCallback(async () => {
+    setItems([]);
+    try {
+      await apiClearCart();
+    } catch (err) {
+      console.error(err.message);
+      reloadCart();
+    }
+  }, [reloadCart]);
+
+  const total = items.reduce((sum, i) => sum + (i.price ?? 0) * (i.quantity ?? 1), 0);
+  const currency = items[0]?.currency ?? "UZS";
+
+  // ── Product Favorites ─────────────────────────────────────────────────────
+  const loadFavoriteIds = useCallback(async () => {
+    if (!getAccessToken()) return;
+    try {
+      const data = await getFavorites({ page: 1, perPage: 200 });
+      setFavorites(new Set((data?.content ?? []).map((p) => p.id)));
+    } catch {
+      // not logged in or request failed — leave favorites empty
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isLoggedIn) loadFavoriteIds();
+    else setFavorites(new Set());
+  }, [isLoggedIn, loadFavoriteIds]);
+
+  const toggleFavorite = useCallback(async (productId) => {
+    if (!getAccessToken()) { navigate("/login"); return; }
+    const isFav = favorites.has(productId);
     setFavorites((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (isFav) next.delete(productId);
+      else next.add(productId);
       return next;
     });
-  };
+    try {
+      if (isFav) await removeFavorite(productId);
+      else await addFavorite(productId);
+    } catch {
+      setFavorites((prev) => {
+        const next = new Set(prev);
+        if (isFav) next.add(productId);
+        else next.delete(productId);
+        return next;
+      });
+    }
+  }, [favorites, navigate]);
 
-  const total = items.reduce((sum, i) => sum + i.pricePerTon * i.qty, 0);
+  // ── Company Favorites ─────────────────────────────────────────────────────
+  const [companyFavorites, setCompanyFavorites] = useState(new Set());
+
+  const loadCompanyFavoriteIds = useCallback(async () => {
+    if (!getAccessToken()) return;
+    try {
+      const data = await getCompanyFavorites({ page: 1, perPage: 200 });
+      setCompanyFavorites(new Set((data?.content ?? []).map((c) => c.id)));
+    } catch {
+      // not logged in or request failed — leave company favorites empty
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isLoggedIn) loadCompanyFavoriteIds();
+    else setCompanyFavorites(new Set());
+  }, [isLoggedIn, loadCompanyFavoriteIds]);
+
+  const toggleCompanyFavorite = useCallback(async (companyId) => {
+    if (!getAccessToken()) { navigate("/login"); return; }
+    const isFav = companyFavorites.has(companyId);
+    setCompanyFavorites((prev) => {
+      const next = new Set(prev);
+      if (isFav) next.delete(companyId);
+      else next.add(companyId);
+      return next;
+    });
+    try {
+      if (isFav) await removeCompanyFavorite(companyId);
+      else await addCompanyFavorite(companyId);
+    } catch {
+      setCompanyFavorites((prev) => {
+        const next = new Set(prev);
+        if (isFav) next.add(companyId);
+        else next.delete(companyId);
+        return next;
+      });
+    }
+  }, [companyFavorites, navigate]);
 
   return (
-    <CartContext.Provider
-      value={{ items, addToCart, updateQty, removeFromCart, total, favorites, toggleFavorite }}
-    >
+    <CartContext.Provider value={{
+      items, cartLoading, addToCart, updateQty, removeFromCart, emptyCart, reloadCart,
+      total, currency,
+      favorites, toggleFavorite, reloadFavorites: loadFavoriteIds,
+      companyFavorites, toggleCompanyFavorite, reloadCompanyFavorites: loadCompanyFavoriteIds,
+    }}>
       {children}
     </CartContext.Provider>
   );

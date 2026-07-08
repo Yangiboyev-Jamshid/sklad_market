@@ -14,10 +14,10 @@ export default function ProductCard({ product, index = 0 }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.3) }}
-      className="bg-white dark:bg-[#0D0D0D] p-4 rounded-2xl border border-ink-100 dark:border-[#1C1C1C] flex flex-col cursor-pointer hover:shadow-xl hover:-translate-y-0.5 transition-all"
-      onClick={() => navigate(`/product/${product.id}`)}
+      className="bg-white dark:bg-[#0D0D0D] p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-ink-100 dark:border-[#1C1C1C] flex flex-col cursor-pointer hover:shadow-xl hover:-translate-y-0.5 transition-all"
+      onClick={() => navigate(`/product/${product.slug || product.id}`)}
     >
-      <div className="relative h-[220px] w-full flex items-center justify-center rounded-2xl overflow-hidden bg-[#EBEBEB] dark:bg-[#2A2A2A]" style={{ aspectRatio: "1 / 1" }}>
+      <div className="relative h-[150px] sm:h-[220px] w-full flex items-center justify-center rounded-xl sm:rounded-2xl overflow-hidden bg-[#EBEBEB] dark:bg-[#2A2A2A]" style={{ aspectRatio: "1 / 1" }}>
         <ProductThumb />
 
         <button
@@ -25,7 +25,7 @@ export default function ProductCard({ product, index = 0 }) {
             e.stopPropagation();
             toggleFavorite(product.id);
           }}
-          className="absolute top-3 right-3 w-11 h-11 rounded-2xl bg-white dark:bg-[#0D0D0D] shadow-md flex items-center justify-center hover:scale-110 transition-transform"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-white dark:bg-[#0D0D0D] shadow-md flex items-center justify-center hover:scale-110 transition-transform"
         >
           <Heart
             size={20}
@@ -36,23 +36,23 @@ export default function ProductCard({ product, index = 0 }) {
       </div>
 
       <div className="flex flex-col flex-1 pt-4 px-1 pb-1 gap-1">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-bold text-ink-900 dark:text-white leading-snug line-clamp-2 flex-1">
+        <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-2">
+          <h3 className="text-[12px] sm:text-sm font-bold text-ink-900 dark:text-white leading-snug line-clamp-2 flex-1">
             {product.name}
           </h3>
           {product.verified && (
-            <span className="shrink-0 text-sm px-2 py-[2px] rounded-[5px] bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400">
+            <span className="shrink-0 text-[10px] sm:text-sm px-1.5 sm:px-2 py-[2px] rounded-[5px] bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400">
               Verified
             </span>
           )}
         </div>
 
         {/* Company name */}
-        <p className="text-[8.25px] font-[400] text-ink-400 dark:text-[#7F7F7F]">{product.company}</p>
+        <p className="text-[10px] sm:text-[8.25px] font-[400] text-ink-400 dark:text-[#7F7F7F]">{product.company}</p>
 
         {/* Price + Add to cart button */}
-        <div className="flex items-center justify-between mt-3 gap-2">
-          <p className="text-[8.25px] text-ink-500 dark:text-[#7F7F7F] whitespace-nowrap">
+        <div className="flex sm:flex-row flex-col items-start sm:items-center justify-between mt-3 gap-2">
+          <p className="text-[10px] sm:text-[8.25px] text-ink-500 dark:text-[#7F7F7F] whitespace-nowrap">
             от <span>{product.price} $</span> / {product.unit}
           </p>
           <button
@@ -60,7 +60,7 @@ export default function ProductCard({ product, index = 0 }) {
               e.stopPropagation();
               addToCart(product);
             }}
-            className="shrink-0 px-3 dark:text-[#0D0D0D] py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.97] text-white text-[9.43px] font-semibold rounded-full transition-all whitespace-nowrap"
+            className="shrink-0 px-2 sm:px-3 dark:text-[#0D0D0D] py-0.5 sm:py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.97] text-white text-[12px] sm:text-[9.43px] font-semibold rounded-full transition-all whitespace-nowrap"
           >
             Добавить в корзину
           </button>

@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send2, MessageProgramming } from "iconsax-reactjs";
+import { Send } from "iconsax-reactjs";
 import AppShell from "../components/layout/AppShell";
 import { aiSuggestions } from "../data/mockData";
-import { div } from "framer-motion/client";
 
 export default function AiAgentPage() {
   const [messages, setMessages] = useState([]);
@@ -30,16 +29,15 @@ export default function AiAgentPage() {
               <p className="text-[#8D8D8D] mb-8 sm:mb-8 max-w-lg text-xl sm:text-xl">
                 Я ваш AI-ассистент. Ваш интеллектуальный помощник по поиску товаров и поставщиков.
               </p>
-              <div className="grid grid-cols-2 justify-center gap-2.5 sm:gap-3">
+              <div className="grid sm:grid-cols-2 grid-cols-1 justify-center gap-3 sm:gap-3">
                 {aiSuggestions.map((s, i) => (
-                  <div className={`${i === 4 ? "col-span-full" : ""}`}>
+                  <div key={i} className={`${i === 4 ? "col-span-full" : ""}`}>
                     <motion.button
-                      key={i}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
                       onClick={() => send(s)}
-                      className={`bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-ink-700 dark:text-ink-200 hover:border-brand-300 dark:hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors`}
+                      className={`bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3.5 sm:px-4 py-5 sm:py-3 text-xs sm:text-sm text-ink-700 dark:text-ink-200 hover:border-brand-300 dark:hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors`}
                     >
                       {s}
                     </motion.button>
@@ -68,7 +66,7 @@ export default function AiAgentPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-2 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-full px-4 sm:px-5 py-3 sm:py-3.5 mt-4">
+        <div className="flex items-center gap-2 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 mt-4">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -77,7 +75,7 @@ export default function AiAgentPage() {
             className="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder:text-ink-400 dark:text-white"
           />
           <button onClick={() => send()} className="text-brand-600 dark:text-brand-400 hover:text-brand-700 transition-colors shrink-0">
-            <Send2 size={20} variant="Bold" />
+            <Send size={20} variant="Bold" />
           </button>
         </div>
       </div>

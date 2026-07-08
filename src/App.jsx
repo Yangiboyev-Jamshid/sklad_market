@@ -16,6 +16,8 @@ import ProfilePage from "./pages/ProfilePage";
 import SellerDashboardPage from "./pages/SellerDashboardPage";
 import ModeratorDashboardPage from "./pages/ModeratorDashboardPage";
 import TariffsPage from "./pages/TariffsPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import VerifyAccountPage from "./pages/VerifyAccountPage";
 
 function AntDThemeBridge({ children }) {
   const { theme } = useTheme();
@@ -37,31 +39,35 @@ function AntDThemeBridge({ children }) {
 
 function App() {
   return (
-    <ThemeProvider>
-      <AntDThemeBridge>
-        <AuthProvider>
-          <CartProvider>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/" element={<HomePage />} />
-              <Route path="/catalog" element={<CatalogPage />} />
-              <Route path="/products-explore" element={<CatalogPage />} />
-              <Route path="/product/:id" element={<ProductPage />} />
-              <Route path="/favorites" element={<FavoritesPage />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/ai-agent" element={<AiAgentPage />} />
-              <Route path="/companies" element={<CompaniesPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/company/:id" element={<ProfilePage />} />
-              <Route path="/seller" element={<SellerDashboardPage />} />
-              <Route path="/moderator" element={<ModeratorDashboardPage />} />
-              <Route path="/tariffs" element={<TariffsPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </CartProvider>
-        </AuthProvider>
-      </AntDThemeBridge>
-    </ThemeProvider>
+    <div className="max-w-[1440px] w-full m-auto bg-white dark:bg-[#0D0D0D] sm:bg-[#F4F6F8] sm:dark:bg-[#121212]">
+      <ThemeProvider>
+        <AntDThemeBridge>
+          <AuthProvider>
+            <CartProvider>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/verify/:token" element={<VerifyAccountPage />} />
+                <Route path="/" element={<HomePage />} />
+                <Route path="/catalog" element={<CatalogPage />} />
+                <Route path="/products-explore" element={<CatalogPage />} />
+                <Route path="/product/:id" element={<ProductPage />} />
+                <Route path="/favorites" element={<FavoritesPage />} />
+                <Route path="/cart" element={<CartPage />} />
+                <Route path="/ai-agent" element={<AiAgentPage />} />
+                <Route path="/companies" element={<CompaniesPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/company/:id" element={<ProfilePage />} />
+                <Route path="/seller" element={<SellerDashboardPage />} />
+                <Route path="/moderator" element={<ModeratorDashboardPage />} />
+                <Route path="/tariffs" element={<TariffsPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </CartProvider>
+          </AuthProvider>
+        </AntDThemeBridge>
+      </ThemeProvider>
+    </div>
   );
 }
 

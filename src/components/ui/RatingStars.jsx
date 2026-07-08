@@ -1,4 +1,4 @@
-import { Star1 } from "iconsax-reactjs";
+import { FaStar } from "react-icons/fa6";
 
 export default function RatingStars({ rating = 0, size = 20, showValue = false, count }) {
   const full = Math.round(rating);
@@ -6,7 +6,7 @@ export default function RatingStars({ rating = 0, size = 20, showValue = false, 
     <span className="inline-flex items-center gap-1">
       <span className="flex items-center gap-0.5">
         {[1, 2, 3, 4, 5].map((i) => (
-          <Star1
+          <FaStar 
             key={i}
             size={size}
             variant="Bold"

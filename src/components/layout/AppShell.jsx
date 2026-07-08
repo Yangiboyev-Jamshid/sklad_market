@@ -1,6 +1,5 @@
 import SidebarRail from "./SidebarRail";
 import Header from "./Header";
-import BottomNav from "./BottomNav";
 
 export default function AppShell({ children }) {
   return (
@@ -8,8 +7,7 @@ export default function AppShell({ children }) {
       <SidebarRail />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
-        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">{children}</main>
-        <BottomNav />
+        <main className="flex-1 overflow-y-auto pb-3 sm:pb-16 md:pb-0">{children}</main>
       </div>
     </div>
   );

@@ -1,86 +1,197 @@
-import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Eye,
   Minus,
   Add,
   ShoppingCart,
-  Message2,
   Call,
   Heart,
-  Verify,
   Location,
   ShieldTick,
-  Box1,
   Truck,
   Shield,
   TickCircle,
   Box,
+  Message,
 } from "iconsax-reactjs";
 import AppShell from "../components/layout/AppShell";
 import ProductThumb from "../components/ui/ProductThumb";
+import ProductCard from "../components/ui/ProductCard";
 import RatingStars from "../components/ui/RatingStars";
-import { products, companies, reviews } from "../data/mockData";
+import ReportModal from "../components/modal/ReportModal";
 import { useCart } from "../context/CartContext";
+import { getProductBySlug, getAllProducts, createChat } from "../api/api";
 
 const tabs = ["Описание", "Характеристики", "Доставка", "Отзывы"];
 
+const SAMPLE_REVIEWS = [
+  {
+    author: "Алтын Цемент",
+    rating: 5,
+    text: "Работаем с компанией уже 3 года. Качество продукции стабильное, документы всегда в порядке, поставки в срок. Рекомендую.",
+  },
+  {
+    author: "BuildKaz LLP",
+    rating: 5,
+    text: "В целом довольны сотрудничеством. Небольшая задержка по последней партии, но предупредили заранее.",
+  },
+];
+
+function normalizeProduct(p) {
+  return {
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    price: p.price ?? 0,
+    unit: p.currency ?? "UZS",
+    company: p.companyId ? `Компания #${p.companyId}` : "",
+    image: p.images?.find((img) => img.is_primary)?.url ?? p.images?.[0]?.url ?? null,
+    verified: p.status === "ACTIVE" || p.isPromoted,
+  };
+}
+
+const AVAILABILITY_LABEL = {
+  ACTIVE: "В наличии",
+  PENDING: "На модерации",
+  ARCHIVED: "Нет в наличии",
+  REJECTED: "Нет в наличии",
+};
+
 export default function ProductPage() {
   const { id } = useParams();
-  const baseId = id?.split("-")[0] || "p1";
-  const product = products.find((p) => p.id === baseId) || products[0];
-  const company = companies.find((c) => c.id === product.companyId) || companies[0];
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("Описание");
-  const [qty, setQty] = useState(product.minOrder);
+  const [qty, setQty] = useState(1);
+  const [showReport, setShowReport] = useState(false);
+  const [similar, setSimilar] = useState([]);
   const { addToCart, favorites, toggleFavorite } = useCart();
-  const isFav = favorites?.has(id);
+  const navigate = useNavigate();
+  const isFav = product ? favorites?.has(product.id) : false;
+
+  const handleOpenChat = async () => {
+    if (!product?.company?.id) return;
+    try {
+      const result = await createChat({ seller_company_id: product.company.id, product_id: product.id });
+      navigate(`/seller?tab=messages&thread=${result.thread_id}`);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  useEffect(() => {
+    setLoading(true);
+    getProductBySlug(id)
+      .then(setProduct)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  useEffect(() => {
+    if (!product) return;
+    getAllProducts({ page: 1, perPage: 60 })
+      .then((data) => {
+        const items = (data?.items ?? []).filter((p) => p.categoryId === product.category?.id && p.id !== product.id);
+        setSimilar(items.slice(0, 4).map(normalizeProduct));
+      })
+      .catch(() => setSimilar([]));
+  }, [product]);
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="bg-[#F9FAFB] dark:bg-[#121212] mx-auto p-4 sm:p-5 sm:px-10">
+          <div className="hidden sm:block h-8 w-64 bg-ink-200 dark:bg-[#1C1C1C] rounded-xl animate-pulse mb-6" />
+          <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-3">
+            <div className="h-96 bg-ink-200 dark:bg-[#1C1C1C] rounded-2xl animate-pulse" />
+            <div className="h-96 bg-ink-200 dark:bg-[#1C1C1C] rounded-2xl animate-pulse" />
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-ink-400">{error || "Товар не найден"}</p>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const primaryImage = product.images?.find((img) => img.is_primary)?.url ?? product.images?.[0]?.url;
+  const company = product.company;
+  const tags = [product.category?.parentName, product.category?.name, Object.values(product.attributes ?? {})[0]].filter(Boolean);
 
   return (
     <AppShell>
-      <div className="bg-[#F9FAFB] dark:bg-[#121212] mx-auto p-5 sm:px-10">
-        <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white mb-5 sm:mb-6">{product.name}</h1>
+      <div className="bg-[#F9FAFB] dark:bg-[#121212] mx-auto p-4 sm:p-5 sm:px-10">
+        <h1 className="hidden sm:block text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white mb-5 sm:mb-6">{product.name}</h1>
 
-        <div className="grid grid-cols-[3fr_1fr] gap-3">
-          <div className="p-[18.85px] flex flex-col justify-start gap-4 dark:bg-[#0D0D0D] rounded-[12px] border dark:border-[#1C1C1C]">
-            <div className="aspect-[16/10] rounded-xl flex items-center justify-center dark:bg-[#2A2A2A] bg-[#E2E2E2] overflow-hidden border border-ink-100 dark:border-[#1C1C1C]">
-              <ProductThumb />
+        <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-3">
+          <div className="p-3 sm:p-[18.85px] flex flex-col justify-start gap-3 sm:gap-4 bg-white dark:bg-[#0D0D0D] rounded-[12px] border border-ink-100 dark:border-[#1C1C1C]">
+            <div className="relative aspect-[4/3] sm:aspect-[16/10] rounded-xl flex items-center justify-center dark:bg-[#2A2A2A] bg-[#E2E2E2] overflow-hidden border border-ink-100 dark:border-[#1C1C1C]">
+              {primaryImage
+                ? <img src={primaryImage} alt={product.name} className="w-full h-full object-contain" />
+                : <ProductThumb />
+              }
             </div>
-            <div className="flex gap-2">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="aspect-square h-[90px] w-[100px] flex items-center justify-center rounded-lg bg-[#E2E2E2] dark:bg-[#2A2A2A] overflow-hidden border border-ink-100 dark:border-[#1C1C1C]">
-                  <ProductThumb height="14" width="42" />
+            <div className="flex gap-2 overflow-x-auto">
+              {(product.images ?? []).slice(0, 4).map((img, i) => (
+                <div key={img.id ?? i} className="aspect-square h-[72px] w-[80px] sm:h-[90px] sm:w-[100px] shrink-0 flex items-center justify-center rounded-lg bg-[#E2E2E2] dark:bg-[#2A2A2A] overflow-hidden border border-ink-100 dark:border-[#1C1C1C]">
+                  {img.url
+                    ? <img src={img.thumbnail_urls?.sm ?? img.url} alt="" className="w-full h-full object-cover" />
+                    : <ProductThumb height="14" width="42" />
+                  }
                 </div>
               ))}
             </div>
           </div>
+
           <div className="bg-white dark:bg-[#0D0D0D] rounded-[12px] border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-5 transition-colors">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-[#155DFC] dark:text-[#2E6FFC] bg-[#DEECFF] dark:bg-[#00193B] px-1 py-0.5 rounded-[4px]">{product.category}</span>
+              <span className="text-sm font-medium text-[#155DFC] dark:text-[#2E6FFC] bg-[#DEECFF] dark:bg-[#00193B] px-1 py-0.5 rounded-[4px]">
+                {product.category?.name ?? "—"}
+              </span>
               <span className="flex items-center gap-1 text-[10px] text-ink-400 dark:text-ink-500">
-                <Eye size={15} /> {product.views} просмотров
+                <Eye size={15} /> {product.views_count_cache ?? 0} просмотров
               </span>
             </div>
-            <h2 className="text-sm font-semibold text-ink-900 dark:text-white mb-1">{product.name}</h2>
-            <RatingStars rating={product.rating} count={product.reviews} showValue />
+            <h2 className="text-sm font-semibold text-ink-900 dark:text-white mb-1.5">{product.name}</h2>
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <RatingStars rating={product.rating ?? 0} size={14} showValue count={product.reviewsCount} />
+              <button
+                onClick={() => setActiveTab("Отзывы")}
+                className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline shrink-0"
+              >
+                Перейти к отзывам
+              </button>
+            </div>
 
-            <div className="bg-[#DEECFF] flex flex-col gap-1 dark:bg-[#00183A] rounded-xl p-4 mt-4 mb-4">
-              <p className="text-2xl font-bold text-[#155DFC] dark:text-[#2E6FFC]">${product.price}</p>
-              <p className="text-[12px] text-ink-500 dark:text-ink-400">за {product.unit}</p>
-              <p className="text-[12px] text-ink-500 dark:text-ink-400">Минимальный заказ: {product.minOrder} тонны</p>
+            <div className="bg-[#DEECFF] flex flex-col gap-1 dark:bg-[#00183A] rounded-xl p-4 mb-4">
+              <p className="text-2xl font-bold text-[#155DFC] dark:text-[#2E6FFC]">
+                {product.price} {product.currency}
+              </p>
+              <p className="text-[12px] text-ink-500 dark:text-ink-400">за {product.unit ?? "шт."}</p>
+              <p className="text-[12px] text-ink-400 dark:text-ink-500">Минимальный заказ: {product.minProduct ?? 1} {product.unit ?? "шт."}</p>
             </div>
 
             <p className="text-xs font-medium text-ink-700 dark:text-ink-200 mb-2">Количество</p>
             <div className="flex items-center gap-3 mb-2">
               <button
-                onClick={() => setQty((q) => Math.max(product.minOrder, q - 1))}
+                onClick={() => setQty((q) => Math.max(1, q - 1))}
                 className="w-10 h-10 rounded-xl border border-ink-200 dark:border-[#1C1C1C] flex items-center justify-center text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-[#171717] shrink-0"
               >
                 <Minus size={16} />
               </button>
               <input
                 value={qty}
-                onChange={(e) => setQty(Number(e.target.value) || product.minOrder)}
+                onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))}
                 className="flex-1 text-center border border-[#DFDFDF] bg-transparent dark:border-[#1C1C1C] dark:text-white rounded-xl py-[10px] outline-none font-medium"
               />
               <button
@@ -90,23 +201,36 @@ export default function ProductPage() {
                 <Add size={16} />
               </button>
             </div>
-            <p className="text-xs text-ink-400 dark:text-ink-500 mb-4">Итог: ${product.price}</p>
+            <p className="text-xs text-ink-400 dark:text-ink-500 mb-4">
+              Итог: {product.price * qty} {product.currency}
+            </p>
 
             <button
-              onClick={() => addToCart({ ...product, qty })}
-              className="w-full bg-brand-600 dark:text-[#0D0D0D] hover:bg-brand-700 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-3 transition-colors"
+              onClick={() => addToCart({ id: product.id, name: product.name, price: product.price, qty })}
+              className="w-full bg-brand-600 dark:text-[#0D0D0D] hover:bg-brand-700 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-2 transition-colors"
             >
               <ShoppingCart size={18} /> Добавить в корзину
             </button>
-            <button className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 font-medium py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-3 text-ink-700 dark:text-ink-200 transition-colors">
-              <Message2 size={18} /> Написать продавцу
-            </button>
-            <button className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 font-medium py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-3 text-ink-700 dark:text-ink-200 transition-colors">
-              <Call size={18} /> {company.phone}
-            </button>
+
             <button
-              onClick={() => toggleFavorite(id)}
-              className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 font-medium py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-3 text-ink-700 dark:text-ink-200 transition-colors"
+              onClick={handleOpenChat}
+              className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-brand-400 font-medium py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-2 text-ink-700 dark:text-ink-200 transition-colors"
+            >
+              <Message size={18} /> Написать продавцу
+            </button>
+
+            {company?.phonePrimary && (
+              <a
+                href={`tel:${company.phonePrimary}`}
+                className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-brand-400 font-medium py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-2 text-ink-700 dark:text-ink-200 transition-colors"
+              >
+                <Call size={18} /> {company.phonePrimary}
+              </a>
+            )}
+
+            <button
+              onClick={() => toggleFavorite(product.id)}
+              className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 font-medium py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-2 text-ink-700 dark:text-ink-200 transition-colors"
             >
               <Heart size={18} variant={isFav ? "Bold" : "Linear"} className={isFav ? "text-danger-500" : ""} /> Добавить в фавориты
             </button>
@@ -120,16 +244,16 @@ export default function ProductPage() {
               </svg> Поделиться
             </button>
           </div>
+
           <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] transition-colors">
-            <div className="flex border-b border-ink-100 dark:border-[#1C1C1C] px-2 overflow-x-auto">
+            <div className="flex border-b border-ink-100 dark:border-[#1C1C1C] px-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
               {tabs.map((t) => (
                 <button
                   key={t}
                   onClick={() => setActiveTab(t)}
-                  className={`relative px-3 sm:px-4 py-3.5 sm:py-4 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${activeTab === t ? "text-ink-900 dark:text-white" : "text-ink-400 hover:text-ink-600 dark:hover:text-ink-200"
-                    }`}
+                  className={`relative px-3 sm:px-4 py-3.5 sm:py-4 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${activeTab === t ? "text-ink-900 dark:text-white" : "text-ink-400 hover:text-ink-600 dark:hover:text-ink-200"}`}
                 >
-                  {t} {t === "Отзывы" && `(${product.reviews})`}
+                  {t === "Отзывы" ? `Отзывы (${product.reviewsCount ?? 0})` : t}
                   {activeTab === t && (
                     <motion.div layoutId="product-tab" className="absolute bottom-0 left-4 right-4 h-0.5 bg-brand-600" />
                   )}
@@ -137,57 +261,65 @@ export default function ProductPage() {
               ))}
             </div>
 
-            <div className="px-4 sm:p-4">
+            <div className="p-4 sm:p-4">
               <AnimatePresence mode="wait">
                 {activeTab === "Описание" && (
                   <motion.div key="d" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    <p className="text-sm text-ink-600 dark:text-ink-300 leading-relaxed mb-4">{product.description}</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {product.tags.map((t) => (
-                        <span key={t} className="text-xs bg-ink-100 dark:bg-[#171717] text-ink-600 dark:text-ink-300 px-3 py-1.5 rounded-full">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
+                    <p className="text-sm text-ink-600 dark:text-ink-300 leading-relaxed mb-4">{product.description || product.short_description || "—"}</p>
+                    {tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {tags.map((tag) => (
+                          <span key={tag} className="text-xs font-medium text-ink-600 dark:text-ink-300 bg-ink-50 dark:bg-[#171717] px-2.5 py-1 rounded-full">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </motion.div>
                 )}
                 {activeTab === "Характеристики" && (
                   <motion.div key="s" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-[18.85px] justify-start">
-                    {Object.entries(product.specs).map(([k, v], i) => (
-                      <div
-                        key={k}
-                        className={`grid grid-cols-[1fr_2fr] justify-start text-[14px]`}
-                      >
+                    <div className="grid grid-cols-[1fr_2fr] justify-start text-[14px]">
+                      <span className="text-ink-400 dark:text-ink-500">Категория</span>
+                      <span className="text-ink-900 dark:text-white font-medium text-left">{product.category?.name ?? "—"}</span>
+                    </div>
+                    {Object.entries(product.attributes ?? {}).map(([k, v]) => (
+                      <div key={k} className="grid grid-cols-[1fr_2fr] justify-start text-[14px]">
                         <span className="text-ink-400 dark:text-ink-500">{k}</span>
-                        <span className="text-ink-900 dark:text-white font-medium text-left">{v}</span>
+                        <span className="text-ink-900 dark:text-white font-medium text-left">{String(v)}</span>
                       </div>
                     ))}
+                    <div className="grid grid-cols-[1fr_2fr] justify-start text-[14px]">
+                      <span className="text-ink-400 dark:text-ink-500">Минимальный заказ</span>
+                      <span className="text-ink-900 dark:text-white font-medium text-left">{product.minProduct ?? 1} {product.unit ?? "шт."}</span>
+                    </div>
+                    <div className="grid grid-cols-[1fr_2fr] justify-start text-[14px]">
+                      <span className="text-ink-400 dark:text-ink-500">Наличие</span>
+                      <span className="text-ink-900 dark:text-white font-medium text-left">{AVAILABILITY_LABEL[product.status] ?? "—"}</span>
+                    </div>
                   </motion.div>
                 )}
                 {activeTab === "Доставка" && (
                   <motion.div key="del" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-5">
                     <InfoBlock icon={Truck} color="brand" title="Доставка" desc="Доставка по региону - доступна" sub="Срок: 3-5 дней" />
-                    <InfoBlock icon={Location} color="success" title="Склад / самовызов" desc="Ташкент, Узбекистан" />
+                    <InfoBlock icon={Location} color="success" title="Склад / самовызов" desc="Узбекистан" />
                     <InfoBlock icon={Shield} color="ink" title="Условия" desc="Условия поставки обсуждаются с продавцом. Документы и счёта предоставляются." />
                   </motion.div>
                 )}
                 {activeTab === "Отзывы" && (
-                  <motion.div key="r" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
-                    {reviews.map((r) => (
-                      <div key={r.id} className="flex gap-3">
-                        <div className="w-9 h-9 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                          {r.author.slice(0, 2).toUpperCase()}
+                  <motion.div key="rev" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
+                    <div className="flex items-center gap-2.5 pb-1">
+                      <RatingStars rating={product.rating ?? 0} size={18} />
+                      <span className="text-sm font-semibold text-ink-900 dark:text-white">{(product.rating ?? 0).toFixed(1)}</span>
+                      <span className="text-xs text-ink-400">{product.reviewsCount ?? 0} отзывов</span>
+                    </div>
+                    {SAMPLE_REVIEWS.map((r, i) => (
+                      <div key={i} className="border-t border-ink-100 dark:border-[#1C1C1C] pt-4 first:border-0 first:pt-0">
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <p className="text-sm font-semibold text-ink-900 dark:text-white">{r.author}</p>
+                          <RatingStars rating={r.rating} size={13} />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between flex-wrap gap-1">
-                            <p className="text-sm font-semibold text-ink-900 dark:text-white flex items-center gap-1">
-                              {r.author} {r.verified && <Verify size={14} className="text-brand-500" variant="Bold" />}
-                            </p>
-                            <RatingStars rating={r.rating} size={12} />
-                          </div>
-                          <p className="text-xs text-ink-400 dark:text-ink-500 mb-1">{r.industry}</p>
-                          <p className="text-sm text-ink-600 dark:text-ink-300 leading-relaxed">{r.text}</p>
-                        </div>
+                        <p className="text-sm text-ink-600 dark:text-ink-300 leading-relaxed">{r.text}</p>
                       </div>
                     ))}
                   </motion.div>
@@ -195,28 +327,34 @@ export default function ProductPage() {
               </AnimatePresence>
             </div>
           </div>
+
           <div className="flex flex-col gap-3">
             <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-5 transition-colors">
               <p className="font-semibold text-ink-900 dark:text-white mb-3.5">О продавце</p>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
-                  {company.name.slice(0, 2).toUpperCase()}
+                <div className="w-11 h-11 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden">
+                  {company?.logo_path
+                    ? <img src={company.logo_path} alt="" className="w-full h-full object-cover" />
+                    : (company?.name ?? "?").slice(0, 2).toUpperCase()
+                  }
                 </div>
                 <div>
                   <p className="text-[14px] font-semibold text-ink-900 dark:text-white flex items-center gap-1">
-                    {company.name} <TickCircle size={20} variant="Outline" className="text-brand-500" />
+                    {company?.name ?? "—"} <TickCircle size={20} variant="Outline" className="text-brand-500" />
                   </p>
-                  <p className="text-[12px] text-ink-400 dark:text-ink-500">{company.industry} {company.city}</p>
+                  <p className="text-[12px] text-ink-400 dark:text-ink-500">{company?.slug}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3 text-center mb-4">
-                <Stat value={company.rating} label="Рейтинг" />
-                <Stat value={company.reviews} label="Отзывы" />
-                <Stat value={company.rating} label="Товаров" />
+              <div className="grid grid-cols-3 gap-2 text-center mb-4">
+                <Stat value={company?.rating ?? "—"} label="Рейтинг" />
+                <Stat value={company?.reviews ?? 0} label="Отзывы" />
+                <Stat value={company?.productsCount ?? 0} label="Товаров" />
               </div>
-              <a href={`/company/${company.id}`} className="text-sm flex justify-center items-center font-medium text-brand-600 dark:text-brand-400 hover:underline">
-                Перейти на страницу компании →
-              </a>
+              {company?.slug && (
+                <a href={`/company/${company.slug}`} className="text-sm flex justify-center items-center font-medium text-brand-600 dark:text-brand-400 hover:underline">
+                  Перейти на страницу компании →
+                </a>
+              )}
             </div>
             <div className="bg-white dark:bg-[#0D0D0D] rounded-[12px] border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-5 flex flex-col gap-5 transition-colors">
               <FeatureRow icon={ShieldTick} text="Безопасная сделка через платформу" />
@@ -225,16 +363,33 @@ export default function ProductPage() {
             </div>
           </div>
         </div>
+
+        {similar.length > 0 && (
+          <div className="mt-8 sm:mt-10">
+            <h2 className="text-xl sm:text-2xl font-display font-bold text-ink-900 dark:text-white mb-4">Похожие товары</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-6 sm:gap-5">
+              {similar.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+            </div>
+          </div>
+        )}
       </div>
+
+      {showReport && (
+        <ReportModal
+          targetType="PRODUCT"
+          targetId={product.id}
+          onClose={() => setShowReport(false)}
+        />
+      )}
     </AppShell>
   );
 }
 
 function Stat({ value, label }) {
   return (
-    <div className="bg-ink-50/70 dark:bg-[#171717] rounded-xl py-2.5">
+    <div className="bg-ink-50/70 dark:bg-[#171717] rounded-xl py-2.5 px-1">
       <p className="text-[17px] font-bold text-ink-900 dark:text-white">{value}</p>
-      <p className="text-[12px] text-ink-400 dark:text-ink-500">{label}</p>
+      <p className="text-[11px] text-ink-400 dark:text-ink-500">{label}</p>
     </div>
   );
 }

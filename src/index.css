@@ -55,7 +55,19 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   font-family: 'Inter', sans-serif !important;
 }
 
-/* Leaflet map z-index fix inside app shell */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .leaflet-container {
   font-family: 'Inter', sans-serif;
+}
+
+.leaflet-container .leaflet-tile-pane .leaflet-tile {
+  mix-blend-mode: normal !important;
 }
