@@ -3,21 +3,23 @@ import { ConfigProvider, theme as antdTheme } from "antd";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
+import { lazy, Suspense } from "react";
+import Loader from "./components/ui/Loader";
 
-import LoginPage from "./pages/LoginPage";
-import HomePage from "./pages/HomePage";
-import CatalogPage from "./pages/CatalogPage";
-import ProductPage from "./pages/ProductPage";
-import FavoritesPage from "./pages/FavoritesPage";
-import CartPage from "./pages/CartPage";
-import AiAgentPage from "./pages/AiAgentPage";
-import CompaniesPage from "./pages/CompaniesPage";
-import ProfilePage from "./pages/ProfilePage";
-import SellerDashboardPage from "./pages/SellerDashboardPage";
-import ModeratorDashboardPage from "./pages/ModeratorDashboardPage";
-import TariffsPage from "./pages/TariffsPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import VerifyAccountPage from "./pages/VerifyAccountPage";
+const LoginPage = lazy(() => import("./pages/LoginPage"))
+const HomePage = lazy(() => import("./pages/HomePage"))
+const CatalogPage = lazy(() => import("./pages/CatalogPage"))
+const ProductPage = lazy(() => import("./pages/ProductPage"))
+const FavoritesPage = lazy(() => import("./pages/FavoritesPage"))
+const CartPage = lazy(() => import("./pages/CartPage"))
+const AiAgentPage = lazy(() => import("./pages/AiAgentPage"))
+const CompaniesPage = lazy(() => import("./pages/CompaniesPage"))
+const ProfilePage = lazy(() => import("./pages/ProfilePage"))
+const SellerDashboardPage = lazy(() => import("./pages/SellerDashboardPage"))
+const ModeratorDashboardPage = lazy(() => import("./pages/ModeratorDashboardPage"))
+const TariffsPage = lazy(() => import("./pages/TariffsPage"))
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"))
+const VerifyAccountPage = lazy(() => import("./pages/VerifyAccountPage"))
 
 function AntDThemeBridge({ children }) {
   const { theme } = useTheme();
@@ -45,22 +47,78 @@ function App() {
           <AuthProvider>
             <CartProvider>
               <Routes>
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/verify/:token" element={<VerifyAccountPage />} />
+                <Route path="/login" element={
+                  <Suspense fallback={<Loader />}>
+                    <LoginPage />
+                  </Suspense>
+                } />
+                <Route path="/forgot-password" element={
+                  <Suspense fallback={<Loader />}>
+                    <ForgotPasswordPage />
+                  </Suspense>
+                } />
+                <Route path="/verify/:token" element={
+                  <Suspense fallback={<Loader />}>
+                    <VerifyAccountPage />
+                  </Suspense>
+                } />
                 <Route path="/" element={<HomePage />} />
-                <Route path="/catalog" element={<CatalogPage />} />
-                <Route path="/products-explore" element={<CatalogPage />} />
-                <Route path="/product/:id" element={<ProductPage />} />
-                <Route path="/favorites" element={<FavoritesPage />} />
+                <Route path="/catalog" element={
+                  <Suspense fallback={<Loader />}>
+                    <CatalogPage />
+                  </Suspense>
+                } />
+                <Route path="/products-explore" element={
+                  <Suspense fallback={<Loader />}>
+                    <CatalogPage />
+                  </Suspense>
+                } />
+                <Route path="/product/:id" element={
+                  <Suspense fallback={<Loader />}>
+                    <ProductPage />
+                  </Suspense>
+                } />
+                <Route path="/favorites" element={
+                  <Suspense fallback={<Loader />}>
+                    <FavoritesPage />
+                  </Suspense>
+                } />
                 <Route path="/cart" element={<CartPage />} />
-                <Route path="/ai-agent" element={<AiAgentPage />} />
-                <Route path="/companies" element={<CompaniesPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/company/:id" element={<ProfilePage />} />
-                <Route path="/seller" element={<SellerDashboardPage />} />
-                <Route path="/moderator" element={<ModeratorDashboardPage />} />
-                <Route path="/tariffs" element={<TariffsPage />} />
+                <Route path="/ai-agent" element={
+                  <Suspense fallback={<Loader />}>
+                    <AiAgentPage />
+                  </Suspense>
+                } />
+                <Route path="/companies" element={
+                  <Suspense fallback={<Loader />}>
+                    <CompaniesPage />
+                  </Suspense>
+                } />
+                <Route path="/profile" element={
+                  <Suspense fallback={<Loader />}>
+                    <ProfilePage />
+                  </Suspense>
+                } />
+                <Route path="/company/:id" element={
+                  <Suspense fallback={<Loader />}>
+                    <ProfilePage />
+                  </Suspense>
+                } />
+                <Route path="/seller" element={
+                  <Suspense fallback={<Loader />}>
+                    <SellerDashboardPage />
+                  </Suspense>
+                } />
+                <Route path="/moderator" element={
+                  <Suspense fallback={<Loader />}>
+                    <ModeratorDashboardPage />
+                  </Suspense>
+                } />
+                <Route path="/tariffs" element={
+                  <Suspense fallback={<Loader />}>
+                    <TariffsPage />
+                  </Suspense>
+                } />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </CartProvider>
