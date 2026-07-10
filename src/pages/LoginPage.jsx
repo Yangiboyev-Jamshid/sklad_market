@@ -364,7 +364,8 @@ export default function LoginPage() {
               <InputField
                 icon={Sms}
                 placeholder="Номер телефона или Email адрес"
-                type="email"
+                type="text"
+                inputMode="email"
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
                 required

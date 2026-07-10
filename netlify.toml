@@ -2,15 +2,14 @@
   command = "npm run build"
   publish = "dist"
 
-# Proxy API calls to the real backend — mirrors the vite.config.js dev-server
-# proxy, which only applies to `npm run dev` and has no effect on the built
-# site. Without this, every relative /api/... fetch 404s on Netlify because
-# there's no such path in the static output.
-[[redirects]]
-  from = "/api/*"
-  to = "https://skladmarket.uz/api/:splat"
-  status = 200
-  force = true
+# Proxy API calls to the real backend via an Edge Function (see
+# netlify/edge-functions/api-proxy.js) rather than a plain redirect, because
+# the backend's CORS filter only accepts Origin: https://skladmarket.uz and
+# rejects everything else with 403 — a plain redirect forwards the deployed
+# site's own Origin header as-is and gets blocked.
+[[edge_functions]]
+  path = "/api/*"
+  function = "api-proxy"
 
 # SPA fallback so client-side routes (e.g. /catalog, /product/123) don't 404
 # on a hard refresh or direct link.
