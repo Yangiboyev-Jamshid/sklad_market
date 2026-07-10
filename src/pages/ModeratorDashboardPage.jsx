@@ -24,12 +24,12 @@ export default function ModeratorDashboardPage() {
       <div className="p-5 sm:p-10">
         <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white mb-5 sm:mb-6">Панель модератора</h1>
 
-        <div style={{scrollbarWidth: "none"}} className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] px-4 py-2 flex gap-3 mb-5 sm:mb-6 overflow-x-auto transition-colors">
+        <div style={{ scrollbarWidth: "none" }} className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-transparent sm:border-ink-100 dark:border-[#1C1C1C] px-4 py-2 flex gap-3 mb-5 sm:mb-6 overflow-x-auto transition-colors">
           {tabs.map((t) => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`relative py-2.5 px-3 sm:px-0 text-xs sm:text-sm hover:text-black dark:hover:text-[#FFFFFF] font-medium transition-colors whitespace-nowrap ${activeTab === t.id ? "text-black border rounded-xl dark:text-[#FFFFFF]" : "text-[#8A8A8A]"
+              className={`relative py-2.5 px-3 sm:px-0 text-xs sm:text-sm hover:text-black dark:hover:text-[#FFFFFF] font-medium transition-colors whitespace-nowrap ${activeTab === t.id ? "text-black sm:border-none border rounded-xl dark:text-[#FFFFFF]" : "text-[#8A8A8A]"
                 }`}
             >
               {activeTab === t.id && (

@@ -170,13 +170,13 @@ export default function FavoritesPage() {
             </p>
           </div>
         ) : tab === "products" ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+          <div className="sm:px-[60px] grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
             {filteredProducts.map((p, i) => (
               <ProductCard key={p.id} product={normalizeProduct(p)} index={i} />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
+          <div className="sm:px-[60px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
             {filteredCompanies.map((c, i) => (
               <CompanyCard key={c.id} company={c} index={i} />
             ))}

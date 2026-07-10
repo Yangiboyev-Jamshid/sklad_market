@@ -6,7 +6,7 @@ import { useCart } from "../../context/CartContext";
 
 export default function ProductCard({ product, index = 0 }) {
   const navigate = useNavigate();
-  const { addToCart, favorites, toggleFavorite } = useCart();
+  const { addToCart, favorites, toggleFavorite, cartBlocked } = useCart();
   const isFav = favorites?.has(product.id);
 
   return (
@@ -18,7 +18,10 @@ export default function ProductCard({ product, index = 0 }) {
       onClick={() => navigate(`/product/${product.slug || product.id}`)}
     >
       <div className="relative h-[150px] sm:h-[220px] w-full flex items-center justify-center rounded-xl sm:rounded-2xl overflow-hidden bg-[#EBEBEB] dark:bg-[#2A2A2A]" style={{ aspectRatio: "1 / 1" }}>
-        <ProductThumb />
+        {product.image
+          ? <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+          : <ProductThumb />
+        }
 
         <button
           onClick={(e) => {
@@ -53,17 +56,19 @@ export default function ProductCard({ product, index = 0 }) {
         {/* Price + Add to cart button */}
         <div className="flex sm:flex-row flex-col items-start sm:items-center justify-between mt-3 gap-2">
           <p className="text-[10px] sm:text-[8.25px] text-ink-500 dark:text-[#7F7F7F] whitespace-nowrap">
-            от <span>{product.price} $</span> / {product.unit}
+            от <span>{Number(product.price ?? 0).toLocaleString()}</span> {product.unit}
           </p>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              addToCart(product);
-            }}
-            className="shrink-0 px-2 sm:px-3 dark:text-[#0D0D0D] py-0.5 sm:py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.97] text-white text-[12px] sm:text-[9.43px] font-semibold rounded-full transition-all whitespace-nowrap"
-          >
-            Добавить в корзину
-          </button>
+          {!cartBlocked && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                addToCart(product);
+              }}
+              className="shrink-0 px-2 sm:px-3 dark:text-[#0D0D0D] py-0.5 sm:py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.97] text-white text-[12px] sm:text-[9.43px] font-semibold rounded-full transition-all whitespace-nowrap"
+            >
+              Добавить в корзину
+            </button>
+          )}
         </div>
       </div>
     </motion.div>

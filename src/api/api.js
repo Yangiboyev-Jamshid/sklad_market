@@ -217,11 +217,17 @@ export async function submitCompanyVerification(id) {
 }
 
 export async function uploadCompanyLogo(id, file) {
-  return unwrap(http.post(`/companies/${id}/logo`, toSingleFileForm(file)));
+  const result = await unwrap(http.post(`/companies/${id}/logo`, toSingleFileForm(file)));
+  // GET /companies and GET /companies/{slug} never echo logoUrl back for the owner
+  // (see getMyCompany above) — cache it now or it disappears on the next reload.
+  if (result?.url) cacheCompanyDetail({ id, logoUrl: result.url });
+  return result;
 }
 
 export async function uploadCompanyCover(id, file) {
-  return unwrap(http.post(`/companies/${id}/coverUrl`, toSingleFileForm(file)));
+  const result = await unwrap(http.post(`/companies/${id}/coverUrl`, toSingleFileForm(file)));
+  if (result?.url) cacheCompanyDetail({ id, coverUrl: result.url });
+  return result;
 }
 
 export async function addCompanyDocument(id, { documentType, attachId = "", fileUrl }) {

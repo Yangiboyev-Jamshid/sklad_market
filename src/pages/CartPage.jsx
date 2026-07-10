@@ -157,7 +157,7 @@ export default function CartPage() {
 
                     <div className="hidden sm:flex items-start gap-4 p-5">
                       <div className="w-[127px] h-[122px] flex items-center justify-center bg-[#E2E2E2] dark:bg-[#2A2A2A] rounded-sm overflow-hidden shrink-0">
-                        {!item.primaryImage
+                        {item.primaryImage
                           ? <img src={item.primaryImage} alt={item.productName} className="w-full h-full object-cover" />
                           : <ProductThumb width="22" height="7" />
                         }

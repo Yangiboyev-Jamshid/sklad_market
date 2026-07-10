@@ -22,7 +22,9 @@ export default function ModProductsTab() {
         const data = await getProductModerationQueue();
         setProducts(data ?? []);
       } else {
-        const data = await getMyProducts({ page: 1, per_page: 50, status: subTab === "draft" ? "DRAFT" : undefined });
+        // "DRAFT" isn't a valid status on this endpoint (only PENDING/APPROVED/REJECTED/ARCHIVED
+        // exist server-side) — there's no draft concept in the API yet, so no filter is applied.
+        const data = await getMyProducts({ page: 1, per_page: 50 });
         setProducts(data?.items ?? []);
       }
     } catch {

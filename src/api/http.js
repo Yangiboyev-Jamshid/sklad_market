@@ -31,6 +31,14 @@ http.interceptors.response.use(
     const { config, response } = error;
     const isAuthEndpoint = config?.url?.includes("/auth/");
 
+    // ── DEBUG: log full server response for 500 errors ──────────────────────
+    if (response?.status >= 500) {
+      console.group(`🔴 SERVER ERROR ${response.status} — ${config?.method?.toUpperCase()} ${config?.url}`);
+      console.log("Request body:", config?.data);
+      console.log("Response data:", response?.data);
+      console.groupEnd();
+    }
+
     if (response?.status === 401 && config && !config._retry && !isAuthEndpoint && localStorage.getItem("refresh_token")) {
       config._retry = true;
       try {
@@ -49,12 +57,17 @@ http.interceptors.response.use(
       }
     }
 
-    const isAccessDenied = response?.status === 403 || response?.data === "Access Denied";
+    const isAccessDenied =
+      response?.status === 403 ||
+      response?.data === "Access Denied" ||
+      response?.data?.errors?.reason === "Access Denied" ||
+      (response?.status === 500 && response?.data?.errors?.reason === "Access Denied");
 
     const message =
+      (isAccessDenied ? "Доступ запрещён: у вашей роли нет прав для этого действия" : null) ||
       response?.data?.message ||
       (Array.isArray(response?.data?.errors) ? response.data.errors.join(", ") : null) ||
-      (isAccessDenied ? "Недостаточно прав для выполнения этого действия" : null) ||
+      (typeof response?.data?.errors === "object" && response?.data?.errors?.reason ? response.data.errors.reason : null) ||
       (typeof response?.data === "string" && response.data) ||
       error.message ||
       "Ошибка сети";

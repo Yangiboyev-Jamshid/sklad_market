@@ -137,7 +137,7 @@ export default function HomePage() {
             ]}
             value={saleType}
             onChange={setSaleType}
-            className="w-full"
+            className="w-full scrollbar-none"
           />
         </div>
 

@@ -9,16 +9,22 @@ import { useAuth } from "./AuthContext";
 
 const CartContext = createContext(null);
 
+// Roles that are NOT allowed to use cart on the backend
+const CART_BLOCKED_ROLES = ["SELLER", "MODERATOR", "ADMIN", "seller", "moderator", "admin"];
+
 export function CartProvider({ children }) {
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
   const [items, setItems] = useState([]);
   const [cartLoading, setCartLoading] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
 
-  // ── Cart ──────────────────────────────────────────────────────────────────
+  // Cart is blocked for SELLER / MODERATOR / ADMIN roles
+  const cartBlocked = isLoggedIn && CART_BLOCKED_ROLES.includes(user?.role);
+
+  // ── Cart ──────────────────────────────────────────────────────────────────────────────
   const reloadCart = useCallback(async () => {
-    if (!getAccessToken()) return;
+    if (!getAccessToken() || cartBlocked) return;
     setCartLoading(true);
     try {
       const data = await getCart();
@@ -28,7 +34,7 @@ export function CartProvider({ children }) {
     } finally {
       setCartLoading(false);
     }
-  }, []);
+  }, [cartBlocked]);
 
   // Re-fetch whenever login state flips (login populates the cart, logout clears it) —
   // CartProvider mounts once for the whole session, so this can't just be a mount-time effect.
@@ -39,11 +45,18 @@ export function CartProvider({ children }) {
 
   const addToCart = useCallback(async (product) => {
     if (!getAccessToken()) { navigate("/login"); return; }
+    if (cartBlocked) {
+      alert("Корзина недоступна для продавцов / модераторов. Войдите как покупатель.");
+      return;
+    }
     try {
       const newItem = await addCartItem({ productId: product.id, quantity: product.qty || 1 });
-      if (newItem) {
+      if (newItem && newItem.id) {
+        // Optimistic update with server response
         setItems((prev) => {
-          const idx = prev.findIndex((i) => i.productId === newItem.productId);
+          const idx = prev.findIndex(
+            (i) => i.productId === newItem.productId || i.id === newItem.id
+          );
           if (idx !== -1) {
             const next = [...prev];
             next[idx] = newItem;
@@ -51,11 +64,16 @@ export function CartProvider({ children }) {
           }
           return [...prev, newItem];
         });
+      } else {
+        // Server returned null/empty — reload to get fresh cart state
+        await reloadCart();
       }
     } catch (err) {
-      console.error(err.message);
+      console.error("addToCart error:", err.message);
+      // On error, reload cart to sync with server
+      await reloadCart();
     }
-  }, [navigate]);
+  }, [navigate, reloadCart, cartBlocked]);
 
   const updateQty = useCallback(async (id, qty) => {
     const safeQty = Math.max(1, qty);
@@ -173,7 +191,7 @@ export function CartProvider({ children }) {
 
   return (
     <CartContext.Provider value={{
-      items, cartLoading, addToCart, updateQty, removeFromCart, emptyCart, reloadCart,
+      items, cartLoading, cartBlocked, addToCart, updateQty, removeFromCart, emptyCart, reloadCart,
       total, currency,
       favorites, toggleFavorite, reloadFavorites: loadFavoriteIds,
       companyFavorites, toggleCompanyFavorite, reloadCompanyFavorites: loadCompanyFavoriteIds,

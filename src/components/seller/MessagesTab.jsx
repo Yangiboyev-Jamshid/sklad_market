@@ -194,7 +194,7 @@ export default function MessagesTab() {
                 <button onClick={() => openChat(t.thread_id)} className="flex flex-1 items-center gap-3 min-w-0 text-left">
                   <div className="w-10 h-10 rounded-full bg-brand-600 text-white dark:text-black flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
                     {t.other_party?.avatar_url ? (
-                      <div>{t.other_party?.display_name.split(" ")[0][0] || ""}{t.other_party?.display_name.split(" ")[1][0] || ""}</div>
+                      <img src={t.other_party.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
                       initials(t.other_party?.display_name)
                     )}

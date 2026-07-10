@@ -87,7 +87,8 @@ export default function SettingsTab() {
     setError("");
     try {
       const result = await uploadCompanyLogo(company.id, file);
-      if (result?.url) setCompany((prev) => ({ ...prev, logoUrl: result.url }));
+      if (!result?.url) throw new Error("Сервер не вернул ссылку на загруженный логотип");
+      setCompany((prev) => ({ ...prev, logoUrl: result.url }));
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2500);
     } catch (err) {
@@ -263,7 +264,11 @@ export default function SettingsTab() {
         <div className="flex sm:flex-wrap items-center justify-between gap-3 pb-5 border-b border-[#F0F0F0] dark:border-[#1C1C1C] mb-2">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden">
-              {company.name.split(" ")?.[0]?.[0] || ' '}{company.name.split(" ")?.[1]?.[0] || ' '}
+              {company.logoUrl ? (
+                <img src={company.logoUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <>{company.name.split(" ")?.[0]?.[0] || ' '}{company.name.split(" ")?.[1]?.[0] || ' '}</>
+              )}
             </div>
             <div>
               <p className="text-sm font-semibold text-ink-900 dark:text-white flex items-center gap-1.5">

@@ -45,7 +45,7 @@ export default function OverviewTab() {
 
   useEffect(() => {
     Promise.all([
-      getMyProducts({ page: 1, per_page: 1, status: "ACTIVE" }).catch(() => null),
+      getMyProducts({ page: 1, per_page: 1, status: "APPROVED" }).catch(() => null),
       getSellerLeads({ page: 1, perPage: 1 }).catch(() => null),
       getChats({ page: 1, per_page: 1 }).catch(() => null),
     ])

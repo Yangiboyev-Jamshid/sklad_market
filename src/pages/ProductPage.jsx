@@ -68,7 +68,7 @@ export default function ProductPage() {
   const [qty, setQty] = useState(1);
   const [showReport, setShowReport] = useState(false);
   const [similar, setSimilar] = useState([]);
-  const { addToCart, favorites, toggleFavorite } = useCart();
+  const { addToCart, favorites, toggleFavorite, cartBlocked } = useCart();
   const navigate = useNavigate();
   const isFav = product ? favorites?.has(product.id) : false;
 
@@ -205,12 +205,14 @@ export default function ProductPage() {
               Итог: {product.price * qty} {product.currency}
             </p>
 
-            <button
-              onClick={() => addToCart({ id: product.id, name: product.name, price: product.price, qty })}
-              className="w-full bg-brand-600 dark:text-[#0D0D0D] hover:bg-brand-700 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-2 transition-colors"
-            >
-              <ShoppingCart size={18} /> Добавить в корзину
-            </button>
+            {!cartBlocked && (
+              <button
+                onClick={() => addToCart({ id: product.id, name: product.name, price: product.price, qty })}
+                className="w-full bg-brand-600 dark:text-[#0D0D0D] hover:bg-brand-700 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-2 transition-colors"
+              >
+                <ShoppingCart size={18} /> Добавить в корзину
+              </button>
+            )}
 
             <button
               onClick={handleOpenChat}

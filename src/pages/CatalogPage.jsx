@@ -96,8 +96,7 @@ export default function CatalogPage() {
         const all = (data?.content ?? []).filter((c) => c.isActive && (!c.parentId || c.parentId === 0));
         all.sort((a, b) => a.sortOrder - b.sortOrder);
         setCategories(all.map((c) => ({
-          id: c.slug,
-          categoryId: c.id,
+          id: String(c.id),
           name: c.nameRu || c.nameUz || c.slug,
           icon: c.icon,
         })));
@@ -363,8 +362,8 @@ function FiltersContent({
               }`}
           >
             {c.name}
-            {categoryCounts[c.categoryId] > 0 && (
-              <span className="text-ink-400 text-xs">{categoryCounts[c.categoryId]}</span>
+            {categoryCounts[c.id] > 0 && (
+              <span className="text-ink-400 text-xs">{categoryCounts[c.id]}</span>
             )}
           </button>
         ))}

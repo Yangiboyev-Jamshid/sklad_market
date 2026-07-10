@@ -1,13 +1,34 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, TickCircle, Heart } from "iconsax-reactjs";
 import { motion } from "framer-motion";
 import { useCart } from "../../context/CartContext";
+import { getCompanyBySlug } from "../../api/api";
 
 const VERIFIED_STATUSES = ["VERIFIED", "ACTIVE"];
 
-export default function CompanyCard({ company, index = 0 }) {
+function mergeDefined(base, fallback) {
+  const merged = { ...fallback, ...base };
+  for (const key of Object.keys(merged)) {
+    if (merged[key] == null && fallback[key] != null) merged[key] = fallback[key];
+  }
+  return merged;
+}
+
+export default function CompanyCard({ company: companyProp, index = 0 }) {
   const { companyFavorites, toggleCompanyFavorite } = useCart();
+  const [detail, setDetail] = useState(null);
+  const company = detail ? mergeDefined(companyProp, detail) : companyProp;
   const isFav = companyFavorites?.has(company.id);
+
+  useEffect(() => {
+    if (!companyProp.slug) return;
+    let cancelled = false;
+    getCompanyBySlug(companyProp.slug)
+      .then((data) => { if (!cancelled) setDetail(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [companyProp.slug]);
 
   const initials = (company.name ?? "??")
     .split(" ")
@@ -70,7 +91,7 @@ export default function CompanyCard({ company, index = 0 }) {
         </div>
       )}
 
-      <div className="flex mt-auto">
+      <div className="flex justify-center items-center mt-auto">
         <Link
           to={`/company/${company.slug ?? company.id}`}
           className="text-xs sm:text-sm font-medium text-brand-600 dark:text-brand-400 flex items-center gap-1.5 hover:gap-2.5 transition-all"

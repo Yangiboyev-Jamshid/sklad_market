@@ -126,7 +126,7 @@ export default function CompaniesPage() {
             )}
           </motion.div>
         ) : loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 sm:px-[130px]">
+          <div className="sm:px-[60px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-[255px] rounded-2xl bg-ink-100 dark:bg-[#171717] animate-pulse" />
             ))}
@@ -138,7 +138,7 @@ export default function CompaniesPage() {
             {query && <p className="text-xs text-ink-400">Попробуйте другой запрос</p>}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-5 sm:px-[130px]">
+          <div className="sm:px-[60px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
             {companies.map((c, i) => (
               <CompanyCard key={c.id} company={c} index={i} />
             ))}
