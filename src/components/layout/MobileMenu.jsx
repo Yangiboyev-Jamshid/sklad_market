@@ -19,8 +19,9 @@ export default function MobileMenu({ open, onClose }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const isSeller = user?.accountType === "seller";
-  const isModerator = user?.accountType === "moderator" || user?.accountType === "admin";
+  const roleUpper = (user?.role || "").toUpperCase();
+  const isSeller = roleUpper === "SELLER";
+  const isModerator = roleUpper.includes("MODERATOR") || roleUpper.includes("ADMIN");
   const visibleNavItems = navItems.filter(
     (item) => (!item.sellerOnly || isSeller) && (!item.moderatorOnly || isModerator)
   );

@@ -9,9 +9,6 @@ import { useAuth } from "./AuthContext";
 
 const CartContext = createContext(null);
 
-// Roles that are NOT allowed to use cart on the backend
-const CART_BLOCKED_ROLES = ["SELLER", "MODERATOR", "ADMIN", "seller", "moderator", "admin"];
-
 export function CartProvider({ children }) {
   const navigate = useNavigate();
   const { isLoggedIn, user } = useAuth();
@@ -19,8 +16,10 @@ export function CartProvider({ children }) {
   const [cartLoading, setCartLoading] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
 
-  // Cart is blocked for SELLER / MODERATOR / ADMIN roles
-  const cartBlocked = isLoggedIn && CART_BLOCKED_ROLES.includes(user?.role);
+  // Cart is only allowed for BUYER on the backend — block everything else
+  // (SELLER, MODERATOR, ADMIN, SUPER_ADMIN, and any future role) instead of
+  // matching an exact block-list that a new/renamed role would slip through.
+  const cartBlocked = isLoggedIn && (user?.role || "").toUpperCase() !== "BUYER";
 
   // ── Cart ──────────────────────────────────────────────────────────────────────────────
   const reloadCart = useCallback(async () => {

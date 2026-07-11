@@ -23,7 +23,7 @@ const navItems = [
 
 export default function SidebarRail() {
   const { user } = useAuth();
-  const isSeller = user?.accountType === "seller";
+  const isSeller = (user?.role || "").toUpperCase() === "SELLER";
   const visibleNavItems = navItems.filter((item) => !item.sellerOnly || isSeller);
   return (
     <aside className="hidden md:block relative w-[72px] shrink-0">
