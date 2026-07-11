@@ -58,23 +58,62 @@ http.interceptors.response.use(
       }
     }
 
-    const isAccessDenied =
-      response?.status === 403 ||
-      response?.data === "Access Denied" ||
-      response?.data?.errors?.reason === "Access Denied" ||
-      (response?.status === 500 && response?.data?.errors?.reason === "Access Denied");
-
-    const message =
-      (isAccessDenied ? "Доступ запрещён: у вашей роли нет прав для этого действия" : null) ||
-      response?.data?.message ||
-      (Array.isArray(response?.data?.errors) ? response.data.errors.join(", ") : null) ||
-      (typeof response?.data?.errors === "object" && response?.data?.errors?.reason ? response.data.errors.reason : null) ||
-      (typeof response?.data === "string" && response.data) ||
-      error.message ||
-      "Ошибка сети";
-    return Promise.reject(new Error(message));
+    return Promise.reject(new Error(extractErrorMessage(error)));
   }
 );
+
+// Turns whatever shape the backend/network throws at us into one readable
+// Russian sentence — the raw payload varies wildly (plain string, Spring's
+// {timestamp,status,error,path}, {errors:{field: "message"}} validation maps,
+// {errors:[...]} lists, or no response at all for network failures) and none
+// of it is fit to show a user as-is.
+function extractErrorMessage(error) {
+  const { response } = error;
+
+  if (!response) {
+    return error.code === "ECONNABORTED"
+      ? "Сервер не отвечает. Попробуйте позже."
+      : "Нет соединения с сервером. Проверьте интернет и попробуйте снова.";
+  }
+
+  const { status, data } = response;
+
+  const isAccessDenied =
+    status === 403 ||
+    data === "Access Denied" ||
+    data?.errors?.reason === "Access Denied" ||
+    (status === 500 && data?.errors?.reason === "Access Denied");
+  if (isAccessDenied) return "Доступ запрещён: у вашей роли нет прав для этого действия";
+
+  if (typeof data?.message === "string" && data.message) return data.message;
+
+  if (Array.isArray(data?.errors) && data.errors.length) return data.errors.join(", ");
+
+  if (data?.errors && typeof data.errors === "object") {
+    if (typeof data.errors.reason === "string") return data.errors.reason;
+    const fieldMessages = Object.values(data.errors).filter((v) => typeof v === "string" && v);
+    if (fieldMessages.length) return fieldMessages.join(", ");
+  }
+
+  if (typeof data === "string" && data && data !== "Access Denied") return data;
+
+  switch (status) {
+    case 400:
+      return "Проверьте правильность введённых данных";
+    case 401:
+      return "Неверный логин или пароль";
+    case 404:
+      return "Запрашиваемые данные не найдены";
+    case 409:
+      return "Такой пользователь уже существует";
+    case 422:
+      return "Введённые данные некорректны";
+    default:
+      return status >= 500
+        ? "Ошибка сервера. Попробуйте позже"
+        : error.message || "Ошибка сети";
+  }
+}
 
 // Unwraps the { success, data, message } envelope and returns just `data`.
 export async function unwrap(promise) {

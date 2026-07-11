@@ -12,6 +12,8 @@ import {
   Moon,
   Message,
   Profile,
+  Warning2,
+  TickCircle,
 } from "iconsax-reactjs";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -74,8 +76,11 @@ export default function LoginPage() {
         roles: role.toUpperCase(),
       });
       if (data?.success) {
-        setRegSuccess(data.message || "Регистрация прошла успешно!");
-        setTimeout(() => navigate("/"), 1200);
+        setRegSuccess(data.message || "Регистрация прошла успешно! Теперь вы можете войти в свой аккаунт.");
+        setRegName("");
+        setRegCompany("");
+        setRegEmail("");
+        setRegPassword("");
       }
     } catch (err) {
       setRegError(err.message);
@@ -281,9 +286,10 @@ export default function LoginPage() {
                 <motion.p
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-sm text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-2.5"
+                  className="flex items-start gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-2.5"
                 >
-                  {loginError}
+                  <Warning2 size={18} variant="Bold" className="shrink-0 mt-0.5" />
+                  <span>{loginError}</span>
                 </motion.p>
               )}
 
@@ -388,9 +394,10 @@ export default function LoginPage() {
                 <motion.p
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-sm text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-2.5"
+                  className="flex items-start gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-2.5"
                 >
-                  {regError}
+                  <Warning2 size={18} variant="Bold" className="shrink-0 mt-0.5" />
+                  <span>{regError}</span>
                 </motion.p>
               )}
 
@@ -398,9 +405,10 @@ export default function LoginPage() {
                 <motion.p
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl px-4 py-2.5"
+                  className="flex items-start gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl px-4 py-2.5"
                 >
-                  {regSuccess}
+                  <TickCircle size={18} variant="Bold" className="shrink-0 mt-0.5" />
+                  <span>{regSuccess}</span>
                 </motion.p>
               )}
 
