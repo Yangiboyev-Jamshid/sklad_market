@@ -6,9 +6,14 @@ import ProductCard from "../components/ui/ProductCard";
 import PillToggle from "../components/ui/PillToggle";
 import { Input } from "antd";
 import Catalog from "../components/modal/Catalog";
-import { getHomepageData, getCatalogBySaleType, searchProducts, getPopularProducts } from "../api/api";
+import { getHomepageData, getCatalogBySaleType, searchProducts, getPopularProducts, getAllProducts } from "../api/api";
 
-function normalizeProduct(p) {
+// /catalog/saleType/product and /catalog/popular don't populate images on
+// their product DTOs (always images: null / imageUrl: null) even for
+// products that do have images — /catalog is the only endpoint that returns
+// them. HomePage fetches that image map once and merges it in by id so
+// products still show a picture instead of the placeholder.
+function normalizeProduct(p, imageMap) {
   return {
     id: p.id,
     slug: p.slug,
@@ -16,7 +21,7 @@ function normalizeProduct(p) {
     price: p.price ?? 0,
     unit: p.currency ?? "UZS",
     company: p.companyId ? `Компания #${p.companyId}` : "",
-    image: p.imageUrl ?? p.images?.find((img) => img.is_primary)?.url ?? p.images?.[0]?.url ?? null,
+    image: p.imageUrl ?? p.images?.find((img) => img.is_primary)?.url ?? p.images?.[0]?.url ?? imageMap?.get(p.id) ?? null,
     verified: p.status === "ACTIVE" || p.isPromoted,
   };
 }
@@ -29,7 +34,21 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [banners, setBanners] = useState([]);
   const [bannersLoading, setBannersLoading] = useState(true);
+  const [imageMap, setImageMap] = useState(null);
   const debounceRef = useRef(null);
+
+  useEffect(() => {
+    getAllProducts({ page: 1, perPage: 200 })
+      .then((data) => {
+        const map = new Map();
+        (data?.items ?? []).forEach((p) => {
+          const url = p.images?.find((img) => img.is_primary)?.url ?? p.images?.[0]?.url;
+          if (url) map.set(p.id, url);
+        });
+        setImageMap(map);
+      })
+      .catch(() => setImageMap(new Map()));
+  }, []);
 
   useEffect(() => {
     getHomepageData()
@@ -49,15 +68,15 @@ export default function HomePage() {
       try {
         if (query.trim()) {
           const data = await searchProducts({ query: query.trim(), page: 1, perPage: 20 });
-          setProducts((data?.content ?? []).map(normalizeProduct));
+          setProducts((data?.content ?? []).map((p) => normalizeProduct(p, imageMap)));
         } else {
           const data = await getCatalogBySaleType(saleType.toUpperCase(), { page: 1, perPage: 20 });
-          setProducts((data?.content ?? []).map(normalizeProduct));
+          setProducts((data?.content ?? []).map((p) => normalizeProduct(p, imageMap)));
         }
       } catch {
         try {
           const popular = await getPopularProducts({ page: 1, size: 20 });
-          setProducts((popular?.content ?? []).map(normalizeProduct));
+          setProducts((popular?.content ?? []).map((p) => normalizeProduct(p, imageMap)));
         } catch {
           setProducts([]);
         }
@@ -66,7 +85,7 @@ export default function HomePage() {
       }
     }, query ? 400 : 0);
     return () => clearTimeout(debounceRef.current);
-  }, [query, saleType]);
+  }, [query, saleType, imageMap]);
 
   return (
     <AppShell>
