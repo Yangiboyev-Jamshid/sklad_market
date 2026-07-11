@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Buildings } from "iconsax-reactjs";
 import { createCompany } from "../../api/api";
-import { getCurrentCoords } from "../../utils/geo";
 
 export default function CreateCompanyForm({ onCreated }) {
   const [name, setName] = useState("");
@@ -9,17 +8,8 @@ export default function CreateCompanyForm({ onCreated }) {
   const [stir, setStir] = useState("");
   const [phonePrimary, setPhonePrimary] = useState("");
   const [address, setAddress] = useState("");
-  const [regionId, setRegionId] = useState("");
-  const [districtId, setDistrictId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const coordsRef = useRef(null);
-
-  useEffect(() => {
-    getCurrentCoords().then((coords) => {
-      coordsRef.current = coords;
-    });
-  }, []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -31,30 +21,15 @@ export default function CreateCompanyForm({ onCreated }) {
       setError("Заполните ИНН (STIR), телефон и адрес — они обязательны");
       return;
     }
-    if (!regionId || !districtId) {
-      setError("Укажите регион и район");
-      return;
-    }
     setLoading(true);
     setError("");
     try {
-      let coords = coordsRef.current;
-      if (!coords) coords = await getCurrentCoords();
-      if (!coords) {
-        setError("Не удалось определить местоположение компании. Разрешите доступ к геолокации в браузере и попробуйте снова.");
-        setLoading(false);
-        return;
-      }
       const company = await createCompany({
         name: name.trim(),
         shortDescription: shortDescription.trim() || undefined,
         stir: stir.trim(),
         phonePrimary: phonePrimary.trim(),
         address: address.trim(),
-        regionId: Number(regionId),
-        districtId: Number(districtId),
-        lat: String(coords.lat),
-        lng: String(coords.lng),
       });
       onCreated?.(company);
     } catch (err) {
@@ -87,11 +62,6 @@ export default function CreateCompanyForm({ onCreated }) {
           <Field label="Телефон *" value={phonePrimary} onChange={setPhonePrimary} placeholder="+998 90 000 00 00" />
         </div>
         <Field label="Адрес *" value={address} onChange={setAddress} placeholder="г. Ташкент, ..." />
-
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="ID региона *" value={regionId} onChange={setRegionId} placeholder="1" type="number" />
-          <Field label="ID района *" value={districtId} onChange={setDistrictId} placeholder="1" type="number" />
-        </div>
 
         {error && (
           <p className="text-sm text-danger-600 dark:text-danger-400 bg-danger-50 dark:bg-danger-500/10 rounded-xl px-4 py-2.5">
