@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Buildings } from "iconsax-reactjs";
 import { createCompany } from "../../api/api";
+import { getCurrentCoords } from "../../utils/geo";
 
 export default function CreateCompanyForm({ onCreated }) {
   const [name, setName] = useState("");
@@ -24,12 +25,23 @@ export default function CreateCompanyForm({ onCreated }) {
     setLoading(true);
     setError("");
     try {
+      // Requested only now (not on mount) so opening the form doesn't
+      // immediately trigger the browser's location permission prompt —
+      // the backend requires lat/lng, so it's asked for right before submit.
+      const coords = await getCurrentCoords();
+      if (!coords) {
+        setError("Не удалось определить местоположение. Разрешите доступ к геолокации в браузере и попробуйте снова.");
+        setLoading(false);
+        return;
+      }
       const company = await createCompany({
         name: name.trim(),
         shortDescription: shortDescription.trim() || undefined,
         stir: stir.trim(),
         phonePrimary: phonePrimary.trim(),
         address: address.trim(),
+        lat: String(coords.lat),
+        lng: String(coords.lng),
       });
       onCreated?.(company);
     } catch (err) {
