@@ -76,6 +76,8 @@ export default function Header() {
   const { user, logout } = useAuth();
   const { items, favorites } = useCart();
   const { theme, toggleTheme } = useTheme();
+  const isSeller = user?.accountType === "seller";
+  const isModerator = user?.accountType === "moderator" || user?.accountType === "admin";
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -441,10 +443,18 @@ export default function Header() {
                         <p className="text-xs text-ink-400">{user.username}</p>
                       </div>
                     </div>
-                    <DropdownItem icon={Element3} label="Панель продавца" onClick={() => { navigate("/seller"); setProfileOpen(false); }} />
-                    <DropdownItem icon={ElementPlus} label="Панель модератора" onClick={() => { navigate("/moderator"); setProfileOpen(false); }} />
-                    <DropdownItem icon={Buildings} label="Профиль компании" onClick={() => { navigate("/profile"); setProfileOpen(false); }} />
-                    <DropdownItem icon={Setting} label="Настройка" onClick={() => { navigate("/seller?tab=settings"); setProfileOpen(false); }} />
+                    {isSeller && (
+                      <DropdownItem icon={Element3} label="Панель продавца" onClick={() => { navigate("/seller"); setProfileOpen(false); }} />
+                    )}
+                    {isModerator && (
+                      <DropdownItem icon={ElementPlus} label="Панель модератора" onClick={() => { navigate("/moderator"); setProfileOpen(false); }} />
+                    )}
+                    {isSeller && (
+                      <DropdownItem icon={Buildings} label="Профиль компании" onClick={() => { navigate("/profile"); setProfileOpen(false); }} />
+                    )}
+                    {isSeller && (
+                      <DropdownItem icon={Setting} label="Настройка" onClick={() => { navigate("/seller?tab=settings"); setProfileOpen(false); }} />
+                    )}
                     <div className="h-px bg-ink-100 dark:bg-[#1C1C1C] my-1" />
                     <DropdownItem
                       icon={Logout}

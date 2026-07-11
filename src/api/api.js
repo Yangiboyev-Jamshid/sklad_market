@@ -467,7 +467,7 @@ export async function getAdminDashboard() {
 
 // ─── Admin: users ─────────────────────────────────────────────────────────────
 
-export async function getAdminUsers({ q, status, roles, page = 0, per_page = 20 } = {}) {
+export async function getAdminUsers({ q, status, roles, page = 1, per_page = 20 } = {}) {
   return unwrap(http.get("/admin/users", { params: { q, status, roles, page, per_page } }));
 }
 
@@ -493,7 +493,7 @@ export async function revokeUserSessions(userId) {
 
 // ─── Admin: companies ─────────────────────────────────────────────────────────
 
-export async function getAdminCompanies({ status, q, page = 0, per_page = 20 } = {}) {
+export async function getAdminCompanies({ status, q, page = 1, per_page = 20 } = {}) {
   return unwrap(http.get("/admin/companies", { params: { status, q, page, per_page } }));
 }
 
@@ -545,7 +545,7 @@ export async function promoteProduct(id, { promotionType, startsAt, endsAt } = {
 
 // ─── Admin: reports ───────────────────────────────────────────────────────────
 
-export async function getAdminReports({ status, targetType, page = 0, size = 20 } = {}) {
+export async function getAdminReports({ status, targetType, page = 1, size = 20 } = {}) {
   return unwrap(http.get("/admin/reports", { params: { status, targetType, page, size } }));
 }
 

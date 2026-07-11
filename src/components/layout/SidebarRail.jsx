@@ -9,18 +9,22 @@ import {
   DollarCircle
 } from "iconsax-reactjs";
 import { motion } from "framer-motion";
+import { useAuth } from "../../context/AuthContext";
 
 const navItems = [
   { to: "/", label: "Главная", icon: Home2 },
   { to: "/catalog", label: "Каталог", icon: BoxAdd },
   { to: "/products-explore", label: "Продукты", icon: I3DCubeScan },
-  { to: "/profile", label: "Профиль", icon: UserSquare },
+  { to: "/profile", label: "Профиль", icon: UserSquare, sellerOnly: true },
   { to: "/companies", label: "Компании", icon: Buildings },
-  { to: "/seller", label: "Панель продавца", icon: SecurityUser },
+  { to: "/seller", label: "Панель продавца", icon: SecurityUser, sellerOnly: true },
   { to: "/tariffs", label: "Тарифы", icon: DollarCircle },
 ];
 
 export default function SidebarRail() {
+  const { user } = useAuth();
+  const isSeller = user?.accountType === "seller";
+  const visibleNavItems = navItems.filter((item) => !item.sellerOnly || isSeller);
   return (
     <aside className="hidden md:block relative w-[72px] shrink-0">
       <div className="group absolute inset-y-0 left-0 z-40 w-[72px] hover:w-64 flex flex-col items-start bg-white dark:bg-[#0D0D0D] border-r border-ink-200/70 dark:border-[#1E1E1E] py-4 gap-1 overflow-hidden shadow-none hover:shadow-popover transition-[width] duration-200 ease-out">
@@ -76,7 +80,7 @@ export default function SidebarRail() {
         </NavLink>
         <div className=" h-px bg-ink-200 dark:bg-[#1C1C1C] mb-2 ml-5 shrink-0" />
         <nav className="flex flex-col gap-1 w-full items-start">
-          {navItems.map(({ to, label, icon: Icon }) => (
+          {visibleNavItems.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}

@@ -32,7 +32,7 @@ export default function AccountsTab() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getAdminUsers({ page: 0, per_page: 50 });
+      const data = await getAdminUsers({ page: 1, per_page: 50 });
       setAccounts(data?.content ?? []);
     } catch {
       setAccounts([]);

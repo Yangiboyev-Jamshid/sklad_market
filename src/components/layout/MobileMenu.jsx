@@ -8,9 +8,10 @@ const navItems = [
   { to: "/", label: "Главная" },
   { to: "/catalog", label: "Каталог" },
   { to: "/products-explore", label: "Продукты" },
-  { to: "/profile", label: "Профиль" },
+  { to: "/profile", label: "Профиль", sellerOnly: true },
   { to: "/companies", label: "Компании" },
-  { to: "/seller", label: "Панель продавца" },
+  { to: "/seller", label: "Панель продавца", sellerOnly: true },
+  { to: "/moderator", label: "Панель модератора", moderatorOnly: true },
   { to: "/tariffs", label: "Тарифы" },
 ];
 
@@ -18,6 +19,11 @@ export default function MobileMenu({ open, onClose }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const isSeller = user?.accountType === "seller";
+  const isModerator = user?.accountType === "moderator" || user?.accountType === "admin";
+  const visibleNavItems = navItems.filter(
+    (item) => (!item.sellerOnly || isSeller) && (!item.moderatorOnly || isModerator)
+  );
 
   return (
     <AnimatePresence>
@@ -88,7 +94,7 @@ export default function MobileMenu({ open, onClose }) {
             </div>
 
             <nav className="flex-1 overflow-y-auto py-8 flex flex-col items-center gap-7">
-              {navItems.map(({ to, label }) => (
+              {visibleNavItems.map(({ to, label }) => (
                 <NavLink
                   key={to}
                   to={to}
@@ -108,15 +114,17 @@ export default function MobileMenu({ open, onClose }) {
             <div className="px-5 pb-6 pt-4 border-t border-ink-100 dark:border-[#1C1C1C] flex flex-col items-center gap-5">
               {user ? (
                 <>
-                  <button
-                    onClick={() => {
-                      navigate("/seller?tab=settings");
-                      onClose();
-                    }}
-                    className="text-lg font-semibold text-ink-900 dark:text-white"
-                  >
-                    Настройка
-                  </button>
+                  {isSeller && (
+                    <button
+                      onClick={() => {
+                        navigate("/seller?tab=settings");
+                        onClose();
+                      }}
+                      className="text-lg font-semibold text-ink-900 dark:text-white"
+                    >
+                      Настройка
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       logout();

@@ -31,9 +31,10 @@ http.interceptors.response.use(
     const { config, response } = error;
     const isAuthEndpoint = config?.url?.includes("/auth/");
 
-    // ── DEBUG: log full server response for 500 errors ──────────────────────
-    if (response?.status >= 500) {
-      console.group(`🔴 SERVER ERROR ${response.status} — ${config?.method?.toUpperCase()} ${config?.url}`);
+    // ── DEBUG: log full server response for 5xx and 400 errors ───────────────
+    if (response?.status >= 500 || response?.status === 400) {
+      console.group(`🔴 ${response.status >= 500 ? "SERVER" : "REQUEST"} ERROR ${response.status} — ${config?.method?.toUpperCase()} ${config?.url}`);
+      console.log("Params:", config?.params);
       console.log("Request body:", config?.data);
       console.log("Response data:", response?.data);
       console.groupEnd();

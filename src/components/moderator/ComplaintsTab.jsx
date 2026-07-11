@@ -29,7 +29,7 @@ export default function ComplaintsTab() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getAdminReports({ status: "PENDING", page: 0, size: 50 });
+      const data = await getAdminReports({ status: "PENDING", page: 1, size: 50 });
       setComplaints(data?.content ?? []);
     } catch {
       setComplaints([]);
