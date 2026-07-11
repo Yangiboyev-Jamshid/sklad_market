@@ -7,23 +7,40 @@ import { getCompanyBySlug, getPublicCompanies } from "../../api/api";
 
 const VERIFIED_STATUSES = ["VERIFIED", "ACTIVE"];
 
-// Neither /companies/{slug} nor /company-favorites return logoUrl (confirmed
-// against the live backend — only /companies/public does), so callers like
-// FavoritesPage that source their company list from those endpoints never
-// get a logo. Fetch the public list's id -> logoUrl map once and reuse it
-// everywhere CompanyCard needs a fallback.
-let publicLogosPromise = null;
-function getPublicCompanyLogos() {
-  if (!publicLogosPromise) {
-    publicLogosPromise = getPublicCompanies({ page: 1, per_page: 100 })
+// Neither /companies/{slug} nor /company-favorites return logoUrl/createdAt
+// (confirmed against the live backend — only /companies/public does), so
+// callers like FavoritesPage that source their company list from those
+// endpoints never get a logo or a "с <year> г." founding date. Fetch the
+// public list's id -> {logoUrl, createdAt} map once and reuse it everywhere
+// CompanyCard needs a fallback.
+let publicExtrasPromise = null;
+function getPublicCompanyExtras() {
+  if (!publicExtrasPromise) {
+    publicExtrasPromise = getPublicCompanies({ page: 1, per_page: 100 })
       .then((data) => {
         const map = new Map();
-        (data?.content ?? []).forEach((c) => { if (c.logoUrl) map.set(c.id, c.logoUrl); });
+        (data?.content ?? []).forEach((c) => {
+          map.set(c.id, { logoUrl: c.logoUrl ?? null, createdAt: c.createdAt ?? null });
+        });
         return map;
       })
       .catch(() => new Map());
   }
-  return publicLogosPromise;
+  return publicExtrasPromise;
+}
+
+// The reverse gap: /companies/public, /companies/search and /companies/{slug}
+// never include shortDescription/description for a company that isn't the
+// caller's own — /company-favorites happens to include it though. Remember
+// whatever description we do see (e.g. while rendering a favorited company)
+// in a shared cache so the same company shows its description elsewhere in
+// the session too (e.g. the public Companies listing), instead of only ever
+// on the one page that got lucky with a fuller DTO.
+const descriptionCache = new Map();
+function rememberDescription(c) {
+  if (!c?.id) return;
+  const text = c.shortDescription ?? c.description;
+  if (text) descriptionCache.set(c.id, text);
 }
 
 function mergeDefined(base, fallback) {
@@ -37,10 +54,16 @@ function mergeDefined(base, fallback) {
 export default function CompanyCard({ company: companyProp, index = 0 }) {
   const { companyFavorites, toggleCompanyFavorite } = useCart();
   const [detail, setDetail] = useState(null);
-  const [logoFallback, setLogoFallback] = useState(null);
+  const [extrasFallback, setExtrasFallback] = useState(null);
   const company = detail ? mergeDefined(companyProp, detail) : companyProp;
-  const logoUrl = company.logoUrl ?? logoFallback;
+  const logoUrl = company.logoUrl ?? extrasFallback?.logoUrl ?? null;
+  const createdAt = company.createdAt ?? extrasFallback?.createdAt ?? null;
+  const description = company.shortDescription ?? company.description ?? descriptionCache.get(company.id) ?? null;
   const isFav = companyFavorites?.has(company.id);
+
+  useEffect(() => {
+    rememberDescription(companyProp);
+  }, [companyProp.id, companyProp.shortDescription, companyProp.description]);
 
   useEffect(() => {
     if (!companyProp.slug) return;
@@ -52,13 +75,13 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
   }, [companyProp.slug]);
 
   useEffect(() => {
-    if (companyProp.logoUrl || !companyProp.id) return;
+    if ((companyProp.logoUrl && companyProp.createdAt) || !companyProp.id) return;
     let cancelled = false;
-    getPublicCompanyLogos().then((map) => {
-      if (!cancelled) setLogoFallback(map.get(companyProp.id) ?? null);
+    getPublicCompanyExtras().then((map) => {
+      if (!cancelled) setExtrasFallback(map.get(companyProp.id) ?? null);
     });
     return () => { cancelled = true; };
-  }, [companyProp.logoUrl, companyProp.id]);
+  }, [companyProp.logoUrl, companyProp.createdAt, companyProp.id]);
 
   const initials = (company.name ?? "??")
     .split(" ")
@@ -68,7 +91,7 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
     .toUpperCase();
 
   const isVerified = VERIFIED_STATUSES.includes(company.verificationStatus) || company.verified;
-  const createdYear = company.createdAt ? new Date(company.createdAt).getFullYear() : null;
+  const createdYear = createdAt ? new Date(createdAt).getFullYear() : null;
 
   return (
     <motion.div
@@ -107,9 +130,9 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
         </button>
       </div>
 
-      {(company.shortDescription || company.description) && (
+      {description && (
         <p className="text-xs text-ink-400 dark:text-[#7F7F7F] leading-relaxed line-clamp-2">
-          {company.shortDescription || company.description}
+          {description}
         </p>
       )}
 
