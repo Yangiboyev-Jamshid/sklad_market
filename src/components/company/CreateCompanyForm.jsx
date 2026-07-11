@@ -3,6 +3,14 @@ import { Buildings } from "iconsax-reactjs";
 import { createCompany } from "../../api/api";
 import { getCurrentCoords } from "../../utils/geo";
 
+const LOCATION_ERROR_MESSAGES = {
+  insecure_context: "Геолокация работает только по HTTPS. Откройте сайт по защищённому адресу (https://) и попробуйте снова.",
+  unsupported: "Ваш браузер не поддерживает определение местоположения.",
+  denied: "Доступ к геолокации запрещён. Разрешите доступ к местоположению для этого сайта в настройках браузера (значок замка рядом с адресом сайта) и попробуйте снова.",
+  timeout: "Не удалось определить местоположение — превышено время ожидания. Проверьте подключение к интернету/GPS и попробуйте снова.",
+  unavailable: "Не удалось определить местоположение. Проверьте, что на устройстве включена геолокация, и попробуйте снова.",
+};
+
 export default function CreateCompanyForm({ onCreated }) {
   const [name, setName] = useState("");
   const [shortDescription, setShortDescription] = useState("");
@@ -28,9 +36,9 @@ export default function CreateCompanyForm({ onCreated }) {
       // Requested only now (not on mount) so opening the form doesn't
       // immediately trigger the browser's location permission prompt —
       // the backend requires lat/lng, so it's asked for right before submit.
-      const coords = await getCurrentCoords();
+      const { coords, reason } = await getCurrentCoords();
       if (!coords) {
-        setError("Не удалось определить местоположение. Разрешите доступ к геолокации в браузере и попробуйте снова.");
+        setError(LOCATION_ERROR_MESSAGES[reason] ?? LOCATION_ERROR_MESSAGES.unavailable);
         setLoading(false);
         return;
       }

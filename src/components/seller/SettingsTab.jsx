@@ -42,7 +42,7 @@ function isEmpty(value) {
 async function resolveRequiredCompanyFields(company, overrides) {
   const merged = { ...company, ...overrides };
   if (isEmpty(merged.lat) || isEmpty(merged.lng)) {
-    const coords = await getCurrentCoords();
+    const { coords } = await getCurrentCoords();
     if (coords) {
       merged.lat = String(coords.lat);
       merged.lng = String(coords.lng);
