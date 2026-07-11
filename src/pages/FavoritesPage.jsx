@@ -61,7 +61,7 @@ export default function FavoritesPage() {
     if (view !== "map" || tab !== "companies" || companyMapLoaded) return;
     const id = setTimeout(() => setCompanyMapLoading(true), 0);
     const favoriteIds = new Set(companies.map((c) => c.id));
-    getCompaniesMap({ page: 1, per_page: 200 })
+    getCompaniesMap({ page: 1, per_page: 100 })
       .then((data) => {
         const items = (data?.content ?? []).filter((c) => favoriteIds.has(c.companyId));
         setCompanyMapPins(buildCompanyMapPins(items, navigate));

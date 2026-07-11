@@ -154,7 +154,7 @@ export function CartProvider({ children }) {
   const loadCompanyFavoriteIds = useCallback(async () => {
     if (!getAccessToken()) return;
     try {
-      const data = await getCompanyFavorites({ page: 1, perPage: 200 });
+      const data = await getCompanyFavorites({ page: 1, perPage: 100 });
       setCompanyFavorites(new Set((data?.content ?? []).map((c) => c.id)));
     } catch {
       // not logged in or request failed — leave company favorites empty

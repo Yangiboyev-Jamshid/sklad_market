@@ -77,7 +77,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!showMap || companyMapLoaded) return;
     setCompanyMapLoading(true);
-    getCompaniesMap({ page: 1, per_page: 200 })
+    getCompaniesMap({ page: 1, per_page: 100 })
       .then((data) => {
         const items = (data?.content ?? []).filter((c) => c.lat && c.lng);
         setCompanyMapPins(buildCompanyMapPins(items, navigate));

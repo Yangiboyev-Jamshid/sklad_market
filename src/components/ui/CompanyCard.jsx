@@ -3,9 +3,28 @@ import { Link } from "react-router-dom";
 import { ArrowRight, TickCircle, Heart } from "iconsax-reactjs";
 import { motion } from "framer-motion";
 import { useCart } from "../../context/CartContext";
-import { getCompanyBySlug } from "../../api/api";
+import { getCompanyBySlug, getPublicCompanies } from "../../api/api";
 
 const VERIFIED_STATUSES = ["VERIFIED", "ACTIVE"];
+
+// Neither /companies/{slug} nor /company-favorites return logoUrl (confirmed
+// against the live backend — only /companies/public does), so callers like
+// FavoritesPage that source their company list from those endpoints never
+// get a logo. Fetch the public list's id -> logoUrl map once and reuse it
+// everywhere CompanyCard needs a fallback.
+let publicLogosPromise = null;
+function getPublicCompanyLogos() {
+  if (!publicLogosPromise) {
+    publicLogosPromise = getPublicCompanies({ page: 1, per_page: 100 })
+      .then((data) => {
+        const map = new Map();
+        (data?.content ?? []).forEach((c) => { if (c.logoUrl) map.set(c.id, c.logoUrl); });
+        return map;
+      })
+      .catch(() => new Map());
+  }
+  return publicLogosPromise;
+}
 
 function mergeDefined(base, fallback) {
   const merged = { ...fallback, ...base };
@@ -18,7 +37,9 @@ function mergeDefined(base, fallback) {
 export default function CompanyCard({ company: companyProp, index = 0 }) {
   const { companyFavorites, toggleCompanyFavorite } = useCart();
   const [detail, setDetail] = useState(null);
+  const [logoFallback, setLogoFallback] = useState(null);
   const company = detail ? mergeDefined(companyProp, detail) : companyProp;
+  const logoUrl = company.logoUrl ?? logoFallback;
   const isFav = companyFavorites?.has(company.id);
 
   useEffect(() => {
@@ -29,6 +50,15 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [companyProp.slug]);
+
+  useEffect(() => {
+    if (companyProp.logoUrl || !companyProp.id) return;
+    let cancelled = false;
+    getPublicCompanyLogos().then((map) => {
+      if (!cancelled) setLogoFallback(map.get(companyProp.id) ?? null);
+    });
+    return () => { cancelled = true; };
+  }, [companyProp.logoUrl, companyProp.id]);
 
   const initials = (company.name ?? "??")
     .split(" ")
@@ -50,7 +80,7 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 overflow-hidden">
-            {company.logoUrl ? <img src={company.logoUrl} alt="" className="w-full h-full object-cover" /> : initials}
+            {logoUrl ? <img src={logoUrl} alt="" className="w-full h-full object-cover" /> : initials}
           </div>
           <div>
             <div className="flex items-center mb-1 gap-1.5">
