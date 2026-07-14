@@ -245,7 +245,7 @@ export default function ProfilePage() {
                 </button>
                 {company.phonePrimary && (
                   <a
-                    href="#"
+                    href={`tel:${company.phonePrimary}`}
                     className="flex items-center justify-center gap-2 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 text-sm font-medium px-4 py-2.5 rounded-2xl sm:rounded-xl text-ink-700 dark:text-ink-200 transition-colors shrink-0"
                   >
                     <Call size={18} /> Позвонить
@@ -260,14 +260,6 @@ export default function ProfilePage() {
                       }`}
                   >
                     <GlobalSearch size={18} /> Карта
-                  </button>
-                )}
-                {!isOwnProfile && (
-                  <button
-                    onClick={() => toggleCompanyFavorite(company.id)}
-                    className="flex items-center justify-center gap-2 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 text-sm font-medium px-4 py-2.5 rounded-2xl sm:rounded-xl text-ink-700 dark:text-ink-200 transition-colors shrink-0"
-                  >
-                    <Heart size={18} variant={isFav ? "Bold" : "Linear"} className={isFav ? "text-danger-500" : ""} />
                   </button>
                 )}
               </div>

@@ -100,8 +100,8 @@ export default function Header() {
   useEffect(() => {
     if (!user) return;
     const fetchCounts = () => {
-      getChatUnreadCount().then(setChatUnread);
-      getNotificationsUnreadCount().then(setNotifUnread);
+      getChatUnreadCount().then(setChatUnread).catch(() => {});
+      getNotificationsUnreadCount().then(setNotifUnread).catch(() => {});
     };
     fetchCounts();
     const id = setInterval(fetchCounts, 30000);

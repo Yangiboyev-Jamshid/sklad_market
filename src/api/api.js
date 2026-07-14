@@ -177,7 +177,14 @@ export async function searchCompanies({ query, page = 1, per_page = 20 } = {}) {
 }
 
 export async function getCompanyBySlug(slug) {
-  return unwrap(http.get(`/companies/${slug}`));
+  const company = await unwrap(http.get(`/companies/${slug}`));
+  // Layer in whatever this browser cached from a create/update response —
+  // the GET above never returns phonePrimary/website/description/etc, and
+  // this path is hit both for "my own company" (via id-less /company route)
+  // and for a direct /company/{slug} visit to your own company, so the
+  // cache has to apply here, not just in getMyCompany.
+  const cached = company?.id ? getCachedCompanyDetail(company.id) : null;
+  return cached ? { ...cached, ...company } : company;
 }
 
 export async function getCompanyProducts(slug, { page = 1, per_page = 20 } = {}) {
@@ -198,9 +205,16 @@ export async function getCompaniesMap({ page = 1, per_page = 20 } = {}) {
 
 export async function createCompany(data) {
   const company = await unwrap(http.post("/companies/create", data));
-  // CompanyResponseDTO (the create response) never echoes lat/lng back — keep
-  // what we actually sent so the cached copy stays complete.
-  return cacheCompanyDetail({ ...company, lat: data.lat, lng: data.lng });
+  // CompanyResponseDTO (the create response) never echoes lat/lng/region back —
+  // keep what we actually sent so the cached copy (and AddProductModal, which
+  // reads regionId straight from the company) stays complete.
+  return cacheCompanyDetail({
+    ...company,
+    lat: data.lat,
+    lng: data.lng,
+    regionId: company?.regionId ?? data.regionId,
+    districtId: company?.districtId ?? data.districtId,
+  });
 }
 
 export async function updateCompany(id, data) {
@@ -343,7 +357,11 @@ export async function searchProducts({ query, page = 1, perPage = 20, category }
 }
 
 export async function getProductBySlug(slug) {
-  return unwrap(http.get(`/products/${slug}`));
+  return unwrap(http.get(`/products/slug/${slug}`));
+}
+
+export async function getProductReviews(productId, { page = 1, per_page = 20 } = {}) {
+  return unwrap(http.get(`/products/${productId}/reviews`, { params: { page, per_page } }));
 }
 
 export async function createProduct(data) {

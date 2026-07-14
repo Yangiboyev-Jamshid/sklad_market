@@ -8,7 +8,7 @@ import {
 } from "../../api/api";
 import CreateCompanyForm from "../company/CreateCompanyForm";
 import { useAuth } from "../../context/AuthContext";
-import { getCurrentCoords } from "../../utils/geo";
+import { geocodeAddress } from "../../utils/geo";
 import { tariffPlans } from "../../data/mockData";
 
 const VERIFICATION_BADGE = {
@@ -26,8 +26,6 @@ const REQUIRED_COMPANY_FIELDS = {
   stir: "ИНН (STIR)",
   phonePrimary: "Телефон",
   address: "Адрес",
-  regionId: "ID региона",
-  districtId: "ID района",
   lat: "Широта (lat)",
   lng: "Долгота (lng)",
 };
@@ -36,13 +34,13 @@ function isEmpty(value) {
   return value === undefined || value === null || value === "";
 }
 
-// Resolves lat/lng silently via geolocation when the stored company record
-// doesn't have them yet, then reports which required fields are still
-// missing (nothing this function can recover without asking the user).
+// Resolves lat/lng silently by geocoding the company's address when the
+// stored record doesn't have them yet, then reports which required fields
+// are still missing (nothing this function can recover without asking the user).
 async function resolveRequiredCompanyFields(company, overrides) {
   const merged = { ...company, ...overrides };
-  if (isEmpty(merged.lat) || isEmpty(merged.lng)) {
-    const { coords } = await getCurrentCoords();
+  if ((isEmpty(merged.lat) || isEmpty(merged.lng)) && !isEmpty(merged.address)) {
+    const { coords } = await geocodeAddress(merged.address);
     if (coords) {
       merged.lat = String(coords.lat);
       merged.lng = String(coords.lng);
@@ -100,6 +98,14 @@ export default function SettingsTab() {
 
   const handleSubmitVerification = async () => {
     if (!company) return;
+    // Backend rejects verification with a generic, unhelpful message if any
+    // of these are missing — check first so we can point at exactly what's
+    // absent instead (same required-fields list used for saving edits).
+    const missing = Object.keys(REQUIRED_COMPANY_FIELDS).filter((k) => isEmpty(company[k]));
+    if (missing.length > 0) {
+      setError(`Перед отправкой на верификацию заполните: ${missing.map((k) => REQUIRED_COMPANY_FIELDS[k]).join(", ")}`);
+      return;
+    }
     if (!window.confirm("Отправить компанию на верификацию?")) return;
     setVerifying(true);
     setError("");

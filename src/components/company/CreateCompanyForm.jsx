@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { Buildings } from "iconsax-reactjs";
 import { createCompany } from "../../api/api";
-import { getCurrentCoords } from "../../utils/geo";
+import { geocodeAddress } from "../../utils/geo";
 
 const LOCATION_ERROR_MESSAGES = {
-  insecure_context: "Геолокация работает только по HTTPS. Откройте сайт по защищённому адресу (https://) и попробуйте снова.",
-  unsupported: "Ваш браузер не поддерживает определение местоположения.",
-  denied: "Доступ к геолокации запрещён. Разрешите доступ к местоположению для этого сайта в настройках браузера (значок замка рядом с адресом сайта) и попробуйте снова.",
-  timeout: "Не удалось определить местоположение — превышено время ожидания. Проверьте подключение к интернету/GPS и попробуйте снова.",
-  unavailable: "Не удалось определить местоположение. Проверьте, что на устройстве включена геолокация, и попробуйте снова.",
+  empty: "Введите адрес компании, чтобы определить координаты.",
+  not_found: "Не удалось найти этот адрес на карте. Уточните адрес (например, добавьте название города) и попробуйте снова.",
+  unavailable: "Не удалось определить координаты по адресу. Проверьте подключение к интернету и попробуйте снова.",
 };
 
 export default function CreateCompanyForm({ onCreated }) {
@@ -33,10 +31,10 @@ export default function CreateCompanyForm({ onCreated }) {
     setLoading(true);
     setError("");
     try {
-      // Requested only now (not on mount) so opening the form doesn't
-      // immediately trigger the browser's location permission prompt —
-      // the backend requires lat/lng, so it's asked for right before submit.
-      const { coords, reason } = await getCurrentCoords();
+      // Backend requires lat/lng, but there's no reason to interrupt the
+      // user with a device-location permission prompt for it — geocode the
+      // address they already typed instead.
+      const { coords, reason } = await geocodeAddress(address);
       if (!coords) {
         setError(LOCATION_ERROR_MESSAGES[reason] ?? LOCATION_ERROR_MESSAGES.unavailable);
         setLoading(false);

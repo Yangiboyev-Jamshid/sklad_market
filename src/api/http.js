@@ -40,18 +40,26 @@ http.interceptors.response.use(
       console.groupEnd();
     }
 
-    if (response?.status === 401 && config && !config._retry && !isAuthEndpoint && localStorage.getItem("refresh_token")) {
+    if (response?.status === 401 && config && !config._retry && !isAuthEndpoint) {
       config._retry = true;
-      try {
-        refreshPromise = refreshPromise ?? refreshTokens();
-        const token = await refreshPromise;
-        refreshPromise = null;
-        config.headers.Authorization = `Bearer ${token}`;
-        return http(config);
-      } catch {
-        refreshPromise = null;
+      if (localStorage.getItem("refresh_token")) {
+        try {
+          refreshPromise = refreshPromise ?? refreshTokens();
+          const token = await refreshPromise;
+          refreshPromise = null;
+          config.headers.Authorization = `Bearer ${token}`;
+          return http(config);
+        } catch {
+          refreshPromise = null;
+        }
+      }
+      // No refresh token, or refresh itself failed — the session is dead.
+      // Clear it and bounce to /login instead of leaving the app silently
+      // spamming every protected endpoint with a token that will never work.
+      if (localStorage.getItem("access_token")) {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
+        localStorage.removeItem("skladx_user");
         if (typeof window !== "undefined" && window.location.pathname !== "/login") {
           window.location.href = "/login";
         }
@@ -101,7 +109,9 @@ function extractErrorMessage(error) {
     case 400:
       return "Проверьте правильность введённых данных";
     case 401:
-      return "Неверный логин или пароль";
+      return error.config?.url?.includes("/auth/registration/login")
+        ? "Неверный логин или пароль"
+        : "Необходимо авторизоваться";
     case 404:
       return "Запрашиваемые данные не найдены";
     case 409:

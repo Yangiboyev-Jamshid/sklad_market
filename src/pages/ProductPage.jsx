@@ -22,22 +22,9 @@ import ProductCard from "../components/ui/ProductCard";
 import RatingStars from "../components/ui/RatingStars";
 import ReportModal from "../components/modal/ReportModal";
 import { useCart } from "../context/CartContext";
-import { getProductBySlug, getAllProducts, createChat } from "../api/api";
+import { getProductBySlug, getAllProducts, getProductReviews, createChat } from "../api/api";
 
 const tabs = ["Описание", "Характеристики", "Доставка", "Отзывы"];
-
-const SAMPLE_REVIEWS = [
-  {
-    author: "Алтын Цемент",
-    rating: 5,
-    text: "Работаем с компанией уже 3 года. Качество продукции стабильное, документы всегда в порядке, поставки в срок. Рекомендую.",
-  },
-  {
-    author: "BuildKaz LLP",
-    rating: 5,
-    text: "В целом довольны сотрудничеством. Небольшая задержка по последней партии, но предупредили заранее.",
-  },
-];
 
 function normalizeProduct(p) {
   return {
@@ -50,6 +37,15 @@ function normalizeProduct(p) {
     image: p.images?.find((img) => img.is_primary)?.url ?? p.images?.[0]?.url ?? null,
     verified: p.status === "ACTIVE" || p.isPromoted,
   };
+}
+
+// Some backend responses nest currency/unit as an object ({code,symbol,...})
+// instead of a plain string — render whichever primitive field is present
+// instead of passing the object straight into JSX (React can't render objects).
+function displayText(value, fallback = "") {
+  if (value == null) return fallback;
+  if (typeof value !== "object") return value;
+  return value.symbol ?? value.label ?? value.name ?? value.code ?? fallback;
 }
 
 const AVAILABILITY_LABEL = {
@@ -68,6 +64,8 @@ export default function ProductPage() {
   const [qty, setQty] = useState(1);
   const [showReport, setShowReport] = useState(false);
   const [similar, setSimilar] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const { addToCart, favorites, toggleFavorite, cartBlocked } = useCart();
   const navigate = useNavigate();
   const isFav = product ? favorites?.has(product.id) : false;
@@ -89,6 +87,15 @@ export default function ProductPage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!product?.id) return;
+    setReviewsLoading(true);
+    getProductReviews(product.id, { page: 1, per_page: 20 })
+      .then((data) => setReviews(data?.content ?? data?.items ?? []))
+      .catch(() => setReviews([]))
+      .finally(() => setReviewsLoading(false));
+  }, [product?.id]);
 
   useEffect(() => {
     if (!product) return;
@@ -126,7 +133,12 @@ export default function ProductPage() {
 
   const primaryImage = product.images?.find((img) => img.is_primary)?.url ?? product.images?.[0]?.url;
   const company = product.company;
-  const tags = [product.category?.parentName, product.category?.name, Object.values(product.attributes ?? {})[0]].filter(Boolean);
+  const firstAttributeValue = Object.values(product.attributes ?? {})[0];
+  const tags = [
+    product.category?.parentName,
+    product.category?.name,
+    typeof firstAttributeValue === "object" ? null : firstAttributeValue,
+  ].filter(Boolean);
 
   return (
     <AppShell>
@@ -175,10 +187,10 @@ export default function ProductPage() {
 
             <div className="bg-[#DEECFF] flex flex-col gap-1 dark:bg-[#00183A] rounded-xl p-4 mb-4">
               <p className="text-2xl font-bold text-[#155DFC] dark:text-[#2E6FFC]">
-                {product.price} {product.currency}
+                {product.price} {displayText(product.currency)}
               </p>
-              <p className="text-[12px] text-ink-500 dark:text-ink-400">за {product.unit ?? "шт."}</p>
-              <p className="text-[12px] text-ink-400 dark:text-ink-500">Минимальный заказ: {product.minProduct ?? 1} {product.unit ?? "шт."}</p>
+              <p className="text-[12px] text-ink-500 dark:text-ink-400">за {displayText(product.unit, "шт.")}</p>
+              <p className="text-[12px] text-ink-400 dark:text-ink-500">Минимальный заказ: {product.minProduct ?? 1} {displayText(product.unit, "шт.")}</p>
             </div>
 
             <p className="text-xs font-medium text-ink-700 dark:text-ink-200 mb-2">Количество</p>
@@ -202,7 +214,7 @@ export default function ProductPage() {
               </button>
             </div>
             <p className="text-xs text-ink-400 dark:text-ink-500 mb-4">
-              Итог: {product.price * qty} {product.currency}
+              Итог: {product.price * qty} {displayText(product.currency)}
             </p>
 
             {!cartBlocked && (
@@ -293,7 +305,7 @@ export default function ProductPage() {
                     ))}
                     <div className="grid grid-cols-[1fr_2fr] justify-start text-[14px]">
                       <span className="text-ink-400 dark:text-ink-500">Минимальный заказ</span>
-                      <span className="text-ink-900 dark:text-white font-medium text-left">{product.minProduct ?? 1} {product.unit ?? "шт."}</span>
+                      <span className="text-ink-900 dark:text-white font-medium text-left">{product.minProduct ?? 1} {displayText(product.unit, "шт.")}</span>
                     </div>
                     <div className="grid grid-cols-[1fr_2fr] justify-start text-[14px]">
                       <span className="text-ink-400 dark:text-ink-500">Наличие</span>
@@ -315,15 +327,26 @@ export default function ProductPage() {
                       <span className="text-sm font-semibold text-ink-900 dark:text-white">{(product.rating ?? 0).toFixed(1)}</span>
                       <span className="text-xs text-ink-400">{product.reviewsCount ?? 0} отзывов</span>
                     </div>
-                    {SAMPLE_REVIEWS.map((r, i) => (
-                      <div key={i} className="border-t border-ink-100 dark:border-[#1C1C1C] pt-4 first:border-0 first:pt-0">
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <p className="text-sm font-semibold text-ink-900 dark:text-white">{r.author}</p>
-                          <RatingStars rating={r.rating} size={13} />
+                    {reviewsLoading ? (
+                      Array.from({ length: 2 }).map((_, i) => (
+                        <div key={i} className="border-t border-ink-100 dark:border-[#1C1C1C] pt-4 first:border-0 first:pt-0">
+                          <div className="h-4 w-32 rounded bg-ink-100 dark:bg-[#1C1C1C] animate-pulse mb-2" />
+                          <div className="h-3 w-full rounded bg-ink-100 dark:bg-[#1C1C1C] animate-pulse" />
                         </div>
-                        <p className="text-sm text-ink-600 dark:text-ink-300 leading-relaxed">{r.text}</p>
-                      </div>
-                    ))}
+                      ))
+                    ) : reviews.length === 0 ? (
+                      <p className="text-sm text-ink-400 dark:text-ink-500 text-center py-6">Пока нет отзывов</p>
+                    ) : (
+                      reviews.map((r, i) => (
+                        <div key={r.id ?? i} className="border-t border-ink-100 dark:border-[#1C1C1C] pt-4 first:border-0 first:pt-0">
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <p className="text-sm font-semibold text-ink-900 dark:text-white">{r.author ?? r.authorName ?? r.userName ?? r.name ?? "Пользователь"}</p>
+                            <RatingStars rating={r.rating ?? 0} size={13} />
+                          </div>
+                          <p className="text-sm text-ink-600 dark:text-ink-300 leading-relaxed">{r.text ?? r.comment ?? r.body ?? ""}</p>
+                        </div>
+                      ))
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -344,7 +367,9 @@ export default function ProductPage() {
                   <p className="text-[14px] font-semibold text-ink-900 dark:text-white flex items-center gap-1">
                     {company?.name ?? "—"} <TickCircle size={20} variant="Outline" className="text-brand-500" />
                   </p>
-                  <p className="text-[12px] text-ink-400 dark:text-ink-500">{company?.slug}</p>
+                  <p className="text-[12px] text-ink-400 dark:text-ink-500">
+                    {[company?.industry, company?.city ?? company?.address?.split(",")[0]?.trim()].filter(Boolean).join(" ") || company?.slug}
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 text-center mb-4">

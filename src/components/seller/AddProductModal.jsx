@@ -80,15 +80,14 @@ export default function AddProductModal({ open, onClose, companyId }) {
     setError(""); setSuccess("");
     if (!name.trim()) { setError("Введите название товара"); return; }
     if (!price || isNaN(Number(price))) { setError("Введите корректную цену"); return; }
-    if (!companyLocation.regionId) { setError("Не удалось определить регион компании"); return; }
 
     setLoading(true);
     try {
       const payload = {
         companyId: resolvedCompanyId ? Number(resolvedCompanyId) : undefined,
         categoryId: categoryId ? Number(categoryId) : undefined,
-        regionId: companyLocation.regionId,
-        districtId: companyLocation.districtId ?? undefined,
+        regionId: companyLocation.regionId ?? 0,
+        districtId: companyLocation.districtId ?? 0,
         name: name.trim(),
         description: description.trim(),
         priceType: "FIXED",
