@@ -244,7 +244,7 @@ export default function SettingsTab() {
 
   const fields = [
     { key: "name", label: "Название компании" },
-    { key: "shortDescription", label: "Краткое описание" },
+    { key: "shortDescription", label: "Отрасль" },
     { key: "phonePrimary", label: "Телефон" },
     { key: "phoneSecondary", label: "Email" },
     { key: "website", label: "Сайт" },
