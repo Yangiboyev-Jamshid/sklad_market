@@ -28,14 +28,6 @@ function getPublicCompanyExtras() {
   }
   return publicExtrasPromise;
 }
-
-// The reverse gap: /companies/public, /companies/search and /companies/{slug}
-// never include shortDescription/description for a company that isn't the
-// caller's own — /company-favorites happens to include it though. Remember
-// whatever description we do see (e.g. while rendering a favorited company)
-// in a shared cache so the same company shows its description elsewhere in
-// the session too (e.g. the public Companies listing), instead of only ever
-// on the one page that got lucky with a fuller DTO.
 const descriptionCache = new Map();
 function rememberDescription(c) {
   if (!c?.id) return;
@@ -70,7 +62,7 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
     let cancelled = false;
     getCompanyBySlug(companyProp.slug)
       .then((data) => { if (!cancelled) setDetail(data); })
-      .catch(() => {});
+      .catch(() => { });
     return () => { cancelled = true; };
   }, [companyProp.slug]);
 

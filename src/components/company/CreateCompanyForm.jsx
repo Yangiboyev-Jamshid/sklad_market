@@ -15,6 +15,7 @@ export default function CreateCompanyForm({ onCreated }) {
   const [stir, setStir] = useState("");
   const [phonePrimary, setPhonePrimary] = useState("");
   const [address, setAddress] = useState("");
+  const [companyCreatedDate, setCompanyCreatedDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -28,12 +29,13 @@ export default function CreateCompanyForm({ onCreated }) {
       setError("Заполните ИНН (STIR), телефон и адрес — они обязательны");
       return;
     }
+    if (!companyCreatedDate) {
+      setError("Укажите дату создания компании");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
-      // Backend requires lat/lng, but there's no reason to interrupt the
-      // user with a device-location permission prompt for it — geocode the
-      // address they already typed instead.
       const { coords, reason } = await geocodeAddress(address);
       if (!coords) {
         setError(LOCATION_ERROR_MESSAGES[reason] ?? LOCATION_ERROR_MESSAGES.unavailable);
@@ -46,6 +48,7 @@ export default function CreateCompanyForm({ onCreated }) {
         stir: stir.trim(),
         phonePrimary: phonePrimary.trim(),
         address: address.trim(),
+        companyCreatedDate,
         lat: String(coords.lat),
         lng: String(coords.lng),
       });
@@ -80,6 +83,12 @@ export default function CreateCompanyForm({ onCreated }) {
           <Field label="Телефон *" value={phonePrimary} onChange={setPhonePrimary} placeholder="+998 90 000 00 00" />
         </div>
         <Field label="Адрес *" value={address} onChange={setAddress} placeholder="г. Ташкент, ..." />
+        <Field
+          label="Дата создания компании *"
+          value={companyCreatedDate}
+          onChange={setCompanyCreatedDate}
+          type="date"
+        />
 
         {error && (
           <p className="text-sm text-danger-600 dark:text-danger-400 bg-danger-50 dark:bg-danger-500/10 rounded-xl px-4 py-2.5">
