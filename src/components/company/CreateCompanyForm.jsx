@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Buildings } from "iconsax-reactjs";
+import { Buildings, TickCircle } from "iconsax-reactjs";
 import { createCompany } from "../../api/api";
 import { geocodeAddress } from "../../utils/geo";
 
@@ -18,6 +18,7 @@ export default function CreateCompanyForm({ onCreated }) {
   const [companyCreatedDate, setCompanyCreatedDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [created, setCreated] = useState(null);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -52,13 +53,28 @@ export default function CreateCompanyForm({ onCreated }) {
         lat: String(coords.lat),
         lng: String(coords.lng),
       });
-      onCreated?.(company);
+      setCreated(company);
+      setTimeout(() => onCreated?.(company), 1600);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  if (created) {
+    return (
+      <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-6 sm:p-10 max-w-lg mx-auto text-center transition-colors">
+        <div className="w-14 h-14 rounded-2xl bg-success-50 dark:bg-success-500/10 flex items-center justify-center text-success-600 dark:text-success-400 mx-auto mb-4">
+          <TickCircle size={28} variant="Bulk" />
+        </div>
+        <p className="font-semibold text-lg text-ink-900 dark:text-white mb-1">Компания создана!</p>
+        <p className="text-sm text-ink-400 dark:text-ink-500">
+          «{created.name}» успешно зарегистрирована на Sklad Market
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-6 sm:p-10 max-w-lg mx-auto text-center transition-colors">

@@ -103,7 +103,8 @@ function extractErrorMessage(error) {
     if (fieldMessages.length) return fieldMessages.join(", ");
   }
 
-  if (typeof data === "string" && data && data !== "Access Denied") return data;
+  const isHtml = typeof data === "string" && /^\s*<(!doctype|html)/i.test(data);
+  if (typeof data === "string" && data && !isHtml && data !== "Access Denied") return data;
 
   switch (status) {
     case 400:
@@ -116,6 +117,8 @@ function extractErrorMessage(error) {
       return "Запрашиваемые данные не найдены";
     case 409:
       return "Такой пользователь уже существует";
+    case 413:
+      return "Файл слишком большой. Выберите файл меньшего размера.";
     case 422:
       return "Введённые данные некорректны";
     default:
