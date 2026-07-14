@@ -3,31 +3,10 @@ import { Link } from "react-router-dom";
 import { ArrowRight, TickCircle, Heart } from "iconsax-reactjs";
 import { motion } from "framer-motion";
 import { useCart } from "../../context/CartContext";
-import { getCompanyBySlug, getPublicCompanies } from "../../api/api";
+import { getCompanyBySlug, getCompanySummaryById } from "../../api/api";
 
 const VERIFIED_STATUSES = ["VERIFIED", "ACTIVE"];
 
-// Neither /companies/{slug} nor /company-favorites return logoUrl/createdAt
-// (confirmed against the live backend — only /companies/public does), so
-// callers like FavoritesPage that source their company list from those
-// endpoints never get a logo or a "с <year> г." founding date. Fetch the
-// public list's id -> {logoUrl, createdAt} map once and reuse it everywhere
-// CompanyCard needs a fallback.
-let publicExtrasPromise = null;
-function getPublicCompanyExtras() {
-  if (!publicExtrasPromise) {
-    publicExtrasPromise = getPublicCompanies({ page: 1, per_page: 100 })
-      .then((data) => {
-        const map = new Map();
-        (data?.content ?? []).forEach((c) => {
-          map.set(c.id, { logoUrl: c.logoUrl ?? null, createdAt: c.createdAt ?? null });
-        });
-        return map;
-      })
-      .catch(() => new Map());
-  }
-  return publicExtrasPromise;
-}
 const descriptionCache = new Map();
 function rememberDescription(c) {
   if (!c?.id) return;
@@ -69,8 +48,8 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
   useEffect(() => {
     if ((companyProp.logoUrl && companyProp.createdAt) || !companyProp.id) return;
     let cancelled = false;
-    getPublicCompanyExtras().then((map) => {
-      if (!cancelled) setExtrasFallback(map.get(companyProp.id) ?? null);
+    getCompanySummaryById(companyProp.id).then((summary) => {
+      if (!cancelled) setExtrasFallback(summary ? { logoUrl: summary.logoUrl ?? null, createdAt: summary.createdAt ?? null } : null);
     });
     return () => { cancelled = true; };
   }, [companyProp.logoUrl, companyProp.createdAt, companyProp.id]);
