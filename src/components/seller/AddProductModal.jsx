@@ -13,6 +13,7 @@ export default function AddProductModal({ open, onClose, companyId }) {
   const [price, setPrice] = useState("");
   const [unit, setUnit] = useState(UNITS[0]);
   const [minProduct, setMinProduct] = useState("");
+  const [phone, setPhone] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [images, setImages] = useState([]);
   const [previews, setPreviews] = useState([]);
@@ -48,7 +49,7 @@ export default function AddProductModal({ open, onClose, companyId }) {
 
   const reset = () => {
     setName(""); setDescription("");
-    setPrice(""); setMinProduct(""); setCategoryId("");
+    setPrice(""); setMinProduct(""); setCategoryId(""); setPhone("");
     setImages([]); setPreviews([]);
     setError(""); setSuccess(""); setSaleType("WHOLESALE");
     setUnit(UNITS[0]);
@@ -95,6 +96,7 @@ export default function AddProductModal({ open, onClose, companyId }) {
         price: Number(price),
         currency: "UZS",
         minProduct: minProduct ? Number(minProduct) : undefined,
+        phone: phone.trim() || undefined,
       };
 
       const product = await createProduct(payload);
@@ -222,6 +224,14 @@ export default function AddProductModal({ open, onClose, companyId }) {
                 onChange={(e) => setMinProduct(e.target.value)}
               />
             </div>
+
+            <Field
+              label="Телефон для связи"
+              placeholder="+998 90 000 00 00"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
 
             <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">
               Описание товара
