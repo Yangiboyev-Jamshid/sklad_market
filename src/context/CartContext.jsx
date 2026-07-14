@@ -60,6 +60,7 @@ export function CartProvider({ children }) {
       }
     } catch (err) {
       console.error("addToCart error:", err.message);
+      alert(err.message);
       // On error, reload cart to sync with server
       await reloadCart();
     }
@@ -129,7 +130,8 @@ export function CartProvider({ children }) {
     try {
       if (isFav) await removeFavorite(productId);
       else await addFavorite(productId);
-    } catch {
+    } catch (err) {
+      alert(err.message);
       setFavorites((prev) => {
         const next = new Set(prev);
         if (isFav) next.add(productId);
