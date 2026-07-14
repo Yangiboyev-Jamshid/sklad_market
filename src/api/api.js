@@ -172,28 +172,6 @@ export async function getPublicCompanies({ page = 1, per_page = 20 } = {}) {
   return unwrap(http.get("/companies/public", { params: { page, per_page } }));
 }
 
-// Product responses only carry a numeric companyId — /companies/public is the
-// only endpoint that maps id -> {name, slug, logoUrl, verificationStatus} in one
-// shot, so cache it once and reuse it wherever a companyId needs to be resolved.
-let publicCompaniesPromise = null;
-function getPublicCompaniesMap() {
-  if (!publicCompaniesPromise) {
-    publicCompaniesPromise = getPublicCompanies({ page: 1, per_page: 200 })
-      .then((data) => {
-        const map = new Map();
-        (data?.content ?? []).forEach((c) => map.set(c.id, c));
-        return map;
-      })
-      .catch(() => new Map());
-  }
-  return publicCompaniesPromise;
-}
-
-export async function getCompanySummaryById(id) {
-  const map = await getPublicCompaniesMap();
-  return map.get(id) ?? null;
-}
-
 export async function searchCompanies({ query, page = 1, per_page = 20 } = {}) {
   return unwrap(http.get("/companies/search", { params: { q: query, page, per_page } }));
 }

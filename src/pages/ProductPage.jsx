@@ -22,7 +22,7 @@ import ProductCard from "../components/ui/ProductCard";
 import RatingStars from "../components/ui/RatingStars";
 import ReportModal from "../components/modal/ReportModal";
 import { useCart } from "../context/CartContext";
-import { getProductBySlug, getAllProducts, getProductReviews, createChat, getCompanySummaryById, getCompanyBySlug } from "../api/api";
+import { getProductBySlug, getAllProducts, getProductReviews, createChat } from "../api/api";
 
 const tabs = ["Описание", "Характеристики", "Доставка", "Отзывы"];
 
@@ -39,6 +39,9 @@ function normalizeProduct(p) {
   };
 }
 
+// Some backend responses nest currency/unit as an object ({code,symbol,...})
+// instead of a plain string — render whichever primitive field is present
+// instead of passing the object straight into JSX (React can't render objects).
 function displayText(value, fallback = "") {
   if (value == null) return fallback;
   if (typeof value !== "object") return value;
@@ -63,15 +66,14 @@ export default function ProductPage() {
   const [similar, setSimilar] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [company, setCompany] = useState(null);
   const { addToCart, favorites, toggleFavorite } = useCart();
   const navigate = useNavigate();
   const isFav = product ? favorites?.has(product.id) : false;
 
   const handleOpenChat = async () => {
-    if (!product?.companyId) return;
+    if (!product?.company?.id) return;
     try {
-      const result = await createChat({ seller_company_id: product.companyId, product_id: product.id });
+      const result = await createChat({ seller_company_id: product.company.id, product_id: product.id });
       navigate(`/seller?tab=messages&thread=${result.thread_id}`);
     } catch (err) {
       alert(err.message);
@@ -85,19 +87,6 @@ export default function ProductPage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);
-
-  // Product responses only carry a numeric companyId, not a nested company
-  // object — resolve it to a slug via the public companies list, then fetch
-  // the full company record for that slug.
-  useEffect(() => {
-    if (!product?.companyId) return;
-    let cancelled = false;
-    getCompanySummaryById(product.companyId)
-      .then((summary) => (summary?.slug ? getCompanyBySlug(summary.slug).then((detail) => ({ ...summary, ...detail })) : summary))
-      .then((data) => { if (!cancelled) setCompany(data); })
-      .catch(() => { if (!cancelled) setCompany(null); });
-    return () => { cancelled = true; };
-  }, [product?.companyId]);
 
   useEffect(() => {
     if (!product?.id) return;
@@ -143,6 +132,7 @@ export default function ProductPage() {
   }
 
   const primaryImage = product.images?.find((img) => img.is_primary)?.url ?? product.images?.[0]?.url;
+  const company = product.company;
   const firstAttributeValue = Object.values(product.attributes ?? {})[0];
   const tags = [
     product.category?.parentName,
@@ -366,8 +356,8 @@ export default function ProductPage() {
               <p className="font-semibold text-ink-900 dark:text-white mb-3.5">О продавце</p>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-11 h-11 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden">
-                  {company?.logoUrl
-                    ? <img src={company.logoUrl} alt="" className="w-full h-full object-cover" />
+                  {company?.logo_path
+                    ? <img src={company.logo_path} alt="" className="w-full h-full object-cover" />
                     : (company?.name ?? "?").slice(0, 2).toUpperCase()
                   }
                 </div>
