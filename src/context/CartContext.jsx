@@ -11,19 +11,14 @@ const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
   const navigate = useNavigate();
-  const { isLoggedIn, user } = useAuth();
+  const { isLoggedIn } = useAuth();
   const [items, setItems] = useState([]);
   const [cartLoading, setCartLoading] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
 
-  // Cart is only allowed for BUYER on the backend — block everything else
-  // (SELLER, MODERATOR, ADMIN, SUPER_ADMIN, and any future role) instead of
-  // matching an exact block-list that a new/renamed role would slip through.
-  const cartBlocked = isLoggedIn && (user?.role || "").toUpperCase() !== "BUYER";
-
   // ── Cart ──────────────────────────────────────────────────────────────────────────────
   const reloadCart = useCallback(async () => {
-    if (!getAccessToken() || cartBlocked) return;
+    if (!getAccessToken()) return;
     setCartLoading(true);
     try {
       const data = await getCart();
@@ -33,7 +28,7 @@ export function CartProvider({ children }) {
     } finally {
       setCartLoading(false);
     }
-  }, [cartBlocked]);
+  }, []);
 
   // Re-fetch whenever login state flips (login populates the cart, logout clears it) —
   // CartProvider mounts once for the whole session, so this can't just be a mount-time effect.
@@ -44,10 +39,6 @@ export function CartProvider({ children }) {
 
   const addToCart = useCallback(async (product) => {
     if (!getAccessToken()) { navigate("/login"); return; }
-    if (cartBlocked) {
-      alert("Корзина недоступна для продавцов / модераторов. Войдите как покупатель.");
-      return;
-    }
     try {
       const newItem = await addCartItem({ productId: product.id, quantity: product.qty || 1 });
       if (newItem && newItem.id) {
@@ -72,7 +63,7 @@ export function CartProvider({ children }) {
       // On error, reload cart to sync with server
       await reloadCart();
     }
-  }, [navigate, reloadCart, cartBlocked]);
+  }, [navigate, reloadCart]);
 
   const updateQty = useCallback(async (id, qty) => {
     const safeQty = Math.max(1, qty);
@@ -190,7 +181,7 @@ export function CartProvider({ children }) {
 
   return (
     <CartContext.Provider value={{
-      items, cartLoading, cartBlocked, addToCart, updateQty, removeFromCart, emptyCart, reloadCart,
+      items, cartLoading, addToCart, updateQty, removeFromCart, emptyCart, reloadCart,
       total, currency,
       favorites, toggleFavorite, reloadFavorites: loadFavoriteIds,
       companyFavorites, toggleCompanyFavorite, reloadCompanyFavorites: loadCompanyFavoriteIds,

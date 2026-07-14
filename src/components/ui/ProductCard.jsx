@@ -6,7 +6,7 @@ import { useCart } from "../../context/CartContext";
 
 export default function ProductCard({ product, index = 0 }) {
   const navigate = useNavigate();
-  const { addToCart, favorites, toggleFavorite, cartBlocked } = useCart();
+  const { addToCart, favorites, toggleFavorite } = useCart();
   const isFav = favorites?.has(product.id);
 
   return (
@@ -58,17 +58,15 @@ export default function ProductCard({ product, index = 0 }) {
           <p className="text-[10px] sm:text-[8.25px] text-ink-500 dark:text-[#7F7F7F] whitespace-nowrap">
             от <span>{Number(product.price ?? 0).toLocaleString()}</span> {product.unit}
           </p>
-          {!cartBlocked && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                addToCart(product);
-              }}
-              className="shrink-0 px-2 sm:px-3 dark:text-[#0D0D0D] py-0.5 sm:py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.97] text-white text-[12px] sm:text-[9.43px] font-semibold rounded-full transition-all whitespace-nowrap"
-            >
-              Добавить в корзину
-            </button>
-          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              addToCart(product);
+            }}
+            className="shrink-0 px-2 sm:px-3 dark:text-[#0D0D0D] py-0.5 sm:py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.97] text-white text-[12px] sm:text-[9.43px] font-semibold rounded-full transition-all whitespace-nowrap"
+          >
+            Добавить в корзину
+          </button>
         </div>
       </div>
     </motion.div>

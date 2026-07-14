@@ -66,7 +66,7 @@ export default function ProductPage() {
   const [similar, setSimilar] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
-  const { addToCart, favorites, toggleFavorite, cartBlocked } = useCart();
+  const { addToCart, favorites, toggleFavorite } = useCart();
   const navigate = useNavigate();
   const isFav = product ? favorites?.has(product.id) : false;
 
@@ -217,14 +217,12 @@ export default function ProductPage() {
               Итог: {product.price * qty} {displayText(product.currency)}
             </p>
 
-            {!cartBlocked && (
-              <button
-                onClick={() => addToCart({ id: product.id, name: product.name, price: product.price, qty })}
-                className="w-full bg-brand-600 dark:text-[#0D0D0D] hover:bg-brand-700 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-2 transition-colors"
-              >
-                <ShoppingCart size={18} /> Добавить в корзину
-              </button>
-            )}
+            <button
+              onClick={() => addToCart({ id: product.id, name: product.name, price: product.price, qty })}
+              className="w-full bg-brand-600 dark:text-[#0D0D0D] hover:bg-brand-700 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-2 transition-colors"
+            >
+              <ShoppingCart size={18} /> Добавить в корзину
+            </button>
 
             <button
               onClick={handleOpenChat}
