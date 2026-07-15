@@ -86,8 +86,8 @@ export async function getFavoritesCount() {
 
 // ─── Catalog ──────────────────────────────────────────────────────────────────
 
-export async function getAllProducts({ page = 1, perPage = 20, category } = {}) {
-  return unwrap(http.get("/catalog", { params: { page, perPage, category } }));
+export async function getAllProducts({ page = 1, perPage = 20, category, minPrice, maxPrice, inStock, verified } = {}) {
+  return unwrap(http.get("/catalog", { params: { page, perPage, category, minPrice, maxPrice, inStock, verified } }));
 }
 
 export async function getPopularProducts({ page = 1, size = 8 } = {}) {
@@ -352,8 +352,8 @@ export async function getMyProducts({ page = 1, per_page = 20, company_id, statu
   return unwrap(http.get("/products/my", { params: { page, per_page, company_id, status } }));
 }
 
-export async function searchProducts({ query, page = 1, perPage = 20, category } = {}) {
-  return unwrap(http.get("/catalog/search", { params: { q: query, page, perPage, category } }));
+export async function searchProducts({ query, page = 1, perPage = 20, category, minPrice, maxPrice, inStock, verified } = {}) {
+  return unwrap(http.get("/catalog/search", { params: { q: query, page, perPage, category, minPrice, maxPrice, inStock, verified } }));
 }
 
 export async function getProductBySlug(slug) {
@@ -381,6 +381,8 @@ export async function updateProduct(id, data) {
     price_type: data.priceType,
     region_id: data.regionId,
     district_id: data.districtId,
+    min_product: data.minProduct,
+    unit: data.unit,
   };
   return unwrap(http.put(`/products/${id}`, body));
 }
@@ -454,6 +456,10 @@ export async function getChats({ page = 1, per_page = 20 } = {}) {
 
 export async function getChatMessages(threadId, { page = 1, per_page = 20, before_id } = {}) {
   return unwrap(http.get(`/chats/${threadId}/messages`, { params: { page, per_page, before_id } }));
+}
+
+export async function sendChatMessage(threadId, body) {
+  return unwrap(http.post(`/chats/${threadId}/messages`, { body }));
 }
 
 export async function getChatUnreadCount() {

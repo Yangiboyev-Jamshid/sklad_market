@@ -56,6 +56,8 @@ export default function CatalogPage() {
   const [view, setView] = useState("grid");
   const [inStockOnly, setInStockOnly] = useState(false);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [products, setProducts] = useState([]);
@@ -131,15 +133,21 @@ export default function CatalogPage() {
   useEffect(() => {
     clearTimeout(debounceRef.current);
     const category = activeCategory !== "all" ? activeCategory : undefined;
+    const filterParams = {
+      minPrice: minPrice.trim() ? Number(minPrice) : undefined,
+      maxPrice: maxPrice.trim() ? Number(maxPrice) : undefined,
+      inStock: inStockOnly || undefined,
+      verified: verifiedOnly || undefined,
+    };
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
         if (query.trim()) {
-          const data = await searchProducts({ query: query.trim(), page: 1, perPage: 40, category });
+          const data = await searchProducts({ query: query.trim(), page: 1, perPage: 40, category, ...filterParams });
           setProducts((data?.content ?? []).map(normalizeProduct));
           setTotal(data?.totalElements ?? 0);
         } else {
-          const data = await getAllProducts({ page: 1, perPage: 40, category });
+          const data = await getAllProducts({ page: 1, perPage: 40, category, ...filterParams });
           setProducts((data?.items ?? []).map(normalizeProduct));
           setTotal(data?.meta?.total ?? 0);
         }
@@ -150,7 +158,7 @@ export default function CatalogPage() {
       }
     }, query ? 400 : 0);
     return () => clearTimeout(debounceRef.current);
-  }, [query, activeCategory]);
+  }, [query, activeCategory, minPrice, maxPrice, inStockOnly, verifiedOnly]);
 
   return (
     <AppShell>
@@ -208,6 +216,10 @@ export default function CatalogPage() {
               setInStockOnly={setInStockOnly}
               verifiedOnly={verifiedOnly}
               setVerifiedOnly={setVerifiedOnly}
+              minPrice={minPrice}
+              setMinPrice={setMinPrice}
+              maxPrice={maxPrice}
+              setMaxPrice={setMaxPrice}
             />
           </aside>
 
@@ -244,6 +256,10 @@ export default function CatalogPage() {
                     setInStockOnly={setInStockOnly}
                     verifiedOnly={verifiedOnly}
                     setVerifiedOnly={setVerifiedOnly}
+                    minPrice={minPrice}
+                    setMinPrice={setMinPrice}
+                    maxPrice={maxPrice}
+                    setMaxPrice={setMaxPrice}
                     showHeader={false}
                   />
                   <button
@@ -330,8 +346,19 @@ function FiltersContent({
   setInStockOnly,
   verifiedOnly,
   setVerifiedOnly,
+  minPrice,
+  setMinPrice,
+  maxPrice,
+  setMaxPrice,
   showHeader = true,
 }) {
+  const resetFilters = () => {
+    setActiveCategory("all");
+    setInStockOnly(false);
+    setVerifiedOnly(false);
+    setMinPrice("");
+    setMaxPrice("");
+  };
   return (
     <>
       {showHeader && (
@@ -372,10 +399,16 @@ function FiltersContent({
       <p className="text-xs font-medium text-black dark:text-white mb-2">Цены</p>
       <div className="flex flex-col gap-2 mb-5">
         <input
+          type="number"
+          value={minPrice}
+          onChange={(e) => setMinPrice(e.target.value)}
           placeholder={filterMeta?.minPrice != null ? `от ${filterMeta.minPrice}` : "от"}
           className="bg-ink-50 dark:bg-[#0D0D0D] border dark:border-[#2D2D2D] rounded-xl px-4 py-2.5 text-sm outline-none placeholder:text-ink-400 dark:text-white"
         />
         <input
+          type="number"
+          value={maxPrice}
+          onChange={(e) => setMaxPrice(e.target.value)}
           placeholder={filterMeta?.maxPrice != null ? `до ${filterMeta.maxPrice}` : "до"}
           className="bg-ink-50 dark:bg-[#0D0D0D] border dark:border-[#2D2D2D] rounded-xl px-4 py-2.5 text-sm outline-none placeholder:text-ink-400 dark:text-white"
         />
@@ -389,7 +422,10 @@ function FiltersContent({
       <ToggleRow label="Только наличии" checked={inStockOnly} onChange={setInStockOnly} />
       <ToggleRow label="Верифицированные продавцы" checked={verifiedOnly} onChange={setVerifiedOnly} />
 
-      <button className="w-full bg-danger-50 dark:bg-danger-500/10 text-danger-600 dark:text-danger-400 font-medium text-sm py-3 rounded-2xl mt-5 hover:bg-danger-100 dark:hover:bg-danger-500/20 transition-colors">
+      <button
+        onClick={resetFilters}
+        className="w-full bg-danger-50 dark:bg-danger-500/10 text-danger-600 dark:text-danger-400 font-medium text-sm py-3 rounded-2xl mt-5 hover:bg-danger-100 dark:hover:bg-danger-500/20 transition-colors"
+      >
         Сбросить фильтры
       </button>
     </>
