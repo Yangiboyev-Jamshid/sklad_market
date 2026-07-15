@@ -114,7 +114,7 @@ export default function Header() {
       const data = await getNotifications({ per_page: 20 });
       setNotifications(data?.items ?? []);
     } catch (error) {
-      console.log(error);
+      console.error(error);
     } finally {
       setNotifLoading(false);
     }
@@ -140,7 +140,7 @@ export default function Header() {
       setNotifications((prev) => prev.map((n) => ({ ...n, read_at: new Date().toISOString() })));
       setNotifUnread(0);
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 
@@ -152,7 +152,7 @@ export default function Header() {
       );
       setNotifUnread((c) => Math.max(0, c - 1));
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 
@@ -330,7 +330,7 @@ export default function Header() {
           </Link>
 
           <Link
-            to="/chat"
+            to="/seller?tab=messages"
             className="relative hidden md:inline-flex text-ink-500 dark:text-[#CDD1D6] hover:text-ink-900 dark:hover:text-white transition-colors"
           >
             <Messages2 size={24} variant="Linear" />
@@ -392,7 +392,7 @@ export default function Header() {
                     icon={Messages2}
                     label="Чат"
                     badge={chatUnread}
-                    onClick={() => { setCartMenuOpen(false); navigate("/chat"); }}
+                    onClick={() => { setCartMenuOpen(false); navigate("/seller?tab=messages"); }}
                   />
                   <DropdownItem
                     icon={ShoppingCart}
