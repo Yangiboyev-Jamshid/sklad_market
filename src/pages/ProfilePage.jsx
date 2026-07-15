@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,7 +13,6 @@ import {
   Sms,
   GlobalSearch,
   SecurityUser,
-  Heart,
   ArrowDown2,
 } from "iconsax-reactjs";
 import ReportModal from "../components/modal/ReportModal";
@@ -23,7 +22,6 @@ import MapView from "../components/ui/MapView";
 import PillToggle from "../components/ui/PillToggle";
 import RatingStars from "../components/ui/RatingStars";
 import { useAuth } from "../context/AuthContext";
-import { useCart } from "../context/CartContext";
 import { getCompanyBySlug, getMyCompany, getCompaniesMap, getCompanyProducts, getCompanyReviews, createChat } from "../api/api";
 import { buildCompanyMapPins } from "../utils/mapPins";
 import ProductCard from "../components/ui/ProductCard";
@@ -56,8 +54,6 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const isSeller = user?.accountType === "seller";
 
-  const { companyFavorites, toggleCompanyFavorite } = useCart();
-
   const [company, setCompany] = useState(null);
   const [products, setProducts] = useState([]);
   const [productsTotal, setProductsTotal] = useState(0);
@@ -68,6 +64,7 @@ export default function ProfilePage() {
   const [showMap, setShowMap] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
+  const chatSubmittingRef = useRef(false);
   const [companyMapPins, setCompanyMapPins] = useState([]);
   const [companyMapLoading, setCompanyMapLoading] = useState(false);
   const [companyMapLoaded, setCompanyMapLoaded] = useState(false);
@@ -121,14 +118,16 @@ export default function ProfilePage() {
   }, [company?.id]);
 
   const handleOpenChat = async () => {
-    if (!company?.id) return;
+    if (!company?.id || chatSubmittingRef.current) return;
+    chatSubmittingRef.current = true;
     setChatLoading(true);
     try {
       const result = await createChat({ seller_company_id: company.id });
-      navigate(`/seller?tab=messages&thread=${result.thread_id}`);
+      navigate(`/chat?thread=${result.thread_id}`);
     } catch (err) {
       alert(err.message);
     } finally {
+      chatSubmittingRef.current = false;
       setChatLoading(false);
     }
   };
@@ -183,7 +182,6 @@ export default function ProfilePage() {
   const verificationStatus = company.verificationStatus ?? company.status ?? "DRAFT";
   const badge = VERIFY_BADGE[verificationStatus] ?? VERIFY_BADGE.DRAFT;
   const isVerified = verificationStatus === "VERIFIED";
-  const isFav = companyFavorites?.has(company.id);
   const initials = (company.name ?? "??").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const createdYear = company.createdAt ? new Date(company.createdAt).getFullYear() : null;
   const cityShort = company.city ?? company.address?.split(",")[0]?.trim();
@@ -315,7 +313,7 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 sm:gap-6">
 
               <div className="hidden lg:flex flex-col gap-4">
-                <CompanyMetaCards company={company} productsTotal={productsTotal} createdYear={createdYear} cityShort={cityShort} email={email} />
+                <CompanyMetaCards company={company} productsTotal={productsTotal} reviewsCount={reviews.length} createdYear={createdYear} cityShort={cityShort} email={email} />
               </div>
 
               <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] transition-colors">
@@ -324,7 +322,7 @@ export default function ProfilePage() {
                     Товары{productsTotal > 0 && ` (${productsTotal})`}
                   </TabBtn>
                   <TabBtn active={tab === "reviews"} onClick={() => setTab("reviews")}>
-                    Отзывы{company.reviews > 0 && ` (${company.reviews})`}
+                    Отзывы{reviews.length > 0 && ` (${reviews.length})`}
                   </TabBtn>
                 </div>
 
@@ -345,7 +343,7 @@ export default function ProfilePage() {
                       ) : (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                           {products.map((p, i) => (
-                            <ProductCard product={p} index={i} />
+                            <ProductCard key={p.id} product={p} index={i} />
                           ))}
                         </div>
                       )}
@@ -397,7 +395,7 @@ export default function ProfilePage() {
   );
 }
 
-function CompanyMetaCards({ company, productsTotal, createdYear, cityShort, email, bare = false }) {
+function CompanyMetaCards({ company, productsTotal, reviewsCount, createdYear, cityShort, email, bare = false }) {
   return (
     <>
       {(company.description || company.shortDescription) && (
@@ -406,10 +404,10 @@ function CompanyMetaCards({ company, productsTotal, createdYear, cityShort, emai
           <p className="text-sm text-ink-500 dark:text-ink-300 leading-relaxed mb-4">
             {company.description || company.shortDescription}
           </p>
-          {(company.rating != null || company.reviews != null || company.productsCount != null) && (
+          {(company.rating != null || reviewsCount > 0 || productsTotal > 0 || company.productsCount != null) && (
             <div className="grid grid-cols-3 gap-2 text-center">
               <Stat value={company.rating ?? "—"} label="Рейтинг" />
-              <Stat value={company.reviews ?? 0} label="Отзывы" />
+              <Stat value={reviewsCount ?? 0} label="Отзывы" />
               <Stat value={company.productsCount ?? productsTotal} label="Товаров" />
             </div>
           )}
