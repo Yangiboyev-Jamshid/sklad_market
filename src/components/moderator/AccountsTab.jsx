@@ -61,7 +61,8 @@ export default function AccountsTab() {
         await unblockUser(a.id);
         setAccounts((prev) => prev.map((x) => (x.id === a.id ? { ...x, status: "ACTIVE" } : x)));
       } else {
-        const reason = window.prompt("Причина блокировки:") ?? "";
+        const reason = window.prompt("Причина блокировки:");
+        if (reason == null) { setActionId(null); return; }
         await blockUser(a.id, reason);
         setAccounts((prev) => prev.map((x) => (x.id === a.id ? { ...x, status: "BLOCKED" } : x)));
       }
