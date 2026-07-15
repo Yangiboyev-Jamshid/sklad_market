@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Minus, Add, Trash, ShoppingCart, Message, ShieldTick, CloseCircle } from "iconsax-reactjs";
+import { Minus, Add, Trash, ShoppingCart, Message, ShieldTick } from "iconsax-reactjs";
 import { motion, AnimatePresence } from "framer-motion";
 import AppShell from "../components/layout/AppShell";
 import ProductThumb from "../components/ui/ProductThumb";
@@ -285,59 +285,36 @@ export default function CartPage() {
                 </h2>
               </div>
 
-              <div className="flex flex-col gap-2.5">
-                <label>
-                  Ваше имя *
-                  <input
-                    placeholder="Ваше имя"
-                    value={contactName}
-                    onChange={(e) => setContactName(e.target.value)}
-                    className="bg-ink-50 dark:bg-[#171717] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full"
-                  />
-                </label>
-                <label>
-                  Телефон *
-                  <input
-                    placeholder="Телефон"
-                    inputMode="tel"
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value.replace(/[^\d+\s\-()]/g, ""))}
-                    className="bg-ink-50 dark:bg-[#171717] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full"
-                  />
-                </label>
-                <label>
-                  Email
-                  <input
-                    placeholder="Email"
-                    type="email"
-                    value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
-                    className="bg-ink-50 dark:bg-[#171717] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full"
-                  />
-                </label>
-                <label>
-                  Адрес доставки
-                  <input
-                    placeholder="Адрес доставки"
-                    value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="bg-ink-50 dark:bg-[#171717] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full"
-                  />
-                </label>
-                <label>
-                  Комментарий
+              <div className="flex flex-col gap-4">
+                <Field label="Ваше имя *" value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Иван Иванов" />
+                <Field
+                  label="Телефон *"
+                  inputMode="tel"
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value.replace(/[^\d+\s\-()]/g, ""))}
+                  placeholder="+998 90 000 00 00"
+                />
+                <Field label="Email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="you@mail.com" />
+                <Field
+                  label="Адрес доставки"
+                  value={deliveryAddress}
+                  onChange={(e) => setDeliveryAddress(e.target.value)}
+                  placeholder="г. Ташкент, ..."
+                />
+                <div>
+                  <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">Комментарий</label>
                   <textarea
-                    placeholder="Комментарий"
+                    placeholder="Комментарий к запросу"
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    rows={2}
-                    className="bg-ink-50 dark:bg-[#171717] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full resize-none"
+                    rows={3}
+                    className="w-full bg-ink-50 dark:bg-[#171717] rounded-xl px-4 py-3 text-sm outline-none placeholder:text-ink-400 dark:text-white resize-none"
                   />
-                </label>
+                </div>
                 <button
                   onClick={handleCheckout}
                   disabled={sending || !contactName.trim() || !contactPhone.trim()}
-                  className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors mt-1"
+                  className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors mt-1"
                 >
                   {sending ? "Отправка..." : "Подтвердить и отправить"}
                 </button>
@@ -347,5 +324,18 @@ export default function CartPage() {
         )}
       </AnimatePresence>
     </AppShell>
+  );
+}
+
+function Field({ label, placeholder, ...props }) {
+  return (
+    <div>
+      <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">{label}</label>
+      <input
+        placeholder={placeholder}
+        className="w-full bg-ink-50 dark:bg-[#171717] rounded-xl px-4 py-3 text-sm outline-none placeholder:text-ink-400 dark:text-white"
+        {...props}
+      />
+    </div>
   );
 }
