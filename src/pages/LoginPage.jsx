@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -43,10 +43,14 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const loginSubmittingRef = useRef(false);
+  const regSubmittingRef = useRef(false);
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
+    if (loginSubmittingRef.current) return;
     setLoginError("");
+    loginSubmittingRef.current = true;
     setLoginLoading(true);
 
     try {
@@ -58,14 +62,17 @@ export default function LoginPage() {
     } catch (err) {
       setLoginError(err.message || "Неверный логин или пароль");
     } finally {
+      loginSubmittingRef.current = false;
       setLoginLoading(false);
     }
   };
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
+    if (regSubmittingRef.current) return;
     setRegError("");
     setRegSuccess("");
+    regSubmittingRef.current = true;
     setRegLoading(true);
     try {
       const data = await registerUser({
@@ -85,6 +92,7 @@ export default function LoginPage() {
     } catch (err) {
       setRegError(err.message);
     } finally {
+      regSubmittingRef.current = false;
       setRegLoading(false);
     }
   };

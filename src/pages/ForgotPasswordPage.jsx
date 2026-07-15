@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Lock1, Eye, EyeSlash, User, Message, Sun1, Moon } from "iconsax-reactjs";
@@ -17,10 +17,13 @@ export default function ForgotPasswordPage() {
 
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const submittingRef = useRef(false);
 
   const handleRequest = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     setError("");
+    submittingRef.current = true;
     setLoading(true);
     try {
       await resetPassword({ username });
@@ -28,13 +31,16 @@ export default function ForgotPasswordPage() {
     } catch (err) {
       setError(err.message);
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
 
   const handleConfirm = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     setError("");
+    submittingRef.current = true;
     setLoading(true);
     try {
       const res = await confirmResetPassword({ username, confirmCode: code, newPassword });
@@ -43,6 +49,7 @@ export default function ForgotPasswordPage() {
     } catch (err) {
       setError(err.message);
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
