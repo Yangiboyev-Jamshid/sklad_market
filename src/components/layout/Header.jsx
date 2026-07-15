@@ -330,7 +330,7 @@ export default function Header() {
           </Link>
 
           <Link
-            to="/seller?tab=messages"
+            to="/chat"
             className="relative hidden md:inline-flex text-ink-500 dark:text-[#CDD1D6] hover:text-ink-900 dark:hover:text-white transition-colors"
           >
             <Messages2 size={24} variant="Linear" />
@@ -392,7 +392,7 @@ export default function Header() {
                     icon={Messages2}
                     label="Чат"
                     badge={chatUnread}
-                    onClick={() => { setCartMenuOpen(false); navigate("/seller?tab=messages"); }}
+                    onClick={() => { setCartMenuOpen(false); navigate("/chat"); }}
                   />
                   <DropdownItem
                     icon={ShoppingCart}

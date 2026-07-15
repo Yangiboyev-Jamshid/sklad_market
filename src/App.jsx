@@ -13,6 +13,7 @@ const ProductPage = lazy(() => import("./pages/ProductPage"))
 const FavoritesPage = lazy(() => import("./pages/FavoritesPage"))
 const CartPage = lazy(() => import("./pages/CartPage"))
 const RequestsPage = lazy(() => import("./pages/RequestsPage"))
+const ChatPage = lazy(() => import("./pages/ChatPage"))
 const AiAgentPage = lazy(() => import("./pages/AiAgentPage"))
 const CompaniesPage = lazy(() => import("./pages/CompaniesPage"))
 const ProfilePage = lazy(() => import("./pages/ProfilePage"))
@@ -88,6 +89,11 @@ function App() {
                 <Route path="/requests" element={
                   <Suspense fallback={<Loader />}>
                     <RequestsPage />
+                  </Suspense>
+                } />
+                <Route path="/chat" element={
+                  <Suspense fallback={<Loader />}>
+                    <ChatPage />
                   </Suspense>
                 } />
                 <Route path="/ai-agent" element={

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -67,13 +67,19 @@ export default function ProductPage() {
   const navigate = useNavigate();
   const isFav = product ? favorites?.has(product.id) : false;
 
+  const chatSubmittingRef = useRef(false);
   const handleOpenChat = async () => {
-    if (!product?.company?.id) return;
+    // product.company is not a field the real API returns — only the flat
+    // product.companyId is, so this must not read a nested company object.
+    if (!product?.companyId || chatSubmittingRef.current) return;
+    chatSubmittingRef.current = true;
     try {
-      const result = await createChat({ seller_company_id: product.company.id, product_id: product.id });
-      navigate(`/seller?tab=messages&thread=${result.thread_id}`);
+      const result = await createChat({ seller_company_id: product.companyId, product_id: product.id });
+      navigate(`/chat?thread=${result.thread_id}`);
     } catch (err) {
       alert(err.message);
+    } finally {
+      chatSubmittingRef.current = false;
     }
   };
 

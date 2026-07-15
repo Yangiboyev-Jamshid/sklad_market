@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Messages2, Box } from "iconsax-reactjs";
+import { Call, Box } from "iconsax-reactjs";
 import { BsCheck } from "react-icons/bs";
 import { IoIosClose } from "react-icons/io";
 import { getSellerLeads, updateLeadStatus } from "../../api/api";
@@ -113,9 +113,14 @@ export default function RequestsTab() {
                       </button>
                     </div>
                   )}
-                  <button className="flex w-full sm:w-auto justify-center items-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 text-xs font-medium px-3 py-3 sm:py-2 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap">
-                    <Messages2 size={14} /> Написать
-                  </button>
+                  {lead.contactPhone && (
+                    <a
+                      href={`tel:${lead.contactPhone}`}
+                      className="flex w-full sm:w-auto justify-center items-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 text-xs font-medium px-3 py-3 sm:py-2 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap"
+                    >
+                      <Call size={14} /> Позвонить
+                    </a>
+                  )}
                 </div>
               </div>
             );
