@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Minus, Add, Trash, ShoppingCart, Message, ShieldTick } from "iconsax-reactjs";
+import { Minus, Add, Trash, ShoppingCart, Message, ShieldTick, CloseCircle } from "iconsax-reactjs";
 import { motion, AnimatePresence } from "framer-motion";
 import AppShell from "../components/layout/AppShell";
 import ProductThumb from "../components/ui/ProductThumb";
@@ -234,7 +234,7 @@ export default function CartPage() {
               </div>
 
               <button
-                onClick={() => setShowForm((v) => !v)}
+                onClick={() => setShowForm(true)}
                 className="w-full bg-brand-600 hover:bg-brand-700 text-white dark:text-[#0D0D0D] font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors"
               >
                 <ShoppingCart size={20} /> Отправить запрос
@@ -247,61 +247,6 @@ export default function CartPage() {
               >
                 <Message size={18} /> Написать продавцу
               </button>
-
-              <AnimatePresence>
-                {showForm && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="bg-ink-50 dark:bg-[#171717] rounded-2xl p-4 flex flex-col gap-2.5">
-                      <p className="text-sm font-semibold text-ink-900 dark:text-white mb-1">Контактные данные</p>
-                      <input
-                        placeholder="Ваше имя *"
-                        value={contactName}
-                        onChange={(e) => setContactName(e.target.value)}
-                        className="bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full"
-                      />
-                      <input
-                        placeholder="Телефон *"
-                        inputMode="tel"
-                        value={contactPhone}
-                        onChange={(e) => setContactPhone(e.target.value.replace(/[^\d+\s\-()]/g, ""))}
-                        className="bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full"
-                      />
-                      <input
-                        placeholder="Email (необязательно)"
-                        type="email"
-                        value={contactEmail}
-                        onChange={(e) => setContactEmail(e.target.value)}
-                        className="bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full"
-                      />
-                      <input
-                        placeholder="Адрес доставки (необязательно)"
-                        value={deliveryAddress}
-                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                        className="bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full"
-                      />
-                      <textarea
-                        placeholder="Комментарий (необязательно)"
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                        rows={2}
-                        className="bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full resize-none"
-                      />
-                      <button
-                        onClick={handleCheckout}
-                        disabled={sending || !contactName.trim() || !contactPhone.trim()}
-                        className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
-                      >
-                        {sending ? "Отправка..." : "Подтвердить и отправить"}
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
 
               <div className="bg-[#FFFFFF] border border-[#F0F0F0] dark:border-[#1C1C1C] dark:bg-[#0D0D0D] rounded-2xl p-5 flex flex-col gap-3">
                 <div className="flex items-center gap-3">
@@ -316,6 +261,91 @@ export default function CartPage() {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4"
+            onClick={() => setShowForm(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 60, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 60, scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-[#0D0D0D] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md max-h-[92vh] sm:max-h-[90vh] overflow-y-auto p-5 sm:p-7 relative transition-colors"
+            >
+              <div className="relative mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl text-center font-display font-bold text-ink-900 dark:text-white">
+                  Контактные данные
+                </h2>
+              </div>
+
+              <div className="flex flex-col gap-2.5">
+                <label>
+                  Ваше имя *
+                  <input
+                    placeholder="Ваше имя"
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    className="bg-ink-50 dark:bg-[#171717] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full"
+                  />
+                </label>
+                <label>
+                  Телефон *
+                  <input
+                    placeholder="Телефон"
+                    inputMode="tel"
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value.replace(/[^\d+\s\-()]/g, ""))}
+                    className="bg-ink-50 dark:bg-[#171717] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full"
+                  />
+                </label>
+                <label>
+                  Email
+                  <input
+                    placeholder="Email"
+                    type="email"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    className="bg-ink-50 dark:bg-[#171717] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full"
+                  />
+                </label>
+                <label>
+                  Адрес доставки
+                  <input
+                    placeholder="Адрес доставки"
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    className="bg-ink-50 dark:bg-[#171717] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full"
+                  />
+                </label>
+                <label>
+                  Комментарий
+                  <textarea
+                    placeholder="Комментарий"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    rows={2}
+                    className="bg-ink-50 dark:bg-[#171717] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 w-full resize-none"
+                  />
+                </label>
+                <button
+                  onClick={handleCheckout}
+                  disabled={sending || !contactName.trim() || !contactPhone.trim()}
+                  className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors mt-1"
+                >
+                  {sending ? "Отправка..." : "Подтвердить и отправить"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AppShell>
   );
 }
