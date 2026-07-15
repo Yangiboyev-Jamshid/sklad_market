@@ -19,7 +19,7 @@ const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors';
 
 function hasCoords(p) {
-  return !!p && typeof p.lat === "number" && typeof p.lng === "number";
+  return !!p && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
 }
 
 export default function MapView({ pins = [], height = "h-[460px]", center }) {
