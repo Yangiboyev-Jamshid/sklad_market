@@ -6,7 +6,8 @@ import {
   I3DCubeScan,
   UserSquare,
   SecurityUser,
-  DollarCircle
+  DollarCircle,
+  ClipboardText
 } from "iconsax-reactjs";
 import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
@@ -15,6 +16,7 @@ const navItems = [
   { to: "/", label: "Главная", icon: Home2 },
   { to: "/catalog", label: "Каталог", icon: BoxAdd },
   { to: "/products-explore", label: "Продукты", icon: I3DCubeScan },
+  { to: "/requests", label: "Мои запросы", icon: ClipboardText },
   { to: "/profile", label: "Профиль", icon: UserSquare, sellerOnly: true },
   { to: "/companies", label: "Компании", icon: Buildings },
   { to: "/seller", label: "Панель продавца", icon: SecurityUser, sellerOnly: true },

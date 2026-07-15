@@ -12,6 +12,7 @@ const CatalogPage = lazy(() => import("./pages/CatalogPage"))
 const ProductPage = lazy(() => import("./pages/ProductPage"))
 const FavoritesPage = lazy(() => import("./pages/FavoritesPage"))
 const CartPage = lazy(() => import("./pages/CartPage"))
+const RequestsPage = lazy(() => import("./pages/RequestsPage"))
 const AiAgentPage = lazy(() => import("./pages/AiAgentPage"))
 const CompaniesPage = lazy(() => import("./pages/CompaniesPage"))
 const ProfilePage = lazy(() => import("./pages/ProfilePage"))
@@ -84,6 +85,11 @@ function App() {
                   </Suspense>
                 } />
                 <Route path="/cart" element={<CartPage />} />
+                <Route path="/requests" element={
+                  <Suspense fallback={<Loader />}>
+                    <RequestsPage />
+                  </Suspense>
+                } />
                 <Route path="/ai-agent" element={
                   <Suspense fallback={<Loader />}>
                     <AiAgentPage />

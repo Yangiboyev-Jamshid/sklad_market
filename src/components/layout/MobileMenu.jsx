@@ -8,6 +8,7 @@ const navItems = [
   { to: "/", label: "Главная" },
   { to: "/catalog", label: "Каталог" },
   { to: "/products-explore", label: "Продукты" },
+  { to: "/requests", label: "Мои запросы" },
   { to: "/profile", label: "Профиль", sellerOnly: true },
   { to: "/companies", label: "Компании" },
   { to: "/seller", label: "Панель продавца", sellerOnly: true },
