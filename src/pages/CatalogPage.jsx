@@ -8,29 +8,6 @@ import MapView from "../components/ui/MapView";
 import { getAllProducts, searchProducts, getCategories, getCatalogMap, getSearchSuggestions, getCatalogFilters, getCategoryCounts } from "../api/api";
 import { buildProductMapPins } from "../utils/mapPins";
 
-const DEFAULT_MAP_PINS = [
-  {
-    id: "default-1",
-    lat: 41.326386,
-    lng: 69.288301,
-    color: "red",
-    label: 3,
-    popover: [
-      { name: "Листовая сталь 3мм", company: "UzMetallPro", rating: 5, verified: true },
-      { name: "Листовая сталь 3мм", company: "UzMetallPro", rating: 4, verified: true },
-      { name: "Листовая сталь 3мм", company: "UzMetallPro", rating: 3, verified: true },
-    ],
-  },
-  {
-    id: "default-2",
-    lat: 41.283333,
-    lng: 69.203333,
-    color: "purple",
-    label: 1,
-    popover: [{ name: "Арматура А500С", company: "TemirMetProm", rating: 4, verified: true }],
-  },
-];
-
 function normalizeProduct(p) {
   return {
     id: p.id,
@@ -81,10 +58,9 @@ export default function CatalogPage() {
     }, 0);
     getCatalogMap({ page: 1, perPage: 200 })
       .then((data) => {
-        const pins = buildProductMapPins(data?.items ?? [], navigate);
-        setMapPins(pins.length === 0 ? DEFAULT_MAP_PINS : pins);
+        setMapPins(buildProductMapPins(data?.items ?? [], navigate));
       })
-      .catch(() => setMapPins(DEFAULT_MAP_PINS))
+      .catch(() => setMapPins([]))
       .finally(() => {
         setMapLoading(false);
         setMapLoaded(true);

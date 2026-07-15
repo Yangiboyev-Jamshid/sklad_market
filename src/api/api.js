@@ -19,10 +19,6 @@ export function getAccessToken() {
   return localStorage.getItem("access_token");
 }
 
-export function getRefreshToken() {
-  return localStorage.getItem("refresh_token");
-}
-
 export function logout() {
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
@@ -52,14 +48,6 @@ export async function confirmResetPassword({ username, confirmCode, newPassword 
   return { message };
 }
 
-export async function refreshAccessToken() {
-  const refreshToken = getRefreshToken();
-  const data = await unwrap(http.post("/auth/refresh", { refreshToken }));
-  if (data?.access_token) localStorage.setItem("access_token", data.access_token);
-  if (data?.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
-  return data;
-}
-
 export async function verifyAccount(token) {
   const message = await unwrap(http.get(`/auth/verification/${token}`));
   return { message };
@@ -77,11 +65,6 @@ export async function removeFavorite(productId) {
 
 export async function getFavorites({ page = 1, perPage = 20 } = {}) {
   return unwrap(http.get("/product-favorites", { params: { page, perPage } }));
-}
-
-export async function getFavoritesCount() {
-  const data = await unwrap(http.get("/product-favorites/count"));
-  return data?.count ?? 0;
 }
 
 // ─── Catalog ──────────────────────────────────────────────────────────────────
@@ -195,10 +178,6 @@ export async function getCompanyReviews(companyId, { page = 1, per_page = 20 } =
   return unwrap(http.get(`/companies/${companyId}/reviews`, { params: { page, per_page } }));
 }
 
-export async function getAllCompanies() {
-  return unwrap(http.get("/companies"));
-}
-
 export async function getCompaniesMap({ page = 1, per_page = 20 } = {}) {
   return unwrap(http.get("/companies/map", { params: { page, per_page } }));
 }
@@ -222,10 +201,6 @@ export async function updateCompany(id, data) {
   return cacheCompanyDetail({ ...company, lat: data.lat, lng: data.lng });
 }
 
-export async function deleteCompany(id) {
-  return unwrap(http.delete(`/companies/${id}`));
-}
-
 export async function submitCompanyVerification(id) {
   return unwrap(http.post(`/companies/${id}/submit-verification`));
 }
@@ -238,36 +213,10 @@ export async function uploadCompanyLogo(id, file) {
   return result;
 }
 
-export async function uploadCompanyCover(id, file) {
-  const result = await unwrap(http.post(`/companies/${id}/coverUrl`, toSingleFileForm(file)));
-  if (result?.url) cacheCompanyDetail({ id, coverUrl: result.url });
-  return result;
-}
-
-export async function addCompanyDocument(id, { documentType, attachId = "", fileUrl }) {
-  return unwrap(http.post(`/companies/${id}/documents`, { documentType, attachId, fileUrl }));
-}
-
 // ─── Categories ───────────────────────────────────────────────────────────────
 
 export async function getCategories({ page = 0, size = 100 } = {}) {
   return unwrap(http.get("/categories", { params: { page, size } }));
-}
-
-export async function getCategoryBySlug(slug) {
-  return unwrap(http.get(`/categories/${slug}`));
-}
-
-export async function createCategory(data) {
-  return unwrap(http.post("/categories/create", data));
-}
-
-export async function updateCategory(id, data) {
-  return unwrap(http.put(`/categories/update/${id}`, data));
-}
-
-export async function deleteCategory(id) {
-  return unwrap(http.delete(`/categories/delete/${id}`));
 }
 
 // ─── Company Favorites ────────────────────────────────────────────────────────
@@ -284,20 +233,10 @@ export async function getCompanyFavorites({ page = 1, perPage = 20 } = {}) {
   return unwrap(http.get("/company-favorites", { params: { page, perPage } }));
 }
 
-export async function getCompanyFavoritesCount() {
-  const data = await unwrap(http.get("/company-favorites/count"));
-  return data?.favoriteCount ?? 0;
-}
-
 // ─── Cart ─────────────────────────────────────────────────────────────────────
 
 export async function getCart() {
   return unwrap(http.get("/cart"));
-}
-
-export async function getCartCount() {
-  const data = await unwrap(http.get("/cart/count"));
-  return data?.count ?? 0;
 }
 
 export async function addCartItem({ productId, quantity = 1 }) {
@@ -330,20 +269,8 @@ export async function getSellerLeads({ page = 1, perPage = 20, status, companyId
   return unwrap(http.get("/leads/seller", { params: { page, perPage, status, companyId } }));
 }
 
-export async function getLead(id) {
-  return unwrap(http.get(`/leads/${id}`));
-}
-
-export async function createLead({ source = "PRODUCT", productId, productIds, quantity = 1, contactName, contactPhone, contactEmail, deliveryAddress, neededDate, comment } = {}) {
-  return unwrap(http.post("/leads", { source, productId, productIds, quantity, contactName, contactPhone, contactEmail, deliveryAddress, neededDate, comment }));
-}
-
 export async function updateLeadStatus(id, { status, closeReason } = {}) {
   return unwrap(http.put(`/leads/${id}/status`, { status, closeReason }));
-}
-
-export async function deleteLead(id) {
-  return unwrap(http.delete(`/leads/${id}`));
 }
 
 // ─── Products ─────────────────────────────────────────────────────────────────
@@ -432,18 +359,6 @@ export async function markNotificationsRead({ notification_ids = [], mark_all = 
   return unwrap(http.post("/notifications/mark-read", { notification_ids, mark_all }));
 }
 
-export async function getNotificationPreferences() {
-  return unwrap(http.get("/notifications/preferences"));
-}
-
-export async function updateNotificationPreferences({ push, email, in_app }) {
-  return unwrap(http.put("/notifications/preferences", { push, email, in_app }));
-}
-
-export async function registerPushToken({ token, platform = "ANDROID" }) {
-  return unwrap(http.post("/notifications/push-token", { token, platform }));
-}
-
 // ─── Chats ────────────────────────────────────────────────────────────────────
 
 export async function createChat({ seller_company_id, product_id } = {}) {
@@ -475,10 +390,6 @@ export async function uploadChatFile(threadId, file) {
   return unwrap(http.post(`/chats/${threadId}/messages/file`, toSingleFileForm(file)));
 }
 
-export async function getChatWsToken() {
-  return unwrap(http.post("/chats/ws-token"));
-}
-
 export async function deleteChat(threadId) {
   return unwrap(http.delete(`/chats/${threadId}`));
 }
@@ -495,10 +406,6 @@ export async function getAdminUsers({ q, status, roles, page = 1, per_page = 20 
   return unwrap(http.get("/admin/users", { params: { q, status, roles, page, per_page } }));
 }
 
-export async function getAdminUser(userId) {
-  return unwrap(http.get(`/admin/users/${userId}`));
-}
-
 export async function blockUser(userId, reason) {
   return unwrap(http.put(`/admin/users/${userId}/block`, { reason }));
 }
@@ -507,19 +414,7 @@ export async function unblockUser(userId) {
   return unwrap(http.put(`/admin/users/${userId}/unblock`));
 }
 
-export async function setUserRole(userId, role) {
-  return unwrap(http.put(`/admin/users/set-admin/${userId}`, null, { params: { role } }));
-}
-
-export async function revokeUserSessions(userId) {
-  return unwrap(http.delete(`/admin/users/${userId}/sessions`));
-}
-
 // ─── Admin: companies ─────────────────────────────────────────────────────────
-
-export async function getAdminCompanies({ status, q, page = 1, per_page = 20 } = {}) {
-  return unwrap(http.get("/admin/companies", { params: { status, q, page, per_page } }));
-}
 
 export async function getCompanyModerationQueue() {
   return unwrap(http.get("/admin/companies/moderation-queue"));
@@ -533,19 +428,7 @@ export async function rejectCompany(id, { reasonCode, comment } = {}) {
   return unwrap(http.put(`/admin/companies/${id}/reject`, { reasonCode, comment }));
 }
 
-export async function blockCompany(id, reason) {
-  return unwrap(http.put(`/admin/companies/${id}/block`, { reason }));
-}
-
 // ─── Admin: products ──────────────────────────────────────────────────────────
-
-export async function getAdminProducts({ status, company_id, q, page = 1, per_page = 20 } = {}) {
-  return unwrap(http.get("/admin/products", { params: { status, company_id, q, page, per_page } }));
-}
-
-export async function getAdminProduct(id) {
-  return unwrap(http.get(`/admin/products/${id}`));
-}
 
 export async function getProductModerationQueue() {
   return unwrap(http.get("/admin/products/moderation-queue"));
@@ -559,14 +442,6 @@ export async function rejectProduct(id, { reasonCode, comment } = {}) {
   return unwrap(http.put(`/admin/products/${id}/reject`, { reasonCode, comment }));
 }
 
-export async function blockProduct(id, reason) {
-  return unwrap(http.put(`/admin/products/${id}/block`, { reason }));
-}
-
-export async function promoteProduct(id, { promotionType, startsAt, endsAt } = {}) {
-  return unwrap(http.put(`/admin/products/${id}/promote`, { promotionType, startsAt, endsAt }));
-}
-
 // ─── Admin: reports ───────────────────────────────────────────────────────────
 
 export async function getAdminReports({ status, targetType, page = 1, size = 20 } = {}) {
@@ -575,10 +450,6 @@ export async function getAdminReports({ status, targetType, page = 1, size = 20 
 
 export async function getAdminReport(id) {
   return unwrap(http.get(`/admin/reports/${id}`));
-}
-
-export async function resolveReport(id, resolutionNote) {
-  return unwrap(http.put(`/admin/reports/${id}/resolve`, { resolutionNote }));
 }
 
 export async function rejectReport(id, resolutionNote) {
