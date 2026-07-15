@@ -62,6 +62,11 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    // Wait for imageMap to resolve (even to an empty Map on failure) before
+    // fetching products — getCatalogBySaleType/getPopularProducts never carry
+    // image data themselves, so fetching products while imageMap is still
+    // null renders the whole grid with placeholders instead of pictures.
+    if (imageMap === null) return;
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setLoading(true);

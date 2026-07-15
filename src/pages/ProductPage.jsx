@@ -39,9 +39,6 @@ function normalizeProduct(p) {
   };
 }
 
-// Some backend responses nest currency/unit as an object ({code,symbol,...})
-// instead of a plain string — render whichever primitive field is present
-// instead of passing the object straight into JSX (React can't render objects).
 function displayText(value, fallback = "") {
   if (value == null) return fallback;
   if (typeof value !== "object") return value;
