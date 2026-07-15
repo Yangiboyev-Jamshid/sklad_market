@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Buildings, TickCircle } from "iconsax-reactjs";
 import { createCompany } from "../../api/api";
 import { geocodeAddress } from "../../utils/geo";
@@ -19,9 +19,16 @@ export default function CreateCompanyForm({ onCreated }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [created, setCreated] = useState(null);
+  const submittingRef = useRef(false);
 
   const submit = async (e) => {
     e.preventDefault();
+    // `disabled={loading}` only blocks a second submit once React has
+    // re-rendered — a fast double-click/double-tap can fire this handler
+    // twice before that happens, sending two createCompany requests and
+    // leaving two company rows for the same owner in the backend. Guard
+    // synchronously here so that can't happen.
+    if (submittingRef.current) return;
     if (!name.trim()) {
       setError("Введите название компании");
       return;
@@ -34,12 +41,14 @@ export default function CreateCompanyForm({ onCreated }) {
       setError("Укажите дату создания компании");
       return;
     }
+    submittingRef.current = true;
     setLoading(true);
     setError("");
     try {
       const { coords, reason } = await geocodeAddress(address);
       if (!coords) {
         setError(LOCATION_ERROR_MESSAGES[reason] ?? LOCATION_ERROR_MESSAGES.unavailable);
+        submittingRef.current = false;
         setLoading(false);
         return;
       }
@@ -57,6 +66,7 @@ export default function CreateCompanyForm({ onCreated }) {
       setTimeout(() => onCreated?.(company), 1600);
     } catch (err) {
       setError(err.message);
+      submittingRef.current = false;
     } finally {
       setLoading(false);
     }
