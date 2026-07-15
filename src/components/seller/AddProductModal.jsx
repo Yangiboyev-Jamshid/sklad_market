@@ -42,7 +42,9 @@ export default function AddProductModal({ open, onClose, companyId }) {
         if (!companyId) setResolvedCompanyId(c.id);
         setCompanyLocation({ regionId: c.regionId ?? null, districtId: c.districtId ?? null });
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!companyId) setError("Не удалось определить вашу компанию. Закройте окно и попробуйте снова.");
+      });
   }, [open, companyId]);
 
   const fileInputRef = useRef(null);
@@ -81,6 +83,7 @@ export default function AddProductModal({ open, onClose, companyId }) {
     setError(""); setSuccess("");
     if (!name.trim()) { setError("Введите название товара"); return; }
     if (!price || isNaN(Number(price))) { setError("Введите корректную цену"); return; }
+    if (!resolvedCompanyId) { setError("Не удалось определить вашу компанию. Закройте окно и попробуйте снова."); return; }
 
     setLoading(true);
     try {
