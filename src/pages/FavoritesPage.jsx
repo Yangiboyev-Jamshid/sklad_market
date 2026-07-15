@@ -41,7 +41,10 @@ export default function FavoritesPage() {
   }, []);
 
   useEffect(() => {
-    if (view !== "map" || tab !== "products" || productMapLoaded) return;
+    // Wait for favorites to finish loading — building the map from `products`
+    // while getFavorites is still in flight would use an empty favoriteIds
+    // set, show a zero-pin map, and mark itself "loaded" so it never retries.
+    if (view !== "map" || tab !== "products" || productMapLoaded || loadingP) return;
     const id = setTimeout(() => setProductMapLoading(true), 0);
     const favoriteIds = new Set(products.map((p) => p.id));
     getCatalogMap({ page: 1, perPage: 200 })
@@ -55,10 +58,10 @@ export default function FavoritesPage() {
         setProductMapLoaded(true);
       });
     return () => clearTimeout(id);
-  }, [view, tab, products, productMapLoaded, navigate]);
+  }, [view, tab, products, productMapLoaded, loadingP, navigate]);
 
   useEffect(() => {
-    if (view !== "map" || tab !== "companies" || companyMapLoaded) return;
+    if (view !== "map" || tab !== "companies" || companyMapLoaded || loadingC) return;
     const id = setTimeout(() => setCompanyMapLoading(true), 0);
     const favoriteIds = new Set(companies.map((c) => c.id));
     getCompaniesMap({ page: 1, per_page: 100 })
@@ -72,7 +75,7 @@ export default function FavoritesPage() {
         setCompanyMapLoaded(true);
       });
     return () => clearTimeout(id);
-  }, [view, tab, companies, companyMapLoaded, navigate]);
+  }, [view, tab, companies, companyMapLoaded, loadingC, navigate]);
 
   const normalizeProduct = (p) => ({
     id: p.id,
