@@ -24,6 +24,7 @@ export default function AddProductModal({ open, onClose, companyId }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     if (!open) return;
@@ -81,10 +82,12 @@ export default function AddProductModal({ open, onClose, companyId }) {
 
   const submit = async (publish) => {
     setError(""); setSuccess("");
+    if (submittingRef.current) return;
     if (!name.trim()) { setError("Введите название товара"); return; }
     if (!price || isNaN(Number(price))) { setError("Введите корректную цену"); return; }
     if (!resolvedCompanyId) { setError("Не удалось определить вашу компанию. Закройте окно и попробуйте снова."); return; }
 
+    submittingRef.current = true;
     setLoading(true);
     try {
       const payload = {
@@ -99,6 +102,7 @@ export default function AddProductModal({ open, onClose, companyId }) {
         price: Number(price),
         currency: "UZS",
         minProduct: minProduct ? Number(minProduct) : undefined,
+        unit,
         phone: phone.trim() || undefined,
       };
 
@@ -119,6 +123,7 @@ export default function AddProductModal({ open, onClose, companyId }) {
     } catch (err) {
       setError(err.message);
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };

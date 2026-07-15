@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Box } from "iconsax-reactjs";
 import { IoIosClose } from "react-icons/io";
 import AppShell from "../components/layout/AppShell";
@@ -21,6 +21,7 @@ export default function RequestsPage() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState(null);
+  const submittingIdsRef = useRef(new Set());
 
   useEffect(() => {
     getLeads({ page: 1, perPage: 50 })
@@ -30,6 +31,8 @@ export default function RequestsPage() {
   }, []);
 
   const cancelRequest = async (id) => {
+    if (submittingIdsRef.current.has(id)) return;
+    submittingIdsRef.current.add(id);
     setActionId(id);
     try {
       const updated = await updateLeadStatus(id, { status: "CANCELED" });
@@ -37,6 +40,7 @@ export default function RequestsPage() {
     } catch (err) {
       alert(err.message);
     } finally {
+      submittingIdsRef.current.delete(id);
       setActionId(null);
     }
   };

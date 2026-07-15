@@ -15,7 +15,7 @@ export default function EditProductModal({ product, onClose, onSaved }) {
   const [name, setName] = useState(product?.name ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [price, setPrice] = useState(product?.price ?? "");
-  const [unit, setUnit] = useState(UNITS[0]);
+  const [unit, setUnit] = useState(product?.unit ?? UNITS[0]);
   const [minProduct, setMinProduct] = useState(product?.minProduct ?? "");
   const [categoryId, setCategoryId] = useState(product?.categoryId ?? "");
 
@@ -30,6 +30,7 @@ export default function EditProductModal({ product, onClose, onSaved }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const fileInputRef = useRef(null);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     getCategories({ page: 0, size: 200 })
@@ -104,9 +105,11 @@ export default function EditProductModal({ product, onClose, onSaved }) {
   const submit = async () => {
     setError("");
     setSuccess("");
+    if (submittingRef.current) return;
     if (!name.trim()) { setError("Введите название товара"); return; }
     if (!price || isNaN(Number(price))) { setError("Введите корректную цену"); return; }
 
+    submittingRef.current = true;
     setLoading(true);
     try {
       const updated = await updateProduct(product.id, {
@@ -116,6 +119,7 @@ export default function EditProductModal({ product, onClose, onSaved }) {
         price: Number(price),
         currency: "UZS",
         minProduct: minProduct ? Number(minProduct) : undefined,
+        unit,
         categoryId: categoryId ? Number(categoryId) : undefined,
         companyId: product.companyId,
         regionId: product.regionId,
@@ -128,6 +132,7 @@ export default function EditProductModal({ product, onClose, onSaved }) {
     } catch (err) {
       setError(err.message);
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
