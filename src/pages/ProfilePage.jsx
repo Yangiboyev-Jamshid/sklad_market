@@ -155,7 +155,12 @@ export default function ProfilePage() {
       <AppShell>
         <div className="mx-auto p-4 sm:p-10 flex items-center justify-center">
           {isSeller ? (
-            <CreateCompanyForm onCreated={setCompany} />
+            <CreateCompanyForm
+              onCreated={(c) => {
+                setError("");
+                setCompany(c);
+              }}
+            />
           ) : (
             <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-6 sm:p-10 max-w-lg mx-auto text-center transition-colors">
               <p className="font-semibold text-lg text-ink-900 dark:text-white mb-1">Создание компании недоступно</p>

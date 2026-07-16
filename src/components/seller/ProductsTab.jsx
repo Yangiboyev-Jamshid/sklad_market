@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
 import { Edit2, Trash, Archive } from "iconsax-reactjs";
-import { getMyProducts, deleteProduct, archiveProduct } from "../../api/api";
+import { getMyCompany, getMyProducts, deleteProduct, archiveProduct } from "../../api/api";
 import EditProductModal from "./EditProductModal";
 import ProductThumb from "../ui/ProductThumb";
 
 export default function ProductsTab() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [actionId, setActionId] = useState(null); // tracks which item is pending action
+  const [actionId, setActionId] = useState(null); 
   const [editingProduct, setEditingProduct] = useState(null);
 
   useEffect(() => {
-    getMyProducts({ page: 1, per_page: 50 })
-      .then((data) => setProducts(data?.items ?? []))
+    getMyCompany()
+      .then((company) => getMyProducts({ page: 1, per_page: 50, company_id: company.id }))
+      .then((data) => setProducts(data?.items ?? data?.content ?? []))
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
   }, []);

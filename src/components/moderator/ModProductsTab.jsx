@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import PillToggle from "../ui/PillToggle";
 import ProductThumb from "../ui/ProductThumb";
-import { getProductModerationQueue, getMyProducts, approveProduct, rejectProduct } from "../../api/api";
+import { getProductModerationQueue, getMyCompany, getMyProducts, approveProduct, rejectProduct } from "../../api/api";
 import { IoIosClose } from "react-icons/io";
 import { GrFormCheckmark } from "react-icons/gr";
 
@@ -22,9 +22,8 @@ export default function ModProductsTab() {
         const data = await getProductModerationQueue();
         setProducts(data ?? []);
       } else {
-        // "DRAFT" isn't a valid status on this endpoint (only PENDING/APPROVED/REJECTED/ARCHIVED
-        // exist server-side) — there's no draft concept in the API yet, so no filter is applied.
-        const data = await getMyProducts({ page: 1, per_page: 50 });
+        const company = await getMyCompany();
+        const data = await getMyProducts({ page: 1, per_page: 50, company_id: company.id });
         setProducts(data?.items ?? []);
       }
     } catch {

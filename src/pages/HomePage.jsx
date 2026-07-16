@@ -8,11 +8,6 @@ import { Input } from "antd";
 import Catalog from "../components/modal/Catalog";
 import { getHomepageData, getCatalogBySaleType, searchProducts, getPopularProducts, getAllProducts } from "../api/api";
 
-// /catalog/saleType/product and /catalog/popular don't populate images on
-// their product DTOs (always images: null / imageUrl: null) even for
-// products that do have images — /catalog is the only endpoint that returns
-// them. HomePage fetches that image map once and merges it in by id so
-// products still show a picture instead of the placeholder.
 function normalizeProduct(p, imageMap) {
   return {
     id: p.id,
@@ -62,10 +57,6 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    // Wait for imageMap to resolve (even to an empty Map on failure) before
-    // fetching products — getCatalogBySaleType/getPopularProducts never carry
-    // image data themselves, so fetching products while imageMap is still
-    // null renders the whole grid with placeholders instead of pictures.
     if (imageMap === null) return;
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
@@ -97,7 +88,7 @@ export default function HomePage() {
       <div className="p-4 sm:p-6 md:p-10 bg-[#F9FAFB] dark:bg-[#121212]">
         <div className="relative mb-5 sm:mb-6">
           <div className="flex items-center gap-3">
-            <button onClick={() => setIsOpen(!isOpen)} className="flex items-center gap-2 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-4 sm:px-5 py-3 sm:py-3 text-xs sm:text-sm font-medium text-ink-700 dark:text-ink-200 hover:border-ink-300 dark:hover:border-ink-600 transition-colors shrink-0">
+            <button onClick={() => setIsOpen(!isOpen)} className="flex items-center gap-2 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-medium text-ink-700 dark:text-ink-200 hover:border-ink-300 dark:hover:border-ink-600 transition-colors shrink-0">
               {isOpen ? (
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                   <path d="M9.16937 15.5794C8.97937 15.5794 8.78938 15.5094 8.63938 15.3594C8.34938 15.0694 8.34938 14.5894 8.63938 14.2994L14.2994 8.63938C14.5894 8.34938 15.0694 8.34938 15.3594 8.63938C15.6494 8.92937 15.6494 9.40937 15.3594 9.69937L9.69937 15.3594C9.55937 15.5094 9.35937 15.5794 9.16937 15.5794Z" fill="currentColor" />
@@ -106,7 +97,7 @@ export default function HomePage() {
               ) : (
                 <Sort size={24} variant="Linear" />
               )}
-              <span>Каталог</span>
+              <span className="sm:inline hidden">Каталог</span>
             </button>
             <div className="flex w-full items-center gap-2 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-4 sm:px-5 py-2.5 sm:py-3">
               <SearchNormal1 size={18} className="text-ink-400 shrink-0" />

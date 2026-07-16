@@ -2,9 +2,6 @@
 function groupPinsByLocation(items, getLat, getLng) {
   const groups = new Map();
   items.forEach((item) => {
-    // Backend returns lat/lng as strings (e.g. "42.449...") on every endpoint
-    // that has them — coerce instead of type-checking, or every pin gets
-    // silently filtered out and the map renders empty.
     const lat = Number(getLat(item));
     const lng = Number(getLng(item));
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;

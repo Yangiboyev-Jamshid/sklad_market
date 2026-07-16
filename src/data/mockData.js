@@ -1,5 +1,3 @@
-// Static UI content with no backend counterpart in any of the skladmarket.uz services
-// (seller trend chart sample data, tariff plans, AI agent prompt suggestions).
 export const trendData = [
   { month: "Март", value: 320 },
   { month: "Апр", value: 540 },

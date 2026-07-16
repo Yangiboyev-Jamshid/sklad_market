@@ -1,6 +1,3 @@
-// Real API client for skladmarket.uz (auth/user/company/category/product/lead/chat/notification/report
-// microservices, all proxied under /api — see vite.config.js). Every function below keeps the same
-// name/signature the app already relies on; only the implementation talks to the real backend now.
 import http, { unwrap } from "./http";
 
 function toSingleFileForm(file) {
@@ -104,16 +101,6 @@ export async function getSearchSuggestions(q) {
 }
 
 // ─── Companies ────────────────────────────────────────────────────────────────
-//
-// Per the company-service OpenAPI spec: GET /companies returns CompanyShortDTO
-// (id, name, slug, logoUrl, verificationStatus, isBlocked, createdAt only) and
-// GET /companies/{slug} returns CompanySlugMapResponse (id, name, slug, status,
-// regionId, districtId, address, lat, lng). Neither ever returns stir,
-// phonePrimary, phoneSecondary, website, description, shortDescription or
-// coverUrl — there is no backend endpoint that reads those back for the owner.
-// The only responses that include them are the POST create / PUT update
-// responses (CompanyResponseDTO), so we cache those locally and layer them
-// under the always-fresh data from the two GET endpoints above.
 
 const COMPANY_CACHE_KEY = "sklad_company_detail_cache";
 
@@ -124,7 +111,6 @@ function cacheCompanyDetail(company) {
     all[company.id] = { ...all[company.id], ...company };
     localStorage.setItem(COMPANY_CACHE_KEY, JSON.stringify(all));
   } catch {
-    // storage unavailable — caching is a best-effort convenience, not required
   }
   return company;
 }
@@ -139,16 +125,24 @@ function getCachedCompanyDetail(id) {
 }
 
 export async function getMyCompany() {
-  const companies = await unwrap(http.get("/companies"));
-  if (!companies?.length) throw new Error("Компания не найдена");
-  const summary = companies[0];
+  const summary = await unwrap(http.get("/companies"));
+  if (!summary?.id) throw new Error("Компания не найдена");
   const [slugDetail, cached] = await Promise.all([
     summary?.slug ? getCompanyBySlug(summary.slug).catch(() => null) : Promise.resolve(null),
     Promise.resolve(getCachedCompanyDetail(summary.id)),
   ]);
-  // Precedence low -> high: cached (fills gaps no GET endpoint covers) <
-  // summary (always fresh) < slugDetail (freshest for region/district/address/coords).
-  return { ...cached, ...summary, ...slugDetail };
+  // getCompanyBySlug merges in its own stale localStorage cache for fields
+  // CompanySlugMapResponse doesn't carry (e.g. verificationStatus), so slugDetail
+  // can silently smuggle an outdated status through. summary (GET /companies) is
+  // the only source that's guaranteed fresh for verificationStatus/isBlocked —
+  // it must win no matter what slugDetail/cached say.
+  return {
+    ...cached,
+    ...summary,
+    ...slugDetail,
+    verificationStatus: summary.verificationStatus,
+    isBlocked: summary.isBlocked,
+  };
 }
 
 export async function getPublicCompanies({ page = 1, per_page = 20 } = {}) {
@@ -161,11 +155,6 @@ export async function searchCompanies({ query, page = 1, per_page = 20 } = {}) {
 
 export async function getCompanyBySlug(slug) {
   const company = await unwrap(http.get(`/companies/${slug}`));
-  // Layer in whatever this browser cached from a create/update response —
-  // the GET above never returns phonePrimary/website/description/etc, and
-  // this path is hit both for "my own company" (via id-less /company route)
-  // and for a direct /company/{slug} visit to your own company, so the
-  // cache has to apply here, not just in getMyCompany.
   const cached = company?.id ? getCachedCompanyDetail(company.id) : null;
   return cached ? { ...cached, ...company } : company;
 }
@@ -184,9 +173,6 @@ export async function getCompaniesMap({ page = 1, per_page = 20 } = {}) {
 
 export async function createCompany(data) {
   const company = await unwrap(http.post("/companies/create", data));
-  // CompanyResponseDTO (the create response) never echoes lat/lng/region back —
-  // keep what we actually sent so the cached copy (and AddProductModal, which
-  // reads regionId straight from the company) stays complete.
   return cacheCompanyDetail({
     ...company,
     lat: data.lat,
@@ -207,8 +193,6 @@ export async function submitCompanyVerification(id) {
 
 export async function uploadCompanyLogo(id, file) {
   const result = await unwrap(http.post(`/companies/${id}/logo`, toSingleFileForm(file)));
-  // GET /companies and GET /companies/{slug} never echo logoUrl back for the owner
-  // (see getMyCompany above) — cache it now or it disappears on the next reload.
   if (result?.url) cacheCompanyDetail({ id, logoUrl: result.url });
   return result;
 }

@@ -69,8 +69,6 @@ export default function ProductPage() {
 
   const chatSubmittingRef = useRef(false);
   const handleOpenChat = async () => {
-    // product.company is not a field the real API returns — only the flat
-    // product.companyId is, so this must not read a nested company object.
     if (!product?.companyId || chatSubmittingRef.current) return;
     chatSubmittingRef.current = true;
     try {

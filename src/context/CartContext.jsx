@@ -30,8 +30,6 @@ export function CartProvider({ children }) {
     }
   }, []);
 
-  // Re-fetch whenever login state flips (login populates the cart, logout clears it) —
-  // CartProvider mounts once for the whole session, so this can't just be a mount-time effect.
   useEffect(() => {
     if (isLoggedIn) reloadCart();
     else setItems([]);
@@ -55,13 +53,11 @@ export function CartProvider({ children }) {
           return [...prev, newItem];
         });
       } else {
-        // Server returned null/empty — reload to get fresh cart state
         await reloadCart();
       }
     } catch (err) {
       console.error("addToCart error:", err.message);
       alert(err.message);
-      // On error, reload cart to sync with server
       await reloadCart();
     }
   }, [navigate, reloadCart]);
@@ -79,7 +75,6 @@ export function CartProvider({ children }) {
   }, []);
 
   const removeFromCart = useCallback(async (id) => {
-    // Optimistic
     setItems((prev) => prev.filter((i) => i.id !== id));
     try {
       await apiRemoveCartItem(id);
@@ -109,7 +104,6 @@ export function CartProvider({ children }) {
       const data = await getFavorites({ page: 1, perPage: 100 });
       setFavorites(new Set((data?.content ?? []).map((p) => p.id)));
     } catch {
-      // not logged in or request failed — leave favorites empty
     }
   }, []);
 
@@ -150,7 +144,6 @@ export function CartProvider({ children }) {
       const data = await getCompanyFavorites({ page: 1, perPage: 100 });
       setCompanyFavorites(new Set((data?.content ?? []).map((c) => c.id)));
     } catch {
-      // not logged in or request failed — leave company favorites empty
     }
   }, []);
 

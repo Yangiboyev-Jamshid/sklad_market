@@ -18,10 +18,6 @@ const VERIFICATION_BADGE = {
   REJECTED: { label: "Отклонён", cls: "text-danger-500 dark:text-danger-400" },
 };
 
-// Backend отклоняет ЛЮБОЕ обновление компании, если хоть одно из этих полей
-// пусто — даже если меняется совсем другое поле. lat/lng можно молча
-// восстановить через геолокацию; для остальных источника данных нет, поэтому
-// сохранение просто нужно понятно объяснить, а не падать с сырой ошибкой бэкенда.
 const REQUIRED_COMPANY_FIELDS = {
   stir: "ИНН (STIR)",
   phonePrimary: "Телефон",
@@ -34,9 +30,6 @@ function isEmpty(value) {
   return value === undefined || value === null || value === "";
 }
 
-// Resolves lat/lng silently by geocoding the company's address when the
-// stored record doesn't have them yet, then reports which required fields
-// are still missing (nothing this function can recover without asking the user).
 async function resolveRequiredCompanyFields(company, overrides) {
   const merged = { ...company, ...overrides };
   if ((isEmpty(merged.lat) || isEmpty(merged.lng)) && !isEmpty(merged.address)) {
@@ -98,19 +91,34 @@ export default function SettingsTab() {
 
   const handleSubmitVerification = async () => {
     if (!company) return;
-    // Backend rejects verification with a generic, unhelpful message if any
-    // of these are missing — check first so we can point at exactly what's
-    // absent instead (same required-fields list used for saving edits).
-    const missing = Object.keys(REQUIRED_COMPANY_FIELDS).filter((k) => isEmpty(company[k]));
-    if (missing.length > 0) {
-      setError(`Перед отправкой на верификацию заполните: ${missing.map((k) => REQUIRED_COMPANY_FIELDS[k]).join(", ")}`);
-      return;
-    }
-    if (!window.confirm("Отправить компанию на верификацию?")) return;
     setVerifying(true);
     setError("");
+    let fresh;
     try {
-      await submitCompanyVerification(company.id);
+      fresh = await getMyCompany();
+      setCompany(fresh);
+    } catch (err) {
+      setError(err.message);
+      setVerifying(false);
+      return;
+    }
+    if (!["DRAFT", "REJECTED"].includes(fresh.verificationStatus)) {
+      setError("Компания уже отправлена на верификацию или уже верифицирована.");
+      setVerifying(false);
+      return;
+    }
+    const missing = Object.keys(REQUIRED_COMPANY_FIELDS).filter((k) => isEmpty(fresh[k]));
+    if (missing.length > 0) {
+      setError(`Перед отправкой на верификацию заполните: ${missing.map((k) => REQUIRED_COMPANY_FIELDS[k]).join(", ")}`);
+      setVerifying(false);
+      return;
+    }
+    if (!window.confirm("Отправить компанию на верификацию?")) {
+      setVerifying(false);
+      return;
+    }
+    try {
+      await submitCompanyVerification(fresh.id);
       setCompany((prev) => ({ ...prev, verificationStatus: "PENDING" }));
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -237,7 +245,14 @@ export default function SettingsTab() {
         </div>
       );
     }
-    return <CreateCompanyForm onCreated={setCompany} />;
+    return (
+      <CreateCompanyForm
+        onCreated={(c) => {
+          setError("");
+          setCompany(c);
+        }}
+      />
+    );
   }
 
   const vStatus = VERIFICATION_BADGE[company?.verificationStatus] ?? VERIFICATION_BADGE.DRAFT;

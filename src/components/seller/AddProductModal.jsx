@@ -36,8 +36,6 @@ export default function AddProductModal({ open, onClose, companyId }) {
       })
       .catch(() => {});
 
-    // Product location always follows the seller's own company location —
-    // no need to ask for it again per product.
     getMyCompany()
       .then((c) => {
         if (!companyId) setResolvedCompanyId(c.id);

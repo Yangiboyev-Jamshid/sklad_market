@@ -1,5 +1,3 @@
-// Real backend HTTP client (skladmarket.uz, proxied under /api — see vite.config.js).
-// Every endpoint responds with the same envelope: { success, data, message }.
 import axios from "axios";
 
 const http = axios.create({ baseURL: "/api/v1" });
@@ -30,8 +28,6 @@ http.interceptors.response.use(
   async (error) => {
     const { config, response } = error;
     const isAuthEndpoint = config?.url?.includes("/auth/");
-
-    // ── DEBUG: log full server response for 5xx and 400 errors ───────────────
     if (response?.status >= 500 || response?.status === 400) {
       console.group(`🔴 ${response.status >= 500 ? "SERVER" : "REQUEST"} ERROR ${response.status} — ${config?.method?.toUpperCase()} ${config?.url}`);
       console.log("Params:", config?.params);
@@ -53,9 +49,6 @@ http.interceptors.response.use(
           refreshPromise = null;
         }
       }
-      // No refresh token, or refresh itself failed — the session is dead.
-      // Clear it and bounce to /login instead of leaving the app silently
-      // spamming every protected endpoint with a token that will never work.
       if (localStorage.getItem("access_token")) {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
@@ -70,11 +63,6 @@ http.interceptors.response.use(
   }
 );
 
-// Turns whatever shape the backend/network throws at us into one readable
-// Russian sentence — the raw payload varies wildly (plain string, Spring's
-// {timestamp,status,error,path}, {errors:{field: "message"}} validation maps,
-// {errors:[...]} lists, or no response at all for network failures) and none
-// of it is fit to show a user as-is.
 function extractErrorMessage(error) {
   const { response } = error;
 

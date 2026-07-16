@@ -5,7 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { trendData } from "../../data/mockData";
 import ProductThumb from "../ui/ProductThumb";
 import { useTheme } from "../../context/ThemeContext";
-import { getMyProducts, getSellerLeads, getChats } from "../../api/api";
+import { getMyCompany, getMyProducts, getSellerLeads, getChats } from "../../api/api";
 
 function totalOf(data) {
   return data?.meta?.total ?? data?.items?.length ?? 0;
@@ -44,11 +44,14 @@ export default function OverviewTab() {
   const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      getMyProducts({ page: 1, per_page: 1, status: "APPROVED" }).catch(() => null),
-      getSellerLeads({ page: 1, perPage: 1 }).catch(() => null),
-      getChats({ page: 1, per_page: 1 }).catch(() => null),
-    ])
+    getMyCompany()
+      .then((company) =>
+        Promise.all([
+          getMyProducts({ page: 1, per_page: 1, status: "APPROVED", company_id: company.id }).catch(() => null),
+          getSellerLeads({ page: 1, perPage: 1 }).catch(() => null),
+          getChats({ page: 1, per_page: 1 }).catch(() => null),
+        ])
+      )
       .then(([products, leads, chats]) => {
         setStats({
           activeProducts: totalOf(products),
@@ -87,7 +90,7 @@ export default function OverviewTab() {
           </div>
         </div>
         <div className="h-72 sm:h-[330px] -ml-2 sm:-ml-4">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <AreaChart data={trendData} margin={{ top: 10, right: 0, left: -8, bottom: 0 }}>
               <defs>
                 <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">

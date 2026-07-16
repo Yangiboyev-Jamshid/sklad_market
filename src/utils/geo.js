@@ -1,6 +1,3 @@
-// Turns a typed address/city into lat/lng via OpenStreetMap's free Nominatim
-// geocoder — no device location permission needed. Best-effort: returns null
-// coords on any failure so the caller can fall back or ask the user to retry.
 export async function geocodeAddress(query) {
   if (!query?.trim()) return { coords: null, reason: "empty" };
   try {

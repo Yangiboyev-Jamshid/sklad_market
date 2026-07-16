@@ -7,12 +7,6 @@ import { getCompanyBySlug, getPublicCompanies } from "../../api/api";
 
 const VERIFIED_STATUSES = ["VERIFIED", "ACTIVE"];
 
-// Neither /companies/{slug} nor /company-favorites return logoUrl/createdAt
-// (confirmed against the live backend — only /companies/public does), so
-// callers like FavoritesPage that source their company list from those
-// endpoints never get a logo or a "с <year> г." founding date. Fetch the
-// public list's id -> {logoUrl, createdAt} map once and reuse it everywhere
-// CompanyCard needs a fallback.
 let publicExtrasPromise = null;
 function getPublicCompanyExtras() {
   if (!publicExtrasPromise) {
