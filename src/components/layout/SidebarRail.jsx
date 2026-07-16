@@ -99,12 +99,12 @@ export default function SidebarRail() {
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-active"
-                      className="absolute inset-0 rounded-xl bg-brand-50 dark:bg-brand-500/20"
+                      className="absolute inset-0 rounded-xl bg-brand-50 dark:bg-brand-500/15"
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
                   <span className="w-11 h-11 flex items-center justify-center shrink-0 relative z-10">
-                    <Icon size={20} variant={isActive ? "Bold" : "Linear"} className="dark:text-[#CDD1D6] text-[#292D32]" />
+                    <Icon size={20} variant={isActive ? "Bold" : "Linear"} />
                   </span>
                   <span className="relative z-10 whitespace-nowrap text-sm font-medium pr-4 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                     {label}
