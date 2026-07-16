@@ -1,105 +1,127 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Call,
-  Sms,
-  Lock1,
-  Eye,
-  EyeSlash,
-  User,
-  Sun1,
-  Moon,
-  Message,
-  Profile,
-  Warning2,
-} from "iconsax-reactjs";
-import { useAuth } from "../context/AuthContext";
+import { motion } from "framer-motion";
+import { Sun1, Moon, TickCircle } from "iconsax-reactjs";
 import { useTheme } from "../context/ThemeContext";
-import { login as apiLogin, registerUser } from "../api/api";
+import { useAuth } from "../context/AuthContext";
+import { verifyAccount, login as apiLogin } from "../api/api";
 
-export default function LoginPage() {
+const CODE_LENGTH = 4;
+
+export default function EmailVerificationPage() {
   const location = useLocation();
-  const [mode, setMode] = useState(location.state?.mode === "register" ? "register" : "login");
-  const [method, setMethod] = useState("phone");
-  const [role, setRole] = useState("buyer");
-  const [showPassword, setShowPassword] = useState(false);
+  const email = location.state?.username || "";
+  const password = location.state?.password || "";
 
-  const [loginPhone, setLoginPhone] = useState("");
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [loginError, setLoginError] = useState("");
-  const [regName, setRegName] = useState("");
-  const [regCompany, setRegCompany] = useState("");
-  const [regEmail, setRegEmail] = useState("");
-  const [regPassword, setRegPassword] = useState("");
-  const [regLoading, setRegLoading] = useState(false);
-  const [regError, setRegError] = useState("");
-
+  const [digits, setDigits] = useState(Array(CODE_LENGTH).fill(""));
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [shake, setShake] = useState(false);
+  const [done, setDone] = useState(false);
+  const [message, setMessage] = useState("");
 
   const navigate = useNavigate();
-  const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const loginSubmittingRef = useRef(false);
-  const regSubmittingRef = useRef(false);
+  const { login } = useAuth();
+  const submittingRef = useRef(false);
+  const inputRefs = useRef([]);
 
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    if (loginSubmittingRef.current) return;
-    setLoginError("");
-    loginSubmittingRef.current = true;
-    setLoginLoading(true);
+  useEffect(() => {
+    inputRefs.current[0]?.focus();
+  }, []);
 
+  const triggerShake = () => {
+    setShake(true);
+    setTimeout(() => setShake(false), 450);
+  };
+
+  const handleVerify = async (fullCode) => {
+    if (submittingRef.current || fullCode.length !== CODE_LENGTH) return;
+    if (!email) {
+      setError("Не удалось определить email. Пройдите регистрацию заново.");
+      return;
+    }
+    setError("");
+    submittingRef.current = true;
+    setLoading(true);
     try {
-      const username = method === "phone" ? loginPhone : loginEmail;
-      const data = await apiLogin({ username, password: loginPassword });
+      const res = await verifyAccount({ username: email, code: fullCode });
 
-      login(data);
-      navigate("/");
+      if (password) {
+        try {
+          const loginData = await apiLogin({ username: email, password });
+          login(loginData);
+          navigate("/");
+          return;
+        } catch {
+          // Account is verified, but auto-login failed — fall back to manual login.
+        }
+      }
+
+      setMessage(res?.message || "Аккаунт успешно подтверждён!");
+      setDone(true);
     } catch (err) {
-      setLoginError(err.message || "Неверный логин или пароль");
+      setError(err.message);
+      triggerShake();
+      setDigits(Array(CODE_LENGTH).fill(""));
+      inputRefs.current[0]?.focus();
     } finally {
-      loginSubmittingRef.current = false;
-      setLoginLoading(false);
+      submittingRef.current = false;
+      setLoading(false);
     }
   };
 
-  const handleRegisterSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (regSubmittingRef.current) return;
-    setRegError("");
-    regSubmittingRef.current = true;
-    setRegLoading(true);
-    try {
-      const data = await registerUser({
-        firstName: regName,
-        lastName: regCompany,
-        username: regEmail,
-        password: regPassword,
-        roles: role.toUpperCase(),
+    handleVerify(digits.join(""));
+  };
+
+  const handleDigitChange = (index, rawValue) => {
+    const digit = rawValue.replace(/\D/g, "").slice(-1);
+    const next = [...digits];
+    next[index] = digit;
+    setDigits(next);
+    if (digit && index < CODE_LENGTH - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+    if (next.every((d) => d)) {
+      handleVerify(next.join(""));
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !digits[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+      setDigits((prev) => {
+        const next = [...prev];
+        next[index - 1] = "";
+        return next;
       });
-      if (data?.success) {
-        navigate("/confirm-email", { state: { username: regEmail, password: regPassword } });
-      }
-    } catch (err) {
-      setRegError(err.message);
-    } finally {
-      regSubmittingRef.current = false;
-      setRegLoading(false);
+    }
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, CODE_LENGTH).split("");
+    if (!pasted.length) return;
+    const next = Array(CODE_LENGTH).fill("");
+    pasted.forEach((d, i) => { next[i] = d; });
+    setDigits(next);
+    inputRefs.current[Math.min(pasted.length, CODE_LENGTH) - 1]?.focus();
+    if (next.every((d) => d)) {
+      handleVerify(next.join(""));
     }
   };
 
   return (
-    <div className="w-full sm:h-auto h-auto bg-white dark:bg-[#0D0D0D] sm:bg-[#F4F6F8] sm:dark:bg-[#121212] flex flex-col items-center justify-center px-0 py-6 sm:px-4 sm:py-10 transition-colors relative">
+    <div className="min-h-screen w-full bg-surface dark:bg-[#121212] flex flex-col items-center justify-center px-4 py-8 sm:py-10 transition-colors relative">
       <button
         onClick={toggleTheme}
-        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] flex items-center justify-center text-ink-600 dark:text-amber-300 shadow-card hover:scale-105 transition-transform"
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#0D0D0D] flex items-center justify-center text-ink-600 dark:text-amber-300 shadow-card hover:scale-105 transition-transform"
         aria-label="Переключить тему"
       >
         {theme === "dark" ? <Sun1 size={18} variant="Bold" /> : <Moon size={18} variant="Bold" />}
       </button>
-
 
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -180,292 +202,104 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="w-full max-w-none sm:max-w-[520px] bg-white dark:bg-[#0D0D0D] rounded-none sm:rounded-[30px] shadow-none sm:shadow-card border-0 sm:border sm:border-white/80 dark:sm:border-[#1C1C1C] px-5 pb-5 transition-colors sm:p-12"
+        className="w-full max-w-md bg-white dark:bg-[#0D0D0D] rounded-3xl shadow-card border border-ink-100 dark:border-[#0D0D0D] p-5 sm:p-7 transition-colors"
       >
-        <div className="flex flex-col items-center text-center mb-4 sm:hidden">
-          <h1 className={`text-[24px] leading-tight font-extrabold text-black dark:text-white ${mode === "login" ? "mb-6" : ""}`}>
-            {mode === "login" ? "Авторизация" : "Регистрация"}
-          </h1>
-          {mode === "register" && (
-            <p className="mt-2 mb-6 text-[14px] leading-tight text-ink-400">Зарегистрируйте свой новый аккаунт</p>
-          )}
-        </div>
+        {!done ? (
+          <>
+            <h2 className="text-lg text-center font-semibold text-ink-900 dark:text-white mb-1 text-center">
+              Подтверждение Email
+            </h2>
+            <p className="text-sm text-center text-ink-400 mb-8 text-center leading-relaxed">
+              {email
+                ? <>Мы отправили 4-значный код на <span className="font-medium text-ink-600 dark:text-ink-300">{email}</span></>
+                : "Введите 4-значный код подтверждения, отправленный на ваш email"}
+            </p>
 
-        <div className="hidden sm:flex items-center bg-ink-100 dark:bg-[#171717] rounded-full p-1 mb-10">
-          <button
-            type="button"
-            onClick={() => setMode("login")}
-            className={`flex-1 text-sm font-semibold py-2.5 rounded-full transition-colors ${mode === "login"
-              ? "bg-white dark:bg-[#0D0D0D] text-black dark:text-white shadow-card"
-              : "text-ink-400 hover:text-ink-600"
-              }`}
-          >
-            Войти
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("register")}
-            className={`flex-1 text-sm font-semibold py-2.5 rounded-full transition-colors ${mode === "register"
-              ? "bg-white dark:bg-[#0D0D0D] text-black dark:text-white shadow-card"
-              : "text-ink-400 hover:text-ink-600"
-              }`}
-          >
-            Регистрация
-          </button>
-        </div>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+              <motion.div
+                animate={shake ? { x: [0, -10, 10, -8, 8, -4, 4, 0] } : { x: 0 }}
+                transition={{ duration: 0.45 }}
+                className="flex justify-center gap-3 sm:gap-4"
+                onPaste={handlePaste}
+              >
+                {digits.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => (inputRefs.current[index] = el)}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={1}
+                    value={digit}
+                    disabled={loading}
+                    onChange={(e) => handleDigitChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    className={`w-14 h-16 sm:w-16 sm:h-[4.5rem] text-center text-2xl font-bold rounded-2xl border-2 outline-none transition-all bg-ink-50 dark:bg-[#171717] text-ink-900 dark:text-white disabled:opacity-50 ${error
+                        ? "border-red-400 dark:border-red-500/60"
+                        : digit
+                          ? "border-brand-400 dark:border-brand-500/60 bg-white dark:bg-[#0D0D0D]"
+                          : "border-ink-200 dark:border-[#232323] focus:border-brand-400 dark:focus:border-brand-500 focus:bg-white dark:focus:bg-[#0D0D0D]"
+                      }`}
+                  />
+                ))}
+              </motion.div>
 
-        <AnimatePresence mode="wait">
-          {mode === "login" ? (
-            <motion.form
-              key="login"
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 8 }}
-              transition={{ duration: 0.2 }}
-              onSubmit={handleLoginSubmit}
-              className="flex flex-col gap-4 sm:h-auto h-screen"
-            >
-              <div className="grid grid-cols-2 gap-2.5 mb-6 sm:mb-10">
-                <MethodButton
-                  icon={Call}
-                  label="Телефон"
-                  active={method === "phone"}
-                  onClick={() => { setMethod("phone"); setLoginEmail(""); setLoginError(""); }}
-                />
-                <MethodButton
-                  icon={Message}
-                  label="Email"
-                  active={method === "email"}
-                  onClick={() => { setMethod("email"); setLoginPhone(""); setLoginError(""); }}
-                />
-              </div>
+              {error && <ErrorMsg>{error}</ErrorMsg>}
 
-              <InputField
-                icon={method === "phone" ? Call : Sms}
-                placeholder={method === "phone" ? "Номер телефон" : "Email адрес"}
-                type={method === "phone" ? "tel" : "email"}
-                inputMode={method === "phone" ? "numeric" : undefined}
-                value={method === "phone" ? loginPhone : loginEmail}
-                onChange={(e) => {
-                  if (method === "phone") {
-                    setLoginPhone(e.target.value.replace(/\D/g, ""));
-                  } else {
-                    setLoginEmail(e.target.value);
-                  }
-                }}
-                required
-              />
-              <InputField
-                icon={Lock1}
-                placeholder="Введите пароль"
-                type={showPassword ? "text" : "password"}
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                required
-                trailing={
-                  <button type="button" onClick={() => setShowPassword((v) => !v)} className="text-ink-400">
-                    {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
-                  </button>
-                }
-              />
-
-              {loginError && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-start gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-2.5"
-                >
-                  <Warning2 size={18} variant="Bold" className="shrink-0 mt-0.5" />
-                  <span>{loginError}</span>
-                </motion.p>
+              {loading && (
+                <div className="flex items-center justify-center gap-2 text-sm text-ink-400">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Проверяем код...
+                </div>
               )}
+            </form>
 
-              <div className="flex justify-end -mt-1">
-                <button
-                  type="button"
-                  onClick={() => navigate("/forgot-password")}
-                  className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline"
-                >
-                  Забыли пароль?
-                </button>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loginLoading || !(method === "phone" ? loginPhone : loginEmail) || !loginPassword}
-                className="w-full bg-brand-600 dark:bg-[#C4C4C4] dark:text-[#0D0D0D] hover:bg-brand-700 disabled:bg-[#C4C4C4] disabled:text-white disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-colors mt-3 flex items-center justify-center gap-2"
-              >
-                {loginLoading ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                    </svg>
-                    Входим...
-                  </>
-                ) : (
-                  "Войти"
-                )}
-              </button>
-
-              <div className="relative flex items-center justify-center my-1">
-                <div className="absolute inset-x-0 h-px bg-ink-200 dark:bg-ink-700" />
-                <span className="relative bg-white dark:bg-[#0D0D0D] px-3 text-xs text-ink-400">или</span>
-              </div>
-
-              <button
-                type="button"
-                className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 font-semibold py-3.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors"
-              >
-                Войти через SKLAD ERP
-              </button>
-              <p className="text-center text-[11px] text-ink-400 mt-1 sm:hidden">
-                Нет учетной записи?{" "}
-                <button type="button" onClick={() => setMode("register")} className="font-medium text-black dark:text-white">
-                  Регистрация
-                </button>
-              </p>
-            </motion.form>
-          ) : mode === "register" ? (
-            <motion.form
-              key="register"
-              initial={{ opacity: 0, x: 8 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -8 }}
-              transition={{ duration: 0.2 }}
-              onSubmit={handleRegisterSubmit}
-              className="flex flex-col gap-4"
+            <button
+              type="button"
+              onClick={() => navigate("/login")}
+              className="w-full text-center text-xs text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 transition-colors mt-6"
             >
-              <div className="grid grid-cols-2 gap-3 sm:gap-2.5 mb-6 sm:mb-10">
-                <RoleButton label="Покупатель" sub="Ищу товары" active={role === "buyer"} onClick={() => setRole("buyer")} />
-                <RoleButton label="Продавец" sub="Продаю товары" active={role === "seller"} onClick={() => setRole("seller")} />
-              </div>
-              <InputField
-                icon={Profile}
-                placeholder="Имя"
-                value={regName}
-                onChange={(e) => setRegName(e.target.value)}
-                required
-              />
-              <InputField
-                icon={User}
-                placeholder="Фамилия"
-                value={regCompany}
-                onChange={(e) => setRegCompany(e.target.value)}
-                required
-              />
-              <InputField
-                icon={Sms}
-                placeholder="Номер телефона или Email адрес"
-                type="text"
-                inputMode="email"
-                value={regEmail}
-                onChange={(e) => setRegEmail(e.target.value)}
-                required
-              />
-              <InputField
-                icon={Lock1}
-                placeholder="Введите пароль"
-                type={showPassword ? "text" : "password"}
-                value={regPassword}
-                onChange={(e) => setRegPassword(e.target.value)}
-                required
-                trailing={
-                  <button type="button" onClick={() => setShowPassword((v) => !v)} className="text-ink-400">
-                    {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
-                  </button>
-                }
-              />
-
-              {regError && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-start gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-2.5"
-                >
-                  <Warning2 size={18} variant="Bold" className="shrink-0 mt-0.5" />
-                  <span>{regError}</span>
-                </motion.p>
-              )}
-
-              <p className="text-[12px] text-center sm:text-start sm:text-[16px] my-6 text-ink-400 leading-snug">
-                Регистрируясь, вы соглашаетесь с{" "}
-                <span className="text-brand-600 dark:text-brand-400 font-medium">условиями использования</span> и{" "}
-                <span className="text-brand-600 dark:text-brand-400 font-medium">политикой конфиденциальности</span>
-              </p>
-
-              <button
-                type="submit"
-                disabled={regLoading || !regName || !regCompany || !regEmail || !regPassword}
-                className="w-full bg-brand-600 dark:bg-[#C4C4C4] dark:text-[#0D0D0D] hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-colors mt-6 sm:mt-3 flex items-center justify-center gap-2"
-              >
-                {regLoading ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                    </svg>
-                    Регистрируем...
-                  </>
-                ) : (
-                  "Регистрация"
-                )}
-              </button>
-              <p className="text-center text-[11px] text-ink-400 mt-1 sm:hidden">
-                Уже есть учетная запись?{" "}
-                <button type="button" onClick={() => setMode("login")} className="font-medium text-black dark:text-white">
-                  Login
-                </button>
-              </p>
-            </motion.form>
-          ) : null}
-        </AnimatePresence>
+              Вернуться на страницу входа
+            </button>
+          </>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center text-center gap-4"
+          >
+            <div className="w-14 h-14 rounded-full bg-success-50 dark:bg-success-500/10 flex items-center justify-center">
+              <TickCircle size={30} variant="Bold" className="text-success-600 dark:text-success-400" />
+            </div>
+            <div>
+              <p className="font-semibold text-lg text-ink-900 dark:text-white mb-1">Готово!</p>
+              <p className="text-sm text-ink-400 dark:text-ink-500">{message}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/login")}
+              className="w-full bg-brand-600 dark:bg-[#C4C4C4] dark:text-[#0D0D0D] hover:bg-brand-700 text-white font-semibold py-3.5 rounded-xl transition-colors"
+            >
+              Войти
+            </button>
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );
 }
 
-function MethodButton({ icon: Icon, label, active, onClick }) {
+function ErrorMsg({ children }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium border transition-colors ${active
-        ? "bg-brand-50 dark:bg-brand-500/15 border-brand-200 dark:border-brand-500/40 text-brand-600 dark:text-brand-400"
-        : "border-ink-200 dark:border-[#1C1C1C] text-ink-500 dark:text-ink-400 hover:border-ink-300 dark:hover:border-ink-600"
-        }`}
+    <motion.p
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="text-sm text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-2.5"
     >
-      <Icon size={16} variant="Linear" />
-      {label}
-    </button>
-  );
-}
-
-function RoleButton({ label, sub, active, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-0.5 py-3 rounded-xl border transition-colors ${active
-        ? "bg-brand-50 dark:bg-brand-500/15 border-brand-200 dark:border-brand-500/40"
-        : "border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600"
-        }`}
-    >
-      <span className={`text-sm font-semibold ${active ? "text-brand-600 dark:text-brand-400" : "text-ink-700 dark:text-ink-200"}`}>{label}</span>
-      <span className="text-[11px] text-ink-400">{sub}</span>
-    </button>
-  );
-}
-
-function InputField({ icon: Icon, trailing, ...props }) {
-  return (
-    <div className="flex items-center gap-3 bg-ink-50 dark:bg-[#171717] border border-transparent focus-within:border-brand-300 dark:focus-within:border-brand-500 focus-within:bg-white rounded-xl px-4 py-3.5 transition-colors">
-      <Icon size={18} variant="Linear" className="text-ink-400 shrink-0" />
-      <input
-        {...props}
-        className="flex-1 bg-transparent outline-none text-sm text-ink-900 dark:text-white placeholder:text-ink-400 min-w-0"
-      />
-      {trailing}
-    </div>
+      {children}
+    </motion.p>
   );
 }

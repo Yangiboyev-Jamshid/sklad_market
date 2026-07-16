@@ -45,8 +45,8 @@ export async function confirmResetPassword({ username, confirmCode, newPassword 
   return { message };
 }
 
-export async function verifyAccount(token) {
-  const message = await unwrap(http.get(`/auth/verification/${token}`));
+export async function verifyAccount({ username, code }) {
+  const message = await unwrap(http.put("/auth/verification", { username, confirmPassword: code }));
   return { message };
 }
 

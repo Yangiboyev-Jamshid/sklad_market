@@ -22,6 +22,7 @@ const ModeratorDashboardPage = lazy(() => import("./pages/ModeratorDashboardPage
 const TariffsPage = lazy(() => import("./pages/TariffsPage"))
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"))
 const VerifyAccountPage = lazy(() => import("./pages/VerifyAccountPage"))
+const EmailVerificationPage = lazy(() => import("./pages/EmailVerificationPage"))
 
 function AntDThemeBridge({ children }) {
   const { theme } = useTheme();
@@ -62,6 +63,11 @@ function App() {
                 <Route path="/verify/:token" element={
                   <Suspense fallback={<Loader />}>
                     <VerifyAccountPage />
+                  </Suspense>
+                } />
+                <Route path="/confirm-email" element={
+                  <Suspense fallback={<Loader />}>
+                    <EmailVerificationPage />
                   </Suspense>
                 } />
                 <Route path="/" element={<HomePage />} />
