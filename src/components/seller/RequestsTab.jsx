@@ -66,7 +66,9 @@ export default function RequestsTab() {
         <div className="flex flex-col gap-3">
           {leads.map((lead) => {
             const busy = actionId === lead.id;
-            const firstItem = lead.items?.[0];
+            const items = lead.items ?? [];
+            const firstItem = items[0];
+            const total = items.reduce((sum, it) => sum + (it.priceSnapshot ?? 0) * (it.quantity ?? 0), 0);
             const canAct = lead.status === "NEW";
             return (
               <div
@@ -89,6 +91,7 @@ export default function RequestsTab() {
                     )}
                     <div className="flex items-center gap-3 mt-1 text-[10px] text-ink-400">
                       {lead.contactPhone && <span>{lead.contactPhone}</span>}
+                      {total > 0 && <span>Сумма: {total.toLocaleString()} сум</span>}
                       {lead.neededDate && <span>До: {lead.neededDate}</span>}
                     </div>
                   </div>

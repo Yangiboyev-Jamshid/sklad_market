@@ -197,29 +197,34 @@ export default function ProductPage() {
             <p className="text-xs font-medium text-ink-700 dark:text-ink-200 mb-2">Количество</p>
             <div className="flex items-center gap-3 mb-2">
               <button
-                onClick={() => setQty((q) => Math.max(1, q - 1))}
+                onClick={() => setQty((q) => Math.max(1, (Number(q) || 0) - 1))}
                 className="w-10 h-10 rounded-xl border border-ink-200 dark:border-[#1C1C1C] flex items-center justify-center text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-[#171717] shrink-0"
               >
                 <Minus size={16} />
               </button>
               <input
+                inputMode="numeric"
                 value={qty}
-                onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "" || /^\d+$/.test(raw)) setQty(raw);
+                }}
+                onBlur={() => setQty((q) => Math.max(1, Number(q) || 1))}
                 className="flex-1 text-center border border-[#DFDFDF] bg-transparent dark:border-[#1C1C1C] dark:text-white rounded-xl py-[10px] outline-none font-medium"
               />
               <button
-                onClick={() => setQty((q) => q + 1)}
+                onClick={() => setQty((q) => (Number(q) || 0) + 1)}
                 className="w-10 h-10 rounded-xl border border-ink-200 dark:border-[#1C1C1C] flex items-center justify-center text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-[#171717] shrink-0"
               >
                 <Add size={16} />
               </button>
             </div>
             <p className="text-xs text-ink-400 dark:text-ink-500 mb-4">
-              Итог: {product.price * qty} {displayText(product.currency)}
+              Итог: {product.price * (Number(qty) || 0)} {displayText(product.currency)}
             </p>
 
             <button
-              onClick={() => addToCart({ id: product.id, name: product.name, price: product.price, qty })}
+              onClick={() => addToCart({ id: product.id, name: product.name, price: product.price, qty: Number(qty) || 1 })}
               className="w-full bg-brand-600 dark:text-[#0D0D0D] hover:bg-brand-700 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-2 transition-colors"
             >
               <ShoppingCart size={18} /> Добавить в корзину

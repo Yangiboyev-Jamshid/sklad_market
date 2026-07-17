@@ -1,13 +1,3 @@
-export const trendData = [
-  { month: "Март", value: 320 },
-  { month: "Апр", value: 540 },
-  { month: "Май", value: 480 },
-  { month: "Июнь", value: 600 },
-  { month: "Июль", value: 700, highlight: true },
-  { month: "Авг", value: 350 },
-  { month: "Сен", value: 950 },
-];
-
 export const tariffPlans = [
   {
     id: "basic",

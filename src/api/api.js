@@ -257,6 +257,12 @@ export async function updateLeadStatus(id, { status, closeReason } = {}) {
   return unwrap(http.put(`/leads/${id}/status`, { status, closeReason }));
 }
 
+// ─── Seller Dashboard ───────────────────────────────────────────────────────────
+
+export async function getSellerDashboard({ companyId, months = 6 } = {}) {
+  return unwrap(http.get("/seller/dashboard", { params: { companyId, months } }));
+}
+
 // ─── Products ─────────────────────────────────────────────────────────────────
 
 export async function getMyProducts({ page = 1, per_page = 20, company_id, status } = {}) {

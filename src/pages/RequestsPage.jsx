@@ -69,7 +69,7 @@ export default function RequestsPage() {
               {leads.map((lead) => {
                 const busy = actionId === lead.id;
                 const items = lead.items ?? [];
-                const companyName = lead.companyName ?? items[0]?.companyName;
+                const total = items.reduce((sum, it) => sum + (it.priceSnapshot ?? 0) * (it.quantity ?? 0), 0);
                 return (
                   <div
                     key={lead.id}
@@ -78,7 +78,7 @@ export default function RequestsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <p className="text-sm font-semibold text-ink-900 dark:text-white">
-                          {companyName ?? `Запрос №${lead.id}`}
+                          Запрос №{lead.id}
                         </p>
                         {badge(lead.status)}
                       </div>
@@ -88,8 +88,8 @@ export default function RequestsPage() {
                         </p>
                       )}
                       <div className="flex items-center gap-3 mt-1 text-[10px] text-ink-400">
+                        {total > 0 && <span>Сумма: {total.toLocaleString()} сум</span>}
                         {lead.neededDate && <span>До: {lead.neededDate}</span>}
-                        {lead.createdAt && <span>Отправлен: {new Date(lead.createdAt).toLocaleDateString()}</span>}
                       </div>
                     </div>
 
