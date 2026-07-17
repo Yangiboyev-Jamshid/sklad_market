@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, TickCircle, Heart } from "iconsax-reactjs";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useCart } from "../../context/CartContext";
 import { getCompanyBySlug, getPublicCompanies } from "../../api/api";
 
@@ -38,6 +39,7 @@ function mergeDefined(base, fallback) {
 }
 
 export default function CompanyCard({ company: companyProp, index = 0 }) {
+  const { t } = useTranslation();
   const { companyFavorites, toggleCompanyFavorite } = useCart();
   const [detail, setDetail] = useState(null);
   const [extrasFallback, setExtrasFallback] = useState(null);
@@ -93,14 +95,14 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
           </div>
           <div>
             <div className="flex items-center mb-1 gap-1.5">
-              <p className="font-semibold text-ink-900 dark:text-white text-sm">{company.name}</p>
+              <p className="font-semibold text-ink-900 dark:text-white text-sm"><span translate="no" className="notranslate">{company.name}</span></p>
               {isVerified && <TickCircle size={18} variant="Outline" className="text-brand-500 shrink-0" />}
             </div>
             <p className="text-xs text-ink-400 dark:text-ink-500">
               {[company.industry, company.city ?? company.address?.split(",")[0]?.trim()].filter(Boolean).join(" ")}
             </p>
             {createdYear && (
-              <p className="text-xs text-ink-400 dark:text-ink-500 mt-0.5">с {createdYear} г.</p>
+              <p className="text-xs text-ink-400 dark:text-ink-500 mt-0.5">{t("companyCard.since", { year: createdYear })}</p>
             )}
           </div>
         </div>
@@ -124,9 +126,9 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
 
       {(company.rating != null || company.reviews != null || company.productsCount != null) && (
         <div className="grid grid-cols-3 gap-2 text-center">
-          <Stat value={company.rating ?? "—"} label="Рейтинг" />
-          <Stat value={company.reviews ?? 0} label="Отзывы" />
-          <Stat value={company.productsCount ?? 0} label="Товаров" />
+          <Stat value={company.rating ?? "—"} label={t("common.rating")} />
+          <Stat value={company.reviews ?? 0} label={t("common.reviews")} />
+          <Stat value={company.productsCount ?? 0} label={t("common.productsCount")} />
         </div>
       )}
 
@@ -135,7 +137,7 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
           to={`/company/${company.slug ?? company.id}`}
           className="text-xs sm:text-sm font-medium text-brand-600 dark:text-brand-400 flex items-center gap-1.5 hover:gap-2.5 transition-all"
         >
-          Перейти на страницу компании <ArrowRight size={16} />
+          {t("companyCard.goToCompanyPage")} <ArrowRight size={16} />
         </Link>
       </div>
     </motion.div>

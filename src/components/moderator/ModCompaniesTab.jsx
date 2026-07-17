@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { getCompanyModerationQueue, verifyCompany, rejectCompany, updateCompany } from "../../api/api";
 import { IoIosClose } from "react-icons/io";
 import { GrFormCheckmark } from "react-icons/gr";
 
 function LocationEditor({ company }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [address, setAddress] = useState(company.address ?? "");
   const [lat, setLat] = useState(company.lat ?? "");
@@ -33,27 +35,27 @@ function LocationEditor({ company }) {
   return (
     <div className="w-full sm:w-auto">
       <button onClick={() => setOpen((v) => !v)} className="text-xs text-brand-600 dark:text-brand-400 hover:underline">
-        {open ? "Скрыть" : "Изменить местоположение"}
+        {open ? t("moderator.hideLocation") : t("moderator.editLocation")}
       </button>
       {open && (
         <div className="mt-2 flex flex-col gap-2 border border-ink-100 dark:border-[#1C1C1C] rounded-xl p-3 w-full sm:w-64">
           <input
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            placeholder="Адрес"
+            placeholder={t("moderator.address")}
             className="text-xs bg-ink-50 dark:bg-[#171717] rounded-lg px-2.5 py-2 outline-none text-ink-900 dark:text-white placeholder:text-ink-400"
           />
           <div className="flex gap-2">
             <input
               value={lat}
               onChange={(e) => setLat(e.target.value)}
-              placeholder="Широта (lat)"
+              placeholder={t("seller.requiredFieldLat")}
               className="text-xs bg-ink-50 dark:bg-[#171717] rounded-lg px-2.5 py-2 outline-none text-ink-900 dark:text-white placeholder:text-ink-400 w-1/2"
             />
             <input
               value={lng}
               onChange={(e) => setLng(e.target.value)}
-              placeholder="Долгота (lng)"
+              placeholder={t("seller.requiredFieldLng")}
               className="text-xs bg-ink-50 dark:bg-[#171717] rounded-lg px-2.5 py-2 outline-none text-ink-900 dark:text-white placeholder:text-ink-400 w-1/2"
             />
           </div>
@@ -63,7 +65,7 @@ function LocationEditor({ company }) {
             disabled={saving}
             className="text-xs font-medium bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white rounded-lg px-2.5 py-2 transition-colors"
           >
-            {saving ? "Сохранение..." : saved ? "Сохранено ✓" : "Сохранить"}
+            {saving ? t("seller.saving") : saved ? t("moderator.saved") : t("seller.save")}
           </button>
         </div>
       )}
@@ -72,6 +74,7 @@ function LocationEditor({ company }) {
 }
 
 export default function ModCompaniesTab() {
+  const { t } = useTranslation();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState(null);
@@ -105,7 +108,7 @@ export default function ModCompaniesTab() {
   };
 
   const handleReject = async (id) => {
-    const comment = window.prompt("Причина отклонения:") ?? "";
+    const comment = window.prompt(t("moderator.rejectReasonPrompt")) ?? "";
     setActionId(id);
     try {
       await rejectCompany(id, { reasonCode: "OTHER", comment });
@@ -119,7 +122,7 @@ export default function ModCompaniesTab() {
 
   return (
     <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-6 transition-colors">
-      <p className="font-semibold text-ink-900 text-[24px] dark:text-white mb-4 sm:mb-5">Верификация компаний</p>
+      <p className="font-semibold text-ink-900 text-[24px] dark:text-white mb-4 sm:mb-5">{t("moderator.companyVerification")}</p>
 
       {loading ? (
         <div className="flex flex-col gap-3">
@@ -128,7 +131,7 @@ export default function ModCompaniesTab() {
           ))}
         </div>
       ) : companies.length === 0 ? (
-        <p className="text-center py-12 text-ink-400">Нет компаний, ожидающих верификации</p>
+        <p className="text-center py-12 text-ink-400">{t("moderator.noCompaniesAwaitingVerification")}</p>
       ) : (
         <div className="flex flex-col gap-3">
           {companies.map((c) => {
@@ -142,8 +145,8 @@ export default function ModCompaniesTab() {
                     {initials}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-ink-900 dark:text-white">{c.name}</p>
-                    {c.stir && <p className="text-xs text-[#7F7F7F] mt-1">ИНН: {c.stir}</p>}
+                    <p className="text-sm font-semibold text-ink-900 dark:text-white"><span translate="no" className="notranslate">{c.name}</span></p>
+                    {c.stir && <p className="text-xs text-[#7F7F7F] mt-1">{t("moderator.stir")}: {c.stir}</p>}
                     {c.phonePrimary && <p className="text-xs text-[#7F7F7F] mt-1">{c.phonePrimary}</p>}
                     {c.address && <p className="text-xs text-[#7F7F7F] mt-1">{c.address}</p>}
                   </div>
@@ -155,14 +158,14 @@ export default function ModCompaniesTab() {
                       onClick={() => handleVerify(c.id)}
                       className="w-full sm:w-auto flex justify-center items-center gap-1.5 bg-success-500 hover:bg-success-600 text-white dark:text-black text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-xl transition-colors whitespace-nowrap"
                     >
-                      <GrFormCheckmark className="text-[20px]" /> Принять
+                      <GrFormCheckmark className="text-[20px]" /> {t("moderator.accept")}
                     </button>
                     <button
                       disabled={busy}
                       onClick={() => handleReject(c.id)}
                       className="w-full sm:w-auto flex justify-center items-center gap-1.5 bg-danger-500 hover:bg-danger-600 text-white dark:text-black text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-xl transition-colors whitespace-nowrap"
                     >
-                      <IoIosClose className="text-[20px]" /> Отклонить
+                      <IoIosClose className="text-[20px]" /> {t("moderator.reject")}
                     </button>
                   </div>
                   <LocationEditor company={c} />

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { SearchNormal1, Call, DocumentText1, ArrowLeft2, More, Send, Trash, Paperclip2 } from "iconsax-reactjs";
 import { HiOutlineEmojiHappy } from "react-icons/hi";
 import { getChats, getChatMessages, sendChatMessage, deleteChat, uploadChatImage, uploadChatFile } from "../../api/api";
@@ -21,6 +22,7 @@ function initials(name) {
 }
 
 export default function ChatPanel() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const requestedThreadId = searchParams.get("thread");
@@ -118,7 +120,7 @@ export default function ChatPanel() {
   };
 
   const handleDeleteChat = async (threadId) => {
-    if (!window.confirm("Удалить чат из списка?")) return;
+    if (!window.confirm(t("chat.deleteChatConfirm"))) return;
     setDeletingId(threadId);
     try {
       await deleteChat(threadId);
@@ -175,10 +177,10 @@ export default function ChatPanel() {
       <div className={`border-r border-ink-100 dark:border-[#1C1C1C] flex min-h-0 flex-col ${mobileShowChat ? "hidden md:flex" : "flex"}`}>
         <div className="px-4 pt-4">
           <div className="pb-4 border-b border-ink-100 dark:border-[#1C1C1C]">
-            <p className="font-semibold text-[24px] text-ink-900 dark:text-white mb-4">Сообщения</p>
+            <p className="font-semibold text-[24px] text-ink-900 dark:text-white mb-4">{t("chat.messages")}</p>
             <div className="grid grid-cols-[1fr_auto] items-center gap-2 bg-white dark:bg-[#0D0D0D] border dark:border-[#2D2D2D] rounded-2xl px-3 py-2.5">
               <SearchNormal1 size={16} className="text-ink-400" />
-              <input placeholder="Поиск сообщений" className="flex-1 bg-transparent outline-none text-sm placeholder:text-ink-400 dark:text-white" />
+              <input placeholder={t("chat.searchMessages")} className="flex-1 bg-transparent outline-none text-sm placeholder:text-ink-400 dark:text-white" />
             </div>
           </div>
         </div>
@@ -195,43 +197,43 @@ export default function ChatPanel() {
             ))
           ) : threads.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-ink-400 dark:text-ink-500 text-sm">
-              Нет активных чатов
+              {t("chat.noActiveChats")}
             </div>
           ) : (
-            threads.map((t) => (
+            threads.map((thread) => (
               <div
-                key={t.thread_id}
-                className={`group w-full flex mt-4 items-center gap-3 p-2 text-left border rounded-xl border-ink-50 dark:border-[#1C1C1C]/60 transition-colors ${activeId === t.thread_id ? "bg-brand-50 dark:bg-brand-500/10" : "hover:bg-ink-50 dark:hover:bg-[#171717]"
-                  } ${deletingId === t.thread_id ? "opacity-50" : ""}`}
+                key={thread.thread_id}
+                className={`group w-full flex mt-4 items-center gap-3 p-2 text-left border rounded-xl border-ink-50 dark:border-[#1C1C1C]/60 transition-colors ${activeId === thread.thread_id ? "bg-brand-50 dark:bg-brand-500/10" : "hover:bg-ink-50 dark:hover:bg-[#171717]"
+                  } ${deletingId === thread.thread_id ? "opacity-50" : ""}`}
               >
-                <button onClick={() => openChat(t.thread_id)} className="flex flex-1 items-center gap-3 min-w-0 text-left">
+                <button onClick={() => openChat(thread.thread_id)} className="flex flex-1 items-center gap-3 min-w-0 text-left">
                   <div className="w-10 h-10 rounded-full bg-brand-600 text-white dark:text-black flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
-                    {t.other_party?.avatar_url ? (
-                      <img src={t.other_party.avatar_url} alt="" className="w-full h-full object-cover" />
+                    {thread.other_party?.avatar_url ? (
+                      <img src={thread.other_party.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      initials(t.other_party?.display_name)
+                      initials(thread.other_party?.display_name)
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-ink-900 dark:text-white truncate">{t.other_party?.display_name ?? "—"}</p>
-                      <span className="text-[11px] text-ink-300 dark:text-ink-600 shrink-0">{formatTime(t.last_message?.sent_at)}</span>
+                      <p className="text-sm font-semibold text-ink-900 dark:text-white truncate">{thread.other_party?.display_name ?? "—"}</p>
+                      <span className="text-[11px] text-ink-300 dark:text-ink-600 shrink-0">{formatTime(thread.last_message?.sent_at)}</span>
                     </div>
                     <p className="text-xs text-[#7F7F7F] truncate">
-                      <span>{t.last_message?.body || "—"}</span><br />
+                      <span>{thread.last_message?.body || "—"}</span><br />
                     </p>
                     <div className="text-[10px] flex items-center justify-between text-[#7F7F7F] truncate">
-                      <span>{t.product?.name}</span>
-                      {t.unread_count > 0 && <div className="flex justify-center items-end">
-                        <span className="text-[7px] w-[11px] h-[11px] flex items-center justify-center dark:text-black text-white rounded-full bg-brand-600">{t.unread_count}</span>
+                      <span>{thread.product?.name}</span>
+                      {thread.unread_count > 0 && <div className="flex justify-center items-end">
+                        <span className="text-[7px] w-[11px] h-[11px] flex items-center justify-center dark:text-black text-white rounded-full bg-brand-600">{thread.unread_count}</span>
                       </div>}
                     </div>
                   </div>
                 </button>
                 <button
-                  onClick={() => handleDeleteChat(t.thread_id)}
-                  disabled={deletingId === t.thread_id}
-                  title="Удалить чат"
+                  onClick={() => handleDeleteChat(thread.thread_id)}
+                  disabled={deletingId === thread.thread_id}
+                  title={t("chat.deleteChat")}
                   className="shrink-0 opacity-0 group-hover:opacity-100 text-ink-300 hover:text-danger-500 dark:text-ink-600 dark:hover:text-danger-500 transition-opacity p-1"
                 >
                   <Trash size={16} />
@@ -260,7 +262,7 @@ export default function ChatPanel() {
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-ink-900 dark:text-white truncate">{active.other_party?.display_name ?? "—"}</p>
                   <p className="text-xs flex items-center gap-1 text-success-600 dark:text-success-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-success-500" /> Онлайн
+                    <span className="w-1.5 h-1.5 rounded-full bg-success-500" /> {t("chat.online")}
                   </p>
                 </div>
               </div>
@@ -279,7 +281,7 @@ export default function ChatPanel() {
                 ))
               ) : chatMessages.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center text-ink-400 dark:text-ink-500 text-sm">
-                  Начните переписку
+                  {t("chat.startConversation")}
                 </div>
               ) : (
                 chatMessages.map((m) => {
@@ -294,7 +296,7 @@ export default function ChatPanel() {
                           className="bg-brand-600 text-white rounded-2xl px-4 py-3 flex items-center gap-2 max-w-[85%] sm:max-w-xs"
                         >
                           <DocumentText1 size={18} className="shrink-0" />
-                          <span className="text-sm truncate">{m.body || "Файл"}</span>
+                          <span className="text-sm truncate">{m.body || t("chat.file")}</span>
                         </a>
                       ) : (
                         <div
@@ -322,7 +324,7 @@ export default function ChatPanel() {
                 disabled={attaching}
                 className="text-[#75809F] hover:text-[#1A94FF] disabled:opacity-50 transition-colors shrink-0"
                 type="button"
-                title="Прикрепить файл"
+                title={t("chat.attachFile")}
               >
                 <Paperclip2 size={22} />
               </button>
@@ -335,7 +337,7 @@ export default function ChatPanel() {
                     handleSend();
                   }
                 }}
-                placeholder="Сообщение"
+                placeholder={t("chat.messagePlaceholder")}
                 className="flex-1 min-w-0 bg-transparent text-base outline-none placeholder:text-[#75809F] text-ink-900 dark:text-white"
               />
               <button onClick={handleSend} disabled={!input.trim()} className="text-[#1A94FF] hover:text-brand-700 disabled:opacity-40 transition-colors p-1 shrink-0" type="button">
@@ -345,7 +347,7 @@ export default function ChatPanel() {
           </>
         ) : (
           <div className="hidden md:flex flex-1 flex-col items-center justify-center text-ink-400 dark:text-ink-500 text-sm">
-            Выберите чат
+            {t("chat.selectChat")}
           </div>
         )}
       </div>

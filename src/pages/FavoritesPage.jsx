@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { SearchNormal1, GlobalSearch, Heart } from "iconsax-reactjs";
 import AppShell from "../components/layout/AppShell";
 import ProductCard from "../components/ui/ProductCard";
@@ -11,6 +12,7 @@ import { getFavorites, getCompanyFavorites, getCatalogMap, getCompaniesMap } fro
 import { buildProductMapPins, buildCompanyMapPins } from "../utils/mapPins";
 
 export default function FavoritesPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [tab, setTab] = useState("products");
   const [products, setProducts] = useState([]);
@@ -83,7 +85,7 @@ export default function FavoritesPage() {
     name: p.name,
     price: p.price ?? 0,
     unit: p.currency ?? "UZS",
-    company: p.companyId ? `Компания #${p.companyId}` : "",
+    company: p.companyId ? t("common.companyFallback", { id: p.companyId }) : "",
     image: p.images?.find((img) => img.is_primary)?.url ?? p.images?.[0]?.url ?? null,
     verified: p.status === "ACTIVE",
   });
@@ -103,16 +105,16 @@ export default function FavoritesPage() {
       <div className="mx-auto p-6 sm:p-10">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-5 sm:mb-6">
           <div className="sm:block hidden">
-            <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white">Фавориты</h1>
+            <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white">{t("favorites.title")}</h1>
             <p className="text-sm text-ink-400 dark:text-ink-500 mt-1">
-              Сохраненные товары и компании
+              {t("favorites.subtitle")}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row w-full sm:w-auto items-stretch sm:items-center gap-2">
             <div className="flex-1 sm:flex-none flex items-center gap-2 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-4 py-2.5 sm:w-64">
               <SearchNormal1 size={16} className="text-ink-400 shrink-0" />
               <input
-                placeholder={tab === "products" ? "Поиск товара" : "Поиск компании"}
+                placeholder={tab === "products" ? t("common.searchProduct") : t("common.searchCompany")}
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); }}
                 className="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder:text-ink-400 dark:text-white"
@@ -124,7 +126,7 @@ export default function FavoritesPage() {
                 }`}
             >
               <GlobalSearch size={24} />
-              Поиск по карте
+              {t("common.searchByMap")}
             </button>
           </div>
         </div>
@@ -132,8 +134,8 @@ export default function FavoritesPage() {
         <div className="mb-6 overflow-x-auto">
           <PillToggle
             options={[
-              { value: "products", label: "Товары" },
-              { value: "companies", label: "Компании" },
+              { value: "products", label: t("favorites.tabProducts") },
+              { value: "companies", label: t("favorites.tabCompanies") },
             ]}
             value={tab}
             onChange={(value) => { setTab(value); setSearch(""); }}
@@ -148,7 +150,7 @@ export default function FavoritesPage() {
             className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-5 transition-colors"
           >
             <p className="font-semibold text-ink-900 dark:text-white mb-4">
-              {tab === "products" ? "Карта избранных товаров" : "Карта избранных компаний"}
+              {tab === "products" ? t("favorites.mapProducts") : t("favorites.mapCompanies")}
             </p>
             {(tab === "products" ? productMapLoading : companyMapLoading) ? (
               <div className="h-[400px] sm:h-[600px] rounded-2xl bg-ink-100 dark:bg-[#171717] animate-pulse" />
@@ -166,10 +168,10 @@ export default function FavoritesPage() {
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <p className="text-4xl mb-4"><Heart size={24} /></p>
             <p className="text-lg font-semibold text-ink-700 dark:text-white">
-              {search ? "Ничего не найдено" : tab === "products" ? "Нет избранных товаров" : "Нет избранных компаний"}
+              {search ? t("favorites.nothingFound") : tab === "products" ? t("favorites.noProducts") : t("favorites.noCompanies")}
             </p>
             <p className="text-sm text-ink-400 mt-1">
-              {search ? "Попробуйте другой запрос" : `Нажмите на ❤️ на карточке, чтобы сохранить`}
+              {search ? t("common.tryAnotherQuery") : t("favorites.hint")}
             </p>
           </div>
         ) : tab === "products" ? (

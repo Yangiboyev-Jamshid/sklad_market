@@ -1,17 +1,26 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { ArrowDown2, CloudAdd, Trash } from "iconsax-reactjs";
 import PillToggle from "../ui/PillToggle";
 import { createProduct, publishProduct, uploadProductImages, getCategories, getMyCompany } from "../../api/api";
 
-const UNITS = ["Тонна", "Килограмм", "Штука", "Упаковка", "Литр", "Метр"];
+const UNIT_KEYS = [
+  { value: "Тонна", labelKey: "seller.unitTon" },
+  { value: "Килограмм", labelKey: "seller.unitKg" },
+  { value: "Штука", labelKey: "seller.unitPiece" },
+  { value: "Упаковка", labelKey: "seller.unitPack" },
+  { value: "Литр", labelKey: "seller.unitLiter" },
+  { value: "Метр", labelKey: "seller.unitMeter" },
+];
 
 export default function AddProductModal({ open, onClose, companyId }) {
+  const { t, i18n } = useTranslation();
   const [saleType, setSaleType] = useState("WHOLESALE");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
-  const [unit, setUnit] = useState(UNITS[0]);
+  const [unit, setUnit] = useState(UNIT_KEYS[0].value);
   const [minProduct, setMinProduct] = useState("");
   const [phone, setPhone] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -42,9 +51,9 @@ export default function AddProductModal({ open, onClose, companyId }) {
         setCompanyLocation({ regionId: c.regionId ?? null, districtId: c.districtId ?? null });
       })
       .catch(() => {
-        if (!companyId) setError("Не удалось определить вашу компанию. Закройте окно и попробуйте снова.");
+        if (!companyId) setError(t("seller.companyNotResolved"));
       });
-  }, [open, companyId]);
+  }, [open, companyId, t]);
 
   const fileInputRef = useRef(null);
 
@@ -53,7 +62,7 @@ export default function AddProductModal({ open, onClose, companyId }) {
     setPrice(""); setMinProduct(""); setCategoryId(""); setPhone("");
     setImages([]); setPreviews([]);
     setError(""); setSuccess(""); setSaleType("WHOLESALE");
-    setUnit(UNITS[0]);
+    setUnit(UNIT_KEYS[0].value);
   };
 
   const handleClose = () => { reset(); onClose(); };
@@ -81,9 +90,9 @@ export default function AddProductModal({ open, onClose, companyId }) {
   const submit = async (publish) => {
     setError(""); setSuccess("");
     if (submittingRef.current) return;
-    if (!name.trim()) { setError("Введите название товара"); return; }
-    if (!price || isNaN(Number(price))) { setError("Введите корректную цену"); return; }
-    if (!resolvedCompanyId) { setError("Не удалось определить вашу компанию. Закройте окно и попробуйте снова."); return; }
+    if (!name.trim()) { setError(t("seller.enterProductName")); return; }
+    if (!price || isNaN(Number(price))) { setError(t("seller.enterValidPrice")); return; }
+    if (!resolvedCompanyId) { setError(t("seller.companyNotResolved")); return; }
 
     submittingRef.current = true;
     setLoading(true);
@@ -112,9 +121,9 @@ export default function AddProductModal({ open, onClose, companyId }) {
 
       if (publish) {
         await publishProduct(product.id);
-        setSuccess("Товар отправлен на модерацию!");
+        setSuccess(t("seller.productSentToModeration"));
       } else {
-        setSuccess("Товар сохранён как черновик!");
+        setSuccess(t("seller.productSavedAsDraft"));
       }
 
       setTimeout(() => { handleClose(); }, 1500);
@@ -146,13 +155,13 @@ export default function AddProductModal({ open, onClose, companyId }) {
             className="bg-white dark:bg-[#0D0D0D] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg max-h-[92vh] sm:max-h-[90vh] overflow-y-auto p-5 sm:p-7 relative transition-colors"
           >
             <h2 className="text-lg sm:text-xl text-center font-display font-bold text-ink-900 dark:text-white mb-4 sm:mb-6">
-              Добавить товар
+              {t("seller.addProductTitle")}
             </h2>
 
             <PillToggle
               options={[
-                { value: "WHOLESALE", label: "Оптом" },
-                { value: "RETAIL", label: "За штуку" },
+                { value: "WHOLESALE", label: t("home.wholesale") },
+                { value: "RETAIL", label: t("home.retail") },
               ]}
               value={saleType}
               onChange={setSaleType}
@@ -160,8 +169,8 @@ export default function AddProductModal({ open, onClose, companyId }) {
             />
 
             <Field
-              label="Название товара"
-              placeholder="Стальной лист"
+              label={t("seller.productName")}
+              placeholder={t("seller.productNamePlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -169,7 +178,7 @@ export default function AddProductModal({ open, onClose, companyId }) {
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div>
                 <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">
-                  Категория
+                  {t("product.category")}
                 </label>
                 <div className="relative">
                   <select
@@ -177,10 +186,10 @@ export default function AddProductModal({ open, onClose, companyId }) {
                     onChange={(e) => setCategoryId(e.target.value)}
                     className="w-full appearance-none bg-ink-50 dark:bg-[#171717] rounded-xl px-4 py-3 pr-9 text-sm outline-none text-ink-900 dark:text-white cursor-pointer"
                   >
-                    <option value="">Выберите категорию</option>
+                    <option value="">{t("seller.selectCategory")}</option>
                     {categoriesList.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.nameRu || c.nameUz || c.slug}
+                        {i18n.language === "uz" ? (c.nameUz || c.nameRu || c.slug) : i18n.language === "en" ? (c.nameEn || c.nameRu || c.slug) : (c.nameRu || c.nameUz || c.slug)}
                       </option>
                     ))}
                   </select>
@@ -193,7 +202,7 @@ export default function AddProductModal({ open, onClose, companyId }) {
               </div>
               <div>
                 <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">
-                  Единица
+                  {t("seller.unit")}
                 </label>
                 <div className="relative">
                   <select
@@ -201,8 +210,8 @@ export default function AddProductModal({ open, onClose, companyId }) {
                     onChange={(e) => setUnit(e.target.value)}
                     className="w-full appearance-none bg-ink-50 dark:bg-[#171717] rounded-xl px-4 py-3 pr-9 text-sm outline-none text-ink-900 dark:text-white cursor-pointer"
                   >
-                    {UNITS.map((u) => (
-                      <option key={u} value={u}>{u}</option>
+                    {UNIT_KEYS.map((u) => (
+                      <option key={u.value} value={u.value}>{t(u.labelKey)}</option>
                     ))}
                   </select>
                   <ArrowDown2
@@ -216,14 +225,14 @@ export default function AddProductModal({ open, onClose, companyId }) {
 
             <div className="grid grid-cols-2 gap-3 mb-4">
               <Field
-                label="Цена"
+                label={t("seller.price")}
                 placeholder="0"
                 type="number"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
               />
               <Field
-                label="Мин. заказ"
+                label={t("seller.minOrder")}
                 placeholder="1"
                 type="number"
                 value={minProduct}
@@ -232,7 +241,7 @@ export default function AddProductModal({ open, onClose, companyId }) {
             </div>
 
             <Field
-              label="Телефон для связи"
+              label={t("seller.phoneForContact")}
               placeholder="+998 90 000 00 00"
               type="tel"
               value={phone}
@@ -240,10 +249,10 @@ export default function AddProductModal({ open, onClose, companyId }) {
             />
 
             <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">
-              Описание товара
+              {t("seller.productDescription")}
             </label>
             <textarea
-              placeholder="Описание товара, характеристики ..."
+              placeholder={t("seller.productDescriptionPlaceholder")}
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -252,7 +261,7 @@ export default function AddProductModal({ open, onClose, companyId }) {
 
             {/* Image upload */}
             <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">
-              Фото товара
+              {t("seller.productPhoto")}
             </label>
             <div
               onDrop={handleDrop}
@@ -261,8 +270,8 @@ export default function AddProductModal({ open, onClose, companyId }) {
               className="border-2 border-dashed border-ink-200 dark:border-[#1C1C1C] rounded-xl py-8 flex flex-col items-center justify-center text-center mb-3 hover:border-brand-300 dark:hover:border-brand-500 transition-colors cursor-pointer"
             >
               <CloudAdd size={28} className="text-ink-300 dark:text-ink-600 mb-2" />
-              <p className="text-sm text-ink-400">Нажмите или перетащите файлы</p>
-              <p className="text-xs text-ink-300 dark:text-ink-600 mt-1">PNG, JPG до 5MB · макс. 10 фото</p>
+              <p className="text-sm text-ink-400">{t("seller.dropFilesHint")}</p>
+              <p className="text-xs text-ink-300 dark:text-ink-600 mt-1">{t("seller.fileSizeHint")}</p>
             </div>
             <input
               ref={fileInputRef}
@@ -317,7 +326,7 @@ export default function AddProductModal({ open, onClose, companyId }) {
                 onClick={() => submit(false)}
                 className="bg-ink-100 dark:bg-[#171717] text-ink-600 dark:text-ink-300 font-medium py-3.5 rounded-xl hover:bg-ink-200 dark:hover:bg-[#1E1E1E] disabled:opacity-50 transition-colors"
               >
-                {loading ? "..." : "Черновик"}
+                {loading ? "..." : t("seller.draft")}
               </button>
               <button
                 type="button"
@@ -331,10 +340,10 @@ export default function AddProductModal({ open, onClose, companyId }) {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                     </svg>
-                    Отправка...
+                    {t("cart.sending")}
                   </>
                 ) : (
-                  "На модерацию"
+                  t("seller.toModeration")
                 )}
               </button>
             </div>

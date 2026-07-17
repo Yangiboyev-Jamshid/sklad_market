@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import {
   Eye,
   Minus,
@@ -24,16 +25,21 @@ import ReportModal from "../components/modal/ReportModal";
 import { useCart } from "../context/CartContext";
 import { getProductBySlug, getAllProducts, getProductReviews, createChat } from "../api/api";
 
-const tabs = ["Описание", "Характеристики", "Доставка", "Отзывы"];
+const TABS = [
+  { key: "description", labelKey: "product.tabDescription" },
+  { key: "specs", labelKey: "product.tabSpecs" },
+  { key: "delivery", labelKey: "product.tabDelivery" },
+  { key: "reviews", labelKey: "product.tabReviews" },
+];
 
-function normalizeProduct(p) {
+function normalizeProduct(p, t) {
   return {
     id: p.id,
     slug: p.slug,
     name: p.name,
     price: p.price ?? 0,
     unit: p.currency ?? "UZS",
-    company: p.companyId ? `Компания #${p.companyId}` : "",
+    company: p.companyId ? t("common.companyFallback", { id: p.companyId }) : "",
     image: p.images?.find((img) => img.is_primary)?.url ?? p.images?.[0]?.url ?? null,
     verified: p.status === "ACTIVE" || p.isPromoted,
   };
@@ -45,19 +51,20 @@ function displayText(value, fallback = "") {
   return value.symbol ?? value.label ?? value.name ?? value.code ?? fallback;
 }
 
-const AVAILABILITY_LABEL = {
-  ACTIVE: "В наличии",
-  PENDING: "На модерации",
-  ARCHIVED: "Нет в наличии",
-  REJECTED: "Нет в наличии",
+const AVAILABILITY_LABEL_KEYS = {
+  ACTIVE: "product.availabilityActive",
+  PENDING: "product.availabilityPending",
+  ARCHIVED: "product.availabilityInactive",
+  REJECTED: "product.availabilityInactive",
 };
 
 export default function ProductPage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("Описание");
+  const [activeTab, setActiveTab] = useState("description");
   const [qty, setQty] = useState(1);
   const [showReport, setShowReport] = useState(false);
   const [similar, setSimilar] = useState([]);
@@ -103,10 +110,10 @@ export default function ProductPage() {
     getAllProducts({ page: 1, perPage: 60 })
       .then((data) => {
         const items = (data?.items ?? []).filter((p) => p.categoryId === product.category?.id && p.id !== product.id);
-        setSimilar(items.slice(0, 4).map(normalizeProduct));
+        setSimilar(items.slice(0, 4).map((p) => normalizeProduct(p, t)));
       })
       .catch(() => setSimilar([]));
-  }, [product]);
+  }, [product, t]);
 
   if (loading) {
     return (
@@ -126,7 +133,7 @@ export default function ProductPage() {
     return (
       <AppShell>
         <div className="flex items-center justify-center h-64">
-          <p className="text-ink-400">{error || "Товар не найден"}</p>
+          <p className="text-ink-400">{error || t("product.notFound")}</p>
         </div>
       </AppShell>
     );
@@ -172,17 +179,17 @@ export default function ProductPage() {
                 {product.category?.name ?? "—"}
               </span>
               <span className="flex items-center gap-1 text-[10px] text-ink-400 dark:text-ink-500">
-                <Eye size={15} /> {product.views_count_cache ?? 0} просмотров
+                <Eye size={15} /> {t("product.views", { count: product.views_count_cache ?? 0 })}
               </span>
             </div>
             <h2 className="text-sm font-semibold text-ink-900 dark:text-white mb-1.5">{product.name}</h2>
             <div className="flex items-center justify-between gap-2 mb-4">
               <RatingStars rating={product.rating ?? 0} size={14} showValue count={product.reviewsCount} />
               <button
-                onClick={() => setActiveTab("Отзывы")}
+                onClick={() => setActiveTab("reviews")}
                 className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline shrink-0"
               >
-                Перейти к отзывам
+                {t("product.goToReviews")}
               </button>
             </div>
 
@@ -190,11 +197,11 @@ export default function ProductPage() {
               <p className="text-2xl font-bold text-[#155DFC] dark:text-[#2E6FFC]">
                 {product.price} {displayText(product.currency)}
               </p>
-              <p className="text-[12px] text-ink-500 dark:text-ink-400">за {displayText(product.unit, "шт.")}</p>
-              <p className="text-[12px] text-ink-400 dark:text-ink-500">Минимальный заказ: {product.minProduct ?? 1} {displayText(product.unit, "шт.")}</p>
+              <p className="text-[12px] text-ink-500 dark:text-ink-400">{t("product.perUnit", { unit: displayText(product.unit, t("product.unitFallback")) })}</p>
+              <p className="text-[12px] text-ink-400 dark:text-ink-500">{t("product.minOrder", { count: product.minProduct ?? 1, unit: displayText(product.unit, t("product.unitFallback")) })}</p>
             </div>
 
-            <p className="text-xs font-medium text-ink-700 dark:text-ink-200 mb-2">Количество</p>
+            <p className="text-xs font-medium text-ink-700 dark:text-ink-200 mb-2">{t("common.quantity")}</p>
             <div className="flex items-center gap-3 mb-2">
               <button
                 onClick={() => setQty((q) => Math.max(1, (Number(q) || 0) - 1))}
@@ -220,21 +227,21 @@ export default function ProductPage() {
               </button>
             </div>
             <p className="text-xs text-ink-400 dark:text-ink-500 mb-4">
-              Итог: {product.price * (Number(qty) || 0)} {displayText(product.currency)}
+              {t("product.total", { total: product.price * (Number(qty) || 0), currency: displayText(product.currency) })}
             </p>
 
             <button
               onClick={() => addToCart({ id: product.id, name: product.name, price: product.price, qty: Number(qty) || 1 })}
               className="w-full bg-brand-600 dark:text-[#0D0D0D] hover:bg-brand-700 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-2 transition-colors"
             >
-              <ShoppingCart size={18} /> Добавить в корзину
+              <ShoppingCart size={18} /> {t("common.addToCart")}
             </button>
 
             <button
               onClick={handleOpenChat}
               className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-brand-400 font-medium py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-2 text-ink-700 dark:text-ink-200 transition-colors"
             >
-              <Message size={18} /> Написать продавцу
+              <Message size={18} /> {t("common.writeToSeller")}
             </button>
 
             {company?.phonePrimary && (
@@ -250,7 +257,7 @@ export default function ProductPage() {
               onClick={() => toggleFavorite(product.id)}
               className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 font-medium py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-2 text-ink-700 dark:text-ink-200 transition-colors"
             >
-              <Heart size={18} variant={isFav ? "Bold" : "Linear"} className={isFav ? "text-danger-500" : ""} /> Добавить в фавориты
+              <Heart size={18} variant={isFav ? "Bold" : "Linear"} className={isFav ? "text-danger-500" : ""} /> {t("product.addToFavorites")}
             </button>
             <button className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 font-medium py-3.5 rounded-2xl flex items-center justify-center gap-2 text-ink-700 dark:text-ink-200 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 16 16" fill="none">
@@ -259,20 +266,20 @@ export default function ProductPage() {
                 <path d="M6.16536 8.66927C6.16536 10.1426 4.97203 11.3359 3.4987 11.3359C2.02536 11.3359 0.832031 10.1426 0.832031 8.66927C0.832031 7.19594 2.02536 6.0026 3.4987 6.0026C4.97203 6.0026 6.16536 7.19594 6.16536 8.66927ZM1.83203 8.66927C1.83203 9.58927 2.5787 10.3359 3.4987 10.3359C4.4187 10.3359 5.16536 9.58927 5.16536 8.66927C5.16536 7.74927 4.4187 7.0026 3.4987 7.0026C2.5787 7.0026 1.83203 7.74927 1.83203 8.66927Z" fill="#7F7F7F" />
                 <path d="M15.168 12.6641C15.168 14.0441 14.048 15.1641 12.668 15.1641C11.288 15.1641 10.168 14.0441 10.168 12.6641C10.168 11.2841 11.288 10.1641 12.668 10.1641C14.048 10.1641 15.168 11.2841 15.168 12.6641ZM11.168 12.6641C11.168 13.4907 11.8413 14.1641 12.668 14.1641C13.4946 14.1641 14.168 13.4907 14.168 12.6641C14.168 11.8374 13.4946 11.1641 12.668 11.1641C11.8413 11.1641 11.168 11.8374 11.168 12.6641Z" fill="#7F7F7F" />
                 <path d="M15.168 3.33594C15.168 4.71594 14.048 5.83594 12.668 5.83594C11.288 5.83594 10.168 4.71594 10.168 3.33594C10.168 1.95594 11.288 0.835938 12.668 0.835938C14.048 0.835938 15.168 1.95594 15.168 3.33594ZM11.168 3.33594C11.168 4.1626 11.8413 4.83594 12.668 4.83594C13.4946 4.83594 14.168 4.1626 14.168 3.33594C14.168 2.50927 13.4946 1.83594 12.668 1.83594C11.8413 1.83594 11.168 2.50927 11.168 3.33594Z" fill="#7F7F7F" />
-              </svg> Поделиться
+              </svg> {t("product.share")}
             </button>
           </div>
 
           <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] transition-colors">
             <div className="flex border-b border-ink-100 dark:border-[#1C1C1C] px-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-              {tabs.map((t) => (
+              {TABS.map((tabItem) => (
                 <button
-                  key={t}
-                  onClick={() => setActiveTab(t)}
-                  className={`relative px-3 sm:px-4 py-3.5 sm:py-4 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${activeTab === t ? "text-ink-900 dark:text-white" : "text-ink-400 hover:text-ink-600 dark:hover:text-ink-200"}`}
+                  key={tabItem.key}
+                  onClick={() => setActiveTab(tabItem.key)}
+                  className={`relative px-3 sm:px-4 py-3.5 sm:py-4 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tabItem.key ? "text-ink-900 dark:text-white" : "text-ink-400 hover:text-ink-600 dark:hover:text-ink-200"}`}
                 >
-                  {t === "Отзывы" ? `Отзывы (${product.reviewsCount ?? 0})` : t}
-                  {activeTab === t && (
+                  {tabItem.key === "reviews" ? `${t(tabItem.labelKey)} (${product.reviewsCount ?? 0})` : t(tabItem.labelKey)}
+                  {activeTab === tabItem.key && (
                     <motion.div layoutId="product-tab" className="absolute bottom-0 left-4 right-4 h-0.5 bg-brand-600" />
                   )}
                 </button>
@@ -281,7 +288,7 @@ export default function ProductPage() {
 
             <div className="p-4 sm:p-4">
               <AnimatePresence mode="wait">
-                {activeTab === "Описание" && (
+                {activeTab === "description" && (
                   <motion.div key="d" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                     <p className="text-sm text-ink-600 dark:text-ink-300 leading-relaxed mb-4">{product.description || product.short_description || "—"}</p>
                     {tags.length > 0 && (
@@ -295,10 +302,10 @@ export default function ProductPage() {
                     )}
                   </motion.div>
                 )}
-                {activeTab === "Характеристики" && (
+                {activeTab === "specs" && (
                   <motion.div key="s" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-[18.85px] justify-start">
                     <div className="grid grid-cols-[1fr_2fr] justify-start text-[14px]">
-                      <span className="text-ink-400 dark:text-ink-500">Категория</span>
+                      <span className="text-ink-400 dark:text-ink-500">{t("product.category")}</span>
                       <span className="text-ink-900 dark:text-white font-medium text-left">{product.category?.name ?? "—"}</span>
                     </div>
                     {Object.entries(product.attributes ?? {}).map(([k, v]) => (
@@ -308,28 +315,28 @@ export default function ProductPage() {
                       </div>
                     ))}
                     <div className="grid grid-cols-[1fr_2fr] justify-start text-[14px]">
-                      <span className="text-ink-400 dark:text-ink-500">Минимальный заказ</span>
-                      <span className="text-ink-900 dark:text-white font-medium text-left">{product.minProduct ?? 1} {displayText(product.unit, "шт.")}</span>
+                      <span className="text-ink-400 dark:text-ink-500">{t("product.minOrderLabel")}</span>
+                      <span className="text-ink-900 dark:text-white font-medium text-left">{product.minProduct ?? 1} {displayText(product.unit, t("product.unitFallback"))}</span>
                     </div>
                     <div className="grid grid-cols-[1fr_2fr] justify-start text-[14px]">
-                      <span className="text-ink-400 dark:text-ink-500">Наличие</span>
-                      <span className="text-ink-900 dark:text-white font-medium text-left">{AVAILABILITY_LABEL[product.status] ?? "—"}</span>
+                      <span className="text-ink-400 dark:text-ink-500">{t("product.availability")}</span>
+                      <span className="text-ink-900 dark:text-white font-medium text-left">{AVAILABILITY_LABEL_KEYS[product.status] ? t(AVAILABILITY_LABEL_KEYS[product.status]) : "—"}</span>
                     </div>
                   </motion.div>
                 )}
-                {activeTab === "Доставка" && (
+                {activeTab === "delivery" && (
                   <motion.div key="del" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-5">
-                    <InfoBlock icon={Truck} color="brand" title="Доставка" desc="Доставка по региону - доступна" sub="Срок: 3-5 дней" />
-                    <InfoBlock icon={Location} color="success" title="Склад / самовызов" desc="Узбекистан" />
-                    <InfoBlock icon={Shield} color="ink" title="Условия" desc="Условия поставки обсуждаются с продавцом. Документы и счёта предоставляются." />
+                    <InfoBlock icon={Truck} color="brand" title={t("product.deliveryTitle")} desc={t("product.deliveryDesc")} sub={t("product.deliveryEta")} />
+                    <InfoBlock icon={Location} color="success" title={t("product.pickupTitle")} desc={t("product.pickupDesc")} />
+                    <InfoBlock icon={Shield} color="ink" title={t("product.termsTitle")} desc={t("product.termsDesc")} />
                   </motion.div>
                 )}
-                {activeTab === "Отзывы" && (
+                {activeTab === "reviews" && (
                   <motion.div key="rev" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
                     <div className="flex items-center gap-2.5 pb-1">
                       <RatingStars rating={product.rating ?? 0} size={18} />
                       <span className="text-sm font-semibold text-ink-900 dark:text-white">{(product.rating ?? 0).toFixed(1)}</span>
-                      <span className="text-xs text-ink-400">{product.reviewsCount ?? 0} отзывов</span>
+                      <span className="text-xs text-ink-400">{t("product.reviewsCount", { count: product.reviewsCount ?? 0 })}</span>
                     </div>
                     {reviewsLoading ? (
                       Array.from({ length: 2 }).map((_, i) => (
@@ -339,12 +346,12 @@ export default function ProductPage() {
                         </div>
                       ))
                     ) : reviews.length === 0 ? (
-                      <p className="text-sm text-ink-400 dark:text-ink-500 text-center py-6">Пока нет отзывов</p>
+                      <p className="text-sm text-ink-400 dark:text-ink-500 text-center py-6">{t("product.noReviews")}</p>
                     ) : (
                       reviews.map((r, i) => (
                         <div key={r.id ?? i} className="border-t border-ink-100 dark:border-[#1C1C1C] pt-4 first:border-0 first:pt-0">
                           <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <p className="text-sm font-semibold text-ink-900 dark:text-white">{r.author ?? r.authorName ?? r.userName ?? r.name ?? "Пользователь"}</p>
+                            <p className="text-sm font-semibold text-ink-900 dark:text-white">{r.author ?? r.authorName ?? r.userName ?? r.name ?? t("product.anonymousUser")}</p>
                             <RatingStars rating={r.rating ?? 0} size={13} />
                           </div>
                           <p className="text-sm text-ink-600 dark:text-ink-300 leading-relaxed">{r.text ?? r.comment ?? r.body ?? ""}</p>
@@ -359,7 +366,7 @@ export default function ProductPage() {
 
           <div className="flex flex-col gap-3">
             <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-5 transition-colors">
-              <p className="font-semibold text-ink-900 dark:text-white mb-3.5">О продавце</p>
+              <p className="font-semibold text-ink-900 dark:text-white mb-3.5">{t("product.aboutSeller")}</p>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-11 h-11 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden">
                   {company?.logo_path
@@ -369,7 +376,7 @@ export default function ProductPage() {
                 </div>
                 <div>
                   <p className="text-[14px] font-semibold text-ink-900 dark:text-white flex items-center gap-1">
-                    {company?.name ?? "—"} <TickCircle size={20} variant="Outline" className="text-brand-500" />
+                    <span translate="no" className="notranslate">{company?.name ?? "—"}</span> <TickCircle size={20} variant="Outline" className="text-brand-500" />
                   </p>
                   <p className="text-[12px] text-ink-400 dark:text-ink-500">
                     {[company?.industry, company?.city ?? company?.address?.split(",")[0]?.trim()].filter(Boolean).join(" ") || company?.slug}
@@ -377,27 +384,27 @@ export default function ProductPage() {
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 text-center mb-4">
-                <Stat value={company?.rating ?? "—"} label="Рейтинг" />
-                <Stat value={company?.reviews ?? 0} label="Отзывы" />
-                <Stat value={company?.productsCount ?? 0} label="Товаров" />
+                <Stat value={company?.rating ?? "—"} label={t("common.rating")} />
+                <Stat value={company?.reviews ?? 0} label={t("common.reviews")} />
+                <Stat value={company?.productsCount ?? 0} label={t("common.productsCount")} />
               </div>
               {company?.slug && (
                 <a href={`/company/${company.slug}`} className="text-sm flex justify-center items-center font-medium text-brand-600 dark:text-brand-400 hover:underline">
-                  Перейти на страницу компании →
+                  {t("product.goToCompanyPage")}
                 </a>
               )}
             </div>
             <div className="bg-white dark:bg-[#0D0D0D] rounded-[12px] border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-5 flex flex-col gap-5 transition-colors">
-              <FeatureRow icon={ShieldTick} text="Безопасная сделка через платформу" />
-              <FeatureRow icon={TickCircle} text="Верифицированный данные компании" />
-              <FeatureRow icon={Box} text="Оригинальная продукция с документами" />
+              <FeatureRow icon={ShieldTick} text={t("product.safeDeal")} />
+              <FeatureRow icon={TickCircle} text={t("product.verifiedData")} />
+              <FeatureRow icon={Box} text={t("product.originalProducts")} />
             </div>
           </div>
         </div>
 
         {similar.length > 0 && (
           <div className="mt-8 sm:mt-10">
-            <h2 className="text-xl sm:text-2xl font-display font-bold text-ink-900 dark:text-white mb-4">Похожие товары</h2>
+            <h2 className="text-xl sm:text-2xl font-display font-bold text-ink-900 dark:text-white mb-4">{t("product.similarProducts")}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-6 sm:gap-5">
               {similar.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
             </div>

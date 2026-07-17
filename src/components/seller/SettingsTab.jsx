@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Export, TickCircle, Edit2, CloseCircle, ShieldTick } from "iconsax-reactjs";
 import {
   getMyCompany,
@@ -11,19 +12,19 @@ import { useAuth } from "../../context/AuthContext";
 import { geocodeAddress } from "../../utils/geo";
 import { tariffPlans } from "../../data/mockData";
 
-const VERIFICATION_BADGE = {
-  VERIFIED: { label: "Верифицирован", cls: "text-success-600 dark:text-success-400" },
-  PENDING: { label: "На проверке", cls: "text-amber-500 dark:text-amber-400" },
-  DRAFT: { label: "Черновик", cls: "text-ink-400 dark:text-ink-500" },
-  REJECTED: { label: "Отклонён", cls: "text-danger-500 dark:text-danger-400" },
+const VERIFICATION_BADGE_KEYS = {
+  VERIFIED: { labelKey: "profile.verifiedStatus", cls: "text-success-600 dark:text-success-400" },
+  PENDING: { labelKey: "profile.pendingStatus", cls: "text-amber-500 dark:text-amber-400" },
+  DRAFT: { labelKey: "profile.draftStatus", cls: "text-ink-400 dark:text-ink-500" },
+  REJECTED: { labelKey: "profile.rejectedStatus", cls: "text-danger-500 dark:text-danger-400" },
 };
 
-const REQUIRED_COMPANY_FIELDS = {
-  stir: "ИНН (STIR)",
-  phonePrimary: "Телефон",
-  address: "Адрес",
-  lat: "Широта (lat)",
-  lng: "Долгота (lng)",
+const REQUIRED_COMPANY_FIELD_KEYS = {
+  stir: "seller.requiredFieldStir",
+  phonePrimary: "seller.fieldPhone",
+  address: "seller.requiredFieldAddress",
+  lat: "seller.requiredFieldLat",
+  lng: "seller.requiredFieldLng",
 };
 
 function isEmpty(value) {
@@ -39,11 +40,12 @@ async function resolveRequiredCompanyFields(company, overrides) {
       merged.lng = String(coords.lng);
     }
   }
-  const missing = Object.keys(REQUIRED_COMPANY_FIELDS).filter((k) => isEmpty(merged[k]));
+  const missing = Object.keys(REQUIRED_COMPANY_FIELD_KEYS).filter((k) => isEmpty(merged[k]));
   return { merged, missing };
 }
 
 export default function SettingsTab() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isSeller = user?.accountType === "seller";
 
@@ -78,7 +80,7 @@ export default function SettingsTab() {
     setError("");
     try {
       const result = await uploadCompanyLogo(company.id, file);
-      if (!result?.url) throw new Error("Сервер не вернул ссылку на загруженный логотип");
+      if (!result?.url) throw new Error(t("seller.logoUploadFailed"));
       setCompany((prev) => ({ ...prev, logoUrl: result.url }));
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2500);
@@ -103,17 +105,17 @@ export default function SettingsTab() {
       return;
     }
     if (!["DRAFT", "REJECTED"].includes(fresh.verificationStatus)) {
-      setError("Компания уже отправлена на верификацию или уже верифицирована.");
+      setError(t("seller.alreadySentOrVerified"));
       setVerifying(false);
       return;
     }
-    const missing = Object.keys(REQUIRED_COMPANY_FIELDS).filter((k) => isEmpty(fresh[k]));
+    const missing = Object.keys(REQUIRED_COMPANY_FIELD_KEYS).filter((k) => isEmpty(fresh[k]));
     if (missing.length > 0) {
-      setError(`Перед отправкой на верификацию заполните: ${missing.map((k) => REQUIRED_COMPANY_FIELDS[k]).join(", ")}`);
+      setError(t("seller.fillBeforeVerification", { fields: missing.map((k) => t(REQUIRED_COMPANY_FIELD_KEYS[k])).join(", ") }));
       setVerifying(false);
       return;
     }
-    if (!window.confirm("Отправить компанию на верификацию?")) {
+    if (!window.confirm(t("seller.confirmSendVerification"))) {
       setVerifying(false);
       return;
     }
@@ -145,7 +147,7 @@ export default function SettingsTab() {
       const { merged, missing } = await resolveRequiredCompanyFields(company, { [key]: editing[key] });
       if (missing.length > 0) {
         setError(
-          `Не удаётся сохранить: в профиле компании не хватает данных — ${missing.map((k) => REQUIRED_COMPANY_FIELDS[k]).join(", ")}. Эти данные указываются при создании компании и сейчас отсутствуют в записи.`
+          t("seller.cannotSaveMissingFields", { fields: missing.map((k) => t(REQUIRED_COMPANY_FIELD_KEYS[k])).join(", ") })
         );
         return;
       }
@@ -195,7 +197,7 @@ export default function SettingsTab() {
       const { merged, missing } = await resolveRequiredCompanyFields(company, profileDraft);
       if (missing.length > 0) {
         setError(
-          `Не удаётся сохранить: в профиле компании не хватает данных — ${missing.map((k) => REQUIRED_COMPANY_FIELDS[k]).join(", ")}. Эти данные указываются при создании компании и сейчас отсутствуют в записи.`
+          t("seller.cannotSaveMissingFields", { fields: missing.map((k) => t(REQUIRED_COMPANY_FIELD_KEYS[k])).join(", ") })
         );
         return;
       }
@@ -238,9 +240,9 @@ export default function SettingsTab() {
     if (!isSeller) {
       return (
         <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-6 sm:p-10 max-w-lg mx-auto text-center transition-colors">
-          <p className="font-semibold text-lg text-ink-900 dark:text-white mb-1">Создание компании недоступно</p>
+          <p className="font-semibold text-lg text-ink-900 dark:text-white mb-1">{t("profile.createUnavailable")}</p>
           <p className="text-sm text-ink-400 dark:text-ink-500">
-            Только пользователи с ролью «Продавец» могут создавать компанию на Sklad Market.
+            {t("profile.createUnavailableDesc")}
           </p>
         </div>
       );
@@ -255,22 +257,23 @@ export default function SettingsTab() {
     );
   }
 
-  const vStatus = VERIFICATION_BADGE[company?.verificationStatus] ?? VERIFICATION_BADGE.DRAFT;
+  const vStatusInfo = VERIFICATION_BADGE_KEYS[company?.verificationStatus] ?? VERIFICATION_BADGE_KEYS.DRAFT;
+  const vStatus = { label: t(vStatusInfo.labelKey), cls: vStatusInfo.cls };
 
   const fields = [
-    { key: "name", label: "Название компании" },
-    { key: "shortDescription", label: "Отрасль" },
-    { key: "phonePrimary", label: "Телефон" },
-    { key: "phoneSecondary", label: "Email" },
-    { key: "website", label: "Сайт" },
-    { key: "address", label: "Город" },
+    { key: "name", label: t("seller.fieldCompanyName") },
+    { key: "shortDescription", label: t("seller.fieldIndustry") },
+    { key: "phonePrimary", label: t("seller.fieldPhone") },
+    { key: "phoneSecondary", label: t("seller.fieldEmail") },
+    { key: "website", label: t("seller.fieldWebsite") },
+    { key: "address", label: t("seller.fieldCity") },
   ];
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
       {success && (
         <div className="text-sm text-success-600 dark:text-success-400 bg-success-50 dark:bg-success-500/10 rounded-2xl p-3 text-center">
-          ✓ Данные компании обновлены
+          {t("seller.companyDataUpdated")}
         </div>
       )}
       {error && (
@@ -280,7 +283,7 @@ export default function SettingsTab() {
       )}
 
       <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-6 transition-colors">
-        <p className="font-semibold text-[24px] text-ink-900 dark:text-white mb-4 sm:mb-5">Профиль компании</p>
+        <p className="font-semibold text-[24px] text-ink-900 dark:text-white mb-4 sm:mb-5">{t("seller.companyProfile")}</p>
 
         <div className="flex sm:flex-wrap items-center justify-between gap-3 pb-5 border-b border-[#F0F0F0] dark:border-[#1C1C1C] mb-2">
           <div className="flex items-center gap-3">
@@ -293,7 +296,7 @@ export default function SettingsTab() {
             </div>
             <div>
               <p className="text-sm font-semibold text-ink-900 dark:text-white flex items-center gap-1.5">
-                {company?.name}
+                <span translate="no" className="notranslate">{company?.name}</span>
                 {company?.verificationStatus === "VERIFIED" && (
                   <TickCircle size={18} variant="Outline" className="text-brand-500" />
                 )}
@@ -314,7 +317,7 @@ export default function SettingsTab() {
               className="flex items-center gap-2 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 text-sm font-medium px-4 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors shrink-0 disabled:opacity-50"
             >
               {logoUploading ? <span className="animate-spin">⏳</span> : <Export size={20} />}
-              Логотип
+              {t("seller.logo")}
             </button>
             {(company?.verificationStatus === "DRAFT" || company?.verificationStatus === "REJECTED") && (
               <button
@@ -322,7 +325,7 @@ export default function SettingsTab() {
                 disabled={verifying}
                 className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shrink-0"
               >
-                <ShieldTick size={18} /> {verifying ? "..." : "На верификацию"}
+                <ShieldTick size={18} /> {verifying ? "..." : t("seller.toVerification")}
               </button>
             )}
           </div>
@@ -352,13 +355,13 @@ export default function SettingsTab() {
                 disabled={saving}
                 className="flex-1 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
               >
-                {saving ? "Сохранение..." : "Сохранить"}
+                {saving ? t("seller.saving") : t("seller.save")}
               </button>
               <button
                 onClick={() => setEditingProfile(false)}
                 className="px-4 py-3 rounded-xl border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 text-sm font-medium text-ink-600 dark:text-ink-300 transition-colors"
               >
-                Отмена
+                {t("seller.cancel")}
               </button>
             </div>
           ) : (
@@ -366,7 +369,7 @@ export default function SettingsTab() {
               onClick={startEditProfile}
               className="w-full flex items-center justify-center gap-2 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 text-sm font-medium py-3 rounded-xl text-ink-700 dark:text-ink-200 transition-colors"
             >
-              <Edit2 size={16} /> Редактировать
+              <Edit2 size={16} /> {t("seller.edit")}
             </button>
           )}
         </div>
@@ -398,7 +401,7 @@ export default function SettingsTab() {
                         disabled={saving}
                         className="text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 px-3 py-1.5 rounded-lg transition-colors"
                       >
-                        {saving ? "..." : "Сохранить"}
+                        {saving ? "..." : t("seller.save")}
                       </button>
                       <button onClick={() => cancelEdit(f.key)} className="text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 p-1">
                         <CloseCircle size={18} />
@@ -409,7 +412,7 @@ export default function SettingsTab() {
                       onClick={() => startEdit(f.key, company?.[f.key] ?? "")}
                       className="flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline"
                     >
-                      Изменить
+                      {t("seller.changeField")}
                     </button>
                   )}
                 </div>
@@ -420,7 +423,7 @@ export default function SettingsTab() {
       </div>
 
       <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-6 transition-colors">
-        <p className="font-semibold text-lg text-ink-900 dark:text-white mb-4">Тарифный план</p>
+        <p className="font-semibold text-lg text-ink-900 dark:text-white mb-4">{t("seller.tariffPlan")}</p>
         <div className="flex flex-col sm:grid sm:grid-cols-3 gap-3 sm:gap-4">
           {tariffPlans.map((plan) => (
             <div

@@ -20,38 +20,40 @@ import {
   TickCircle,
 } from "iconsax-reactjs";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useTheme } from "../../context/ThemeContext";
 import MobileMenu from "./MobileMenu";
+import LanguageSwitcher from "./LanguageSwitcher";
 
-const NOTIF_LABELS = {
-  PRODUCT_CREATED: "Новый товар добавлен",
-  COMPANY_CREATED: "Компания создана",
+const NOTIF_LABEL_KEYS = {
+  PRODUCT_CREATED: "header.notifProductCreated",
+  COMPANY_CREATED: "header.notifCompanyCreated",
 };
 
-function notifLabel(type) {
-  return NOTIF_LABELS[type] ?? type?.replace(/_/g, " ") ?? "Уведомление";
+function notifLabel(type, t) {
+  return NOTIF_LABEL_KEYS[type] ? t(NOTIF_LABEL_KEYS[type]) : type?.replace(/_/g, " ") ?? t("header.notifDefault");
 }
 
-const PAGE_TITLES = [
-  { test: (p) => p === "/", title: "Главная" },
-  { test: (p) => p.startsWith("/catalog"), title: "Каталог" },
-  { test: (p) => p.startsWith("/products-explore"), title: "Продукты" },
-  { test: (p) => p.startsWith("/product/"), title: "Товар" },
-  { test: (p) => p.startsWith("/favorites"), title: "Фавориты" },
-  { test: (p) => p.startsWith("/cart"), title: "Корзина" },
-  { test: (p) => p.startsWith("/ai-agent"), title: "Ai agent" },
-  { test: (p) => p.startsWith("/companies"), title: "Компании" },
-  { test: (p) => p.startsWith("/company/"), title: "Профиль" },
-  { test: (p) => p.startsWith("/profile"), title: "Профиль" },
-  { test: (p) => p.startsWith("/seller"), title: "Панель продавца" },
-  { test: (p) => p.startsWith("/moderator"), title: "Панель модератора" },
-  { test: (p) => p.startsWith("/tariffs"), title: "Тарифы" },
+const PAGE_TITLE_KEYS = [
+  { test: (p) => p === "/", titleKey: "nav.home" },
+  { test: (p) => p.startsWith("/catalog"), titleKey: "nav.catalog" },
+  { test: (p) => p.startsWith("/product/"), titleKey: "nav.product" },
+  { test: (p) => p.startsWith("/favorites"), titleKey: "nav.favorites" },
+  { test: (p) => p.startsWith("/cart"), titleKey: "nav.cart" },
+  { test: (p) => p.startsWith("/ai-agent"), titleKey: "nav.aiAgent" },
+  { test: (p) => p.startsWith("/companies"), titleKey: "nav.companies" },
+  { test: (p) => p.startsWith("/company/"), titleKey: "nav.profile" },
+  { test: (p) => p.startsWith("/profile"), titleKey: "nav.profile" },
+  { test: (p) => p.startsWith("/seller"), titleKey: "nav.seller" },
+  { test: (p) => p.startsWith("/moderator"), titleKey: "nav.moderator" },
+  { test: (p) => p.startsWith("/tariffs"), titleKey: "nav.tariffs" },
 ];
 
-function getPageTitle(pathname) {
-  return PAGE_TITLES.find(({ test }) => test(pathname))?.title ?? "Sklad Market";
+function getPageTitle(pathname, t) {
+  const found = PAGE_TITLE_KEYS.find(({ test }) => test(pathname));
+  return found ? t(found.titleKey) : t("common.brand");
 }
 
 function notifBody(item) {
@@ -61,18 +63,19 @@ function notifBody(item) {
   );
 }
 
-function timeAgo(iso) {
+function timeAgo(iso, t) {
   if (!iso) return "";
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1) return "только что";
-  if (m < 60) return `${m} мин назад`;
+  if (m < 1) return t("header.timeJustNow");
+  if (m < 60) return t("header.timeMinutesAgo", { count: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h} ч назад`;
-  return `${Math.floor(h / 24)} д назад`;
+  if (h < 24) return t("header.timeHoursAgo", { count: h });
+  return t("header.timeDaysAgo", { count: Math.floor(h / 24) });
 }
 
 export default function Header() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { items, favorites } = useCart();
   const { theme, toggleTheme } = useTheme();
@@ -95,7 +98,7 @@ export default function Header() {
   const cartMenuRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const pageTitle = getPageTitle(location.pathname);
+  const pageTitle = getPageTitle(location.pathname, t);
 
   useEffect(() => {
     if (!user) return;
@@ -162,7 +165,7 @@ export default function Header() {
         <button
           onClick={() => setMobileMenuOpen(true)}
           className="md:hidden text-ink-600 dark:text-ink-300 p-1.5 -ml-1 shrink-0"
-          aria-label="Открыть меню"
+          aria-label={t("header.openMenu")}
         >
           <HamburgerMenu size={24} variant="Linear" />
         </button>
@@ -171,7 +174,7 @@ export default function Header() {
           to="/"
           className="hidden sm:block text-2xl font-extrabold text-ink-900 dark:text-white tracking-tight shrink-0"
         >
-          Sklad Market
+          {t("common.brand")}
         </Link>
 
         <p className="sm:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-base font-semibold text-ink-900 dark:text-white">
@@ -184,17 +187,19 @@ export default function Header() {
             className="hidden sm:flex items-center gap-5 px-4 py-2 rounded-full border border-ink-200 dark:border-[#1C1C1C] text-ink-500 dark:text-ink-400 hover:border-brand-300 dark:hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors text-sm w-full max-w-xs"
           >
             <Messages1 size={18} variant="Linear" />
-            <span className="flex-1 text-left text-xs text-black dark:text-white">Ai agent</span>
+            <span className="flex-1 text-left text-xs text-black dark:text-white">{t("nav.aiAgent")}</span>
             <kbd className="text-[14px] bg-ink-100 dark:bg-[#2A2A2A] px-3 rounded-full ml-5 font-mono text-ink-500 dark:text-white">
               ⌘ K
             </kbd>
           </button>
 
+          <LanguageSwitcher />
+
           <button
             onClick={toggleTheme}
             className="hidden sm:flex relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-ink-100 dark:bg-[#1C1C1C] items-center justify-center text-ink-600 dark:text-amber-300 hover:bg-ink-200 dark:hover:bg-[#1E1E1E] transition-colors shrink-0"
-            aria-label="Переключить тему"
-            title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
+            aria-label={t("header.toggleTheme")}
+            title={theme === "dark" ? t("header.lightTheme") : t("header.darkTheme")}
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.span
@@ -234,7 +239,7 @@ export default function Header() {
                 >
                   <div className="flex items-center justify-between px-4 py-3 border-b border-ink-100 dark:border-[#1C1C1C]">
                     <span className="font-semibold text-sm text-ink-900 dark:text-white">
-                      Уведомления
+                      {t("header.notifications")}
                       {notifUnread > 0 && (
                         <span className="ml-2 bg-danger-500 text-white text-[10px] rounded-full px-1.5 py-0.5">
                           {notifUnread}
@@ -247,7 +252,7 @@ export default function Header() {
                         className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline"
                       >
                         <TickCircle size={13} />
-                        Прочитать все
+                        {t("header.markAllRead")}
                       </button>
                     )}
                   </div>
@@ -266,7 +271,7 @@ export default function Header() {
                     ) : notifications.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-10 gap-2 text-ink-400 dark:text-ink-500">
                         <Notification size={28} variant="Linear" />
-                        <p className="text-sm">Нет уведомлений</p>
+                        <p className="text-sm">{t("header.noNotifications")}</p>
                       </div>
                     ) : (
                       notifications.map((n) => {
@@ -293,7 +298,7 @@ export default function Header() {
                                   : "font-medium text-ink-600 dark:text-ink-300"
                                   }`}
                               >
-                                {notifLabel(n.type)}
+                                {notifLabel(n.type, t)}
                               </p>
                               {notifBody(n) && (
                                 <p className="text-[11px] text-ink-400 dark:text-ink-500 truncate mt-0.5">
@@ -301,7 +306,7 @@ export default function Header() {
                                 </p>
                               )}
                               <p className="text-[10px] text-ink-300 dark:text-ink-600 mt-1">
-                                {timeAgo(n.sent_at)}
+                                {timeAgo(n.sent_at, t)}
                               </p>
                             </div>
                             {isUnread && (
@@ -357,7 +362,7 @@ export default function Header() {
             <button
               onClick={() => setCartMenuOpen((v) => !v)}
               className="relative text-ink-500 dark:text-[#CDD1D6] hover:text-ink-900 dark:hover:text-white transition-colors"
-              aria-label="Быстрые действия"
+              aria-label={t("header.quickActions")}
             >
               <ShoppingCart size={22} variant="Linear" />
               {items?.length > 0 && (
@@ -378,31 +383,31 @@ export default function Header() {
                 >
                   <DropdownItem
                     icon={Notification}
-                    label="Уведомления"
+                    label={t("header.notifications")}
                     badge={notifUnread}
                     onClick={() => { setCartMenuOpen(false); setNotifOpen(true); }}
                   />
                   <DropdownItem
                     icon={Heart}
-                    label="Фавориты"
+                    label={t("nav.favorites")}
                     badge={favorites?.size}
                     onClick={() => { setCartMenuOpen(false); navigate("/favorites"); }}
                   />
                   <DropdownItem
                     icon={Messages2}
-                    label="Чат"
+                    label={t("nav.chat")}
                     badge={chatUnread}
                     onClick={() => { setCartMenuOpen(false); navigate(isSeller ? "/seller?tab=messages" : "/chat"); }}
                   />
                   <DropdownItem
                     icon={ShoppingCart}
-                    label="Корзина"
+                    label={t("nav.cart")}
                     badge={items?.length}
                     onClick={() => { setCartMenuOpen(false); navigate("/cart"); }}
                   />
                   <DropdownItem
                     icon={Messages1}
-                    label="Ai agent"
+                    label={t("nav.aiAgent")}
                     onClick={() => { setCartMenuOpen(false); navigate("/ai-agent"); }}
                   />
                 </motion.div>
@@ -445,21 +450,21 @@ export default function Header() {
                       </div>
                     </div>
                     {isSeller && (
-                      <DropdownItem icon={Element3} label="Панель продавца" onClick={() => { navigate("/seller"); setProfileOpen(false); }} />
+                      <DropdownItem icon={Element3} label={t("nav.seller")} onClick={() => { navigate("/seller"); setProfileOpen(false); }} />
                     )}
                     {isModerator && (
-                      <DropdownItem icon={ElementPlus} label="Панель модератора" onClick={() => { navigate("/moderator"); setProfileOpen(false); }} />
+                      <DropdownItem icon={ElementPlus} label={t("nav.moderator")} onClick={() => { navigate("/moderator"); setProfileOpen(false); }} />
                     )}
                     {isSeller && (
-                      <DropdownItem icon={Buildings} label="Профиль компании" onClick={() => { navigate("/profile"); setProfileOpen(false); }} />
+                      <DropdownItem icon={Buildings} label={t("header.companyProfile")} onClick={() => { navigate("/profile"); setProfileOpen(false); }} />
                     )}
                     {isSeller && (
-                      <DropdownItem icon={Setting} label="Настройка" onClick={() => { navigate("/seller?tab=settings"); setProfileOpen(false); }} />
+                      <DropdownItem icon={Setting} label={t("header.settings")} onClick={() => { navigate("/seller?tab=settings"); setProfileOpen(false); }} />
                     )}
                     <div className="h-px bg-ink-100 dark:bg-[#1C1C1C] my-1" />
                     <DropdownItem
                       icon={Logout}
-                      label="Выйти из аккаунта"
+                      label={t("header.logout")}
                       danger
                       onClick={() => {
                         logout();
@@ -476,7 +481,7 @@ export default function Header() {
               to="/login"
               className="hidden sm:inline-block hover:bg-gray-300 dark:text-white dark:hover:bg-gray-800 border border-gray-300 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap"
             >
-              Зарегистрироваться
+              {t("header.register")}
             </Link>
           )}
         </div>

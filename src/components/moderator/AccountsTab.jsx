@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { getAdminUsers, blockUser, unblockUser } from "../../api/api";
 import { IoIosMore } from "react-icons/io";
 
-const headers = ["Пользователи", "Роли", "Логин", "Дата регистрации", "Предупреждении", "Статус"];
+const HEADER_KEYS = ["moderator.colUsers", "moderator.colRoles", "moderator.colLogin", "moderator.colRegDate", "moderator.colWarnings", "moderator.colStatus"];
 
 function formatDate(iso) {
   if (!iso) return "—";
@@ -10,6 +11,7 @@ function formatDate(iso) {
 }
 
 function StatusBadge({ status }) {
+  const { t } = useTranslation();
   const isActive = status !== "BLOCKED";
   return (
     <span
@@ -18,12 +20,13 @@ function StatusBadge({ status }) {
         : "bg-[#FFD0D0] dark:bg-[#4A0E0E] text-[#FF0000] dark:text-[#FF1A1A]"
         }`}
     >
-      {isActive ? "Активный" : "Заблокирован"}
+      {isActive ? t("moderator.active") : t("moderator.blocked")}
     </span>
   );
 }
 
 export default function AccountsTab() {
+  const { t } = useTranslation();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(null);
@@ -61,7 +64,7 @@ export default function AccountsTab() {
         await unblockUser(a.id);
         setAccounts((prev) => prev.map((x) => (x.id === a.id ? { ...x, status: "ACTIVE" } : x)));
       } else {
-        const reason = window.prompt("Причина блокировки:");
+        const reason = window.prompt(t("moderator.blockReasonPrompt"));
         if (reason == null) { setActionId(null); return; }
         await blockUser(a.id, reason);
         setAccounts((prev) => prev.map((x) => (x.id === a.id ? { ...x, status: "BLOCKED" } : x)));
@@ -75,7 +78,7 @@ export default function AccountsTab() {
 
   return (
     <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] px-4 py-6 sm:p-4 transition-colors">
-      <p className="font-semibold text-[24px] leading-tight text-ink-900 dark:text-white mb-6 ml-3 sm:mb-7">Управление аккаунтами</p>
+      <p className="font-semibold text-[24px] leading-tight text-ink-900 dark:text-white mb-6 ml-3 sm:mb-7">{t("moderator.accountsManagement")}</p>
 
       {loading ? (
         <div className="flex flex-col gap-3 px-3 sm:px-0">
@@ -84,7 +87,7 @@ export default function AccountsTab() {
           ))}
         </div>
       ) : accounts.length === 0 ? (
-        <p className="text-center py-12 text-ink-400">Аккаунты не найдены</p>
+        <p className="text-center py-12 text-ink-400">{t("moderator.noAccountsFound")}</p>
       ) : (
         <>
           {/* Mobile: stacked cards */}
@@ -101,7 +104,7 @@ export default function AccountsTab() {
                     <button
                       onClick={() => setMenuOpen(menuOpen === a.id ? null : a.id)}
                       className="inline-flex items-center justify-center text-black rounded-[4px] hover:bg-ink-50 dark:text-white dark:hover:bg-[#171717]"
-                      aria-label="Открыть меню аккаунта"
+                      aria-label={t("moderator.openAccountMenu")}
                     >
                       <IoIosMore className="text-[24px]" />
                     </button>
@@ -111,7 +114,7 @@ export default function AccountsTab() {
                           onClick={() => toggleBlock(a)}
                           className="w-full text-left px-4 py-2.5 text-sm text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10 rounded-xl"
                         >
-                          {a.status === "BLOCKED" ? "Разблокировать" : "Заблокировать"}
+                          {a.status === "BLOCKED" ? t("moderator.unblock") : t("moderator.block")}
                         </button>
                       </div>
                     )}
@@ -119,15 +122,15 @@ export default function AccountsTab() {
                 </div>
                 <div className="flex flex-col gap-1.5 text-xs border-t border-[#F0F0F0] dark:border-[#1C1C1C] pt-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-ink-400 dark:text-ink-500">Логин</span>
+                    <span className="text-ink-400 dark:text-ink-500">{t("moderator.colLogin")}</span>
                     <span className="text-ink-900 dark:text-white font-medium truncate">{a.username}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-ink-400 dark:text-ink-500">Дата регистрации</span>
+                    <span className="text-ink-400 dark:text-ink-500">{t("moderator.colRegDate")}</span>
                     <span className="text-ink-900 dark:text-white font-medium">{formatDate(a.createdDate)}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-ink-400 dark:text-ink-500">Предупреждении</span>
+                    <span className="text-ink-400 dark:text-ink-500">{t("moderator.colWarnings")}</span>
                     <span className="text-ink-900 dark:text-white font-medium">{a.warningCount || "-"}</span>
                   </div>
                 </div>
@@ -139,9 +142,9 @@ export default function AccountsTab() {
           <div className="hidden sm:block overflow-x-auto">
             <div className="w-full">
               <div className="text-left text-[16px] grid grid-cols-6 text-black dark:text-white">
-                {headers.map((header, index) => (
-                  <div key={header} className={`pb-1 font-normal ${index === 0 ? "pl-4" : "border-l border-[#6F6F6F] px-5"}`}>
-                    <span className="flex items-center text-sm gap-3 whitespace-nowrap">{header}</span>
+                {HEADER_KEYS.map((headerKey, index) => (
+                  <div key={headerKey} className={`pb-1 font-normal ${index === 0 ? "pl-4" : "border-l border-[#6F6F6F] px-5"}`}>
+                    <span className="flex items-center text-sm gap-3 whitespace-nowrap">{t(headerKey)}</span>
                   </div>
                 ))}
               </div>
@@ -159,7 +162,7 @@ export default function AccountsTab() {
                     <button
                       onClick={() => setMenuOpen(menuOpen === a.id ? null : a.id)}
                       className="inline-flex items-center justify-center text-black rounded-[4px] hover:bg-ink-50 dark:text-white dark:hover:bg-[#171717]"
-                      aria-label="Открыть меню аккаунта"
+                      aria-label={t("moderator.openAccountMenu")}
                     >
                       <IoIosMore className="text-[24px]" />
                     </button>
@@ -169,7 +172,7 @@ export default function AccountsTab() {
                           onClick={() => toggleBlock(a)}
                           className="w-full text-left px-4 py-2.5 text-sm text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10 rounded-xl"
                         >
-                          {a.status === "BLOCKED" ? "Разблокировать" : "Заблокировать"}
+                          {a.status === "BLOCKED" ? t("moderator.unblock") : t("moderator.block")}
                         </button>
                       </div>
                     )}

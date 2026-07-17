@@ -7,7 +7,6 @@ import {
   Home2,
   Buildings,
   BoxAdd,
-  I3DCubeScan,
   UserSquare,
   SecurityUser,
   DollarCircle,
@@ -19,22 +18,24 @@ import {
   UserAdd,
   Profile,
 } from "iconsax-reactjs";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const navItems = [
-  { to: "/", label: "Главная", icon: Home2 },
-  { to: "/catalog", label: "Каталог", icon: BoxAdd },
-  { to: "/products-explore", label: "Продукты", icon: I3DCubeScan },
-  { to: "/requests", label: "Мои запросы", icon: ClipboardText },
-  { to: "/profile", label: "Профиль", icon: UserSquare, sellerOnly: true },
-  { to: "/companies", label: "Компании", icon: Buildings },
-  { to: "/seller", label: "Панель продавца", icon: SecurityUser, sellerOnly: true },
-  { to: "/moderator", label: "Панель модератора", icon: ElementPlus, moderatorOnly: true },
-  { to: "/tariffs", label: "Тарифы", icon: DollarCircle },
+  { to: "/", labelKey: "nav.home", icon: Home2 },
+  { to: "/catalog", labelKey: "nav.catalog", icon: BoxAdd },
+  { to: "/requests", labelKey: "nav.requests", icon: ClipboardText },
+  { to: "/profile", labelKey: "nav.profile", icon: UserSquare, sellerOnly: true },
+  { to: "/companies", labelKey: "nav.companies", icon: Buildings },
+  { to: "/seller", labelKey: "nav.seller", icon: SecurityUser, sellerOnly: true },
+  { to: "/moderator", labelKey: "nav.moderator", icon: ElementPlus, moderatorOnly: true },
+  { to: "/tariffs", labelKey: "nav.tariffs", icon: DollarCircle },
 ];
 
 export default function MobileMenu({ open, onClose }) {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -103,7 +104,7 @@ export default function MobileMenu({ open, onClose }) {
               <button
                 onClick={onClose}
                 className="text-ink-400 hover:text-ink-700 dark:hover:text-white transition-colors p-1 -mr-1"
-                aria-label="Закрыть"
+                aria-label={t("common.close")}
               >
                 <CloseCircle size={24} variant="Linear" />
               </button>
@@ -122,7 +123,7 @@ export default function MobileMenu({ open, onClose }) {
             )}
 
             <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-1">
-              {visibleNavItems.map(({ to, label, icon: Icon }) => (
+              {visibleNavItems.map(({ to, labelKey, icon: Icon }) => (
                 <NavLink
                   key={to}
                   to={to}
@@ -137,7 +138,7 @@ export default function MobileMenu({ open, onClose }) {
                   {({ isActive }) => (
                     <>
                       <Icon size={20} variant={isActive ? "Bold" : "Linear"} />
-                      <span>{label}</span>
+                      <span>{t(labelKey)}</span>
                     </>
                   )}
                 </NavLink>
@@ -145,12 +146,13 @@ export default function MobileMenu({ open, onClose }) {
             </nav>
 
             <div className="px-3 pb-4 pt-3 border-t border-ink-100 dark:border-[#1C1C1C] flex flex-col gap-1 shrink-0">
+              <LanguageSwitcher variant="mobile" />
               <button
                 onClick={toggleTheme}
                 className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium text-ink-500 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-[#171717] hover:text-ink-800 dark:hover:text-ink-200 transition-colors"
               >
                 {theme === "dark" ? <Sun1 size={20} variant="Linear" /> : <Moon size={20} variant="Linear" />}
-                <span>{theme === "dark" ? "Светлая тема" : "Тёмная тема"}</span>
+                <span>{theme === "dark" ? t("header.lightTheme") : t("header.darkTheme")}</span>
               </button>
 
               {user ? (
@@ -164,7 +166,7 @@ export default function MobileMenu({ open, onClose }) {
                       className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium text-ink-500 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-[#171717] hover:text-ink-800 dark:hover:text-ink-200 transition-colors"
                     >
                       <Setting size={20} variant="Linear" />
-                      <span>Настройка</span>
+                      <span>{t("header.settings")}</span>
                     </button>
                   )}
                   <button
@@ -176,7 +178,7 @@ export default function MobileMenu({ open, onClose }) {
                     className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-semibold text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors"
                   >
                     <Logout size={20} variant="Linear" />
-                    <span>Выйти из аккаунта</span>
+                    <span>{t("header.logout")}</span>
                   </button>
                 </>
               ) : (
@@ -189,7 +191,7 @@ export default function MobileMenu({ open, onClose }) {
                     className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-semibold text-ink-900 dark:text-white hover:bg-ink-50 dark:hover:bg-[#171717] transition-colors"
                   >
                     <LoginCurve size={20} variant="Linear" />
-                    <span>Войти</span>
+                    <span>{t("mobileMenu.login")}</span>
                   </button>
                   <button
                     onClick={() => {
@@ -199,7 +201,7 @@ export default function MobileMenu({ open, onClose }) {
                     className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-semibold text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors"
                   >
                     <UserAdd size={20} variant="Linear" />
-                    <span>Регистрация</span>
+                    <span>{t("mobileMenu.register")}</span>
                   </button>
                 </>
               )}

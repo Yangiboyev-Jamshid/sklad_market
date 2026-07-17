@@ -3,27 +3,27 @@ import {
   Home2,
   Buildings,
   BoxAdd,
-  I3DCubeScan,
   UserSquare,
   SecurityUser,
   DollarCircle,
   ClipboardText
 } from "iconsax-reactjs";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 
 const navItems = [
-  { to: "/", label: "Главная", icon: Home2 },
-  { to: "/catalog", label: "Каталог", icon: BoxAdd },
-  { to: "/products-explore", label: "Продукты", icon: I3DCubeScan },
-  { to: "/requests", label: "Мои запросы", icon: ClipboardText },
-  { to: "/profile", label: "Профиль", icon: UserSquare, sellerOnly: true },
-  { to: "/companies", label: "Компании", icon: Buildings },
-  { to: "/seller", label: "Панель продавца", icon: SecurityUser, sellerOnly: true },
-  { to: "/tariffs", label: "Тарифы", icon: DollarCircle },
+  { to: "/", labelKey: "nav.home", icon: Home2 },
+  { to: "/catalog", labelKey: "nav.catalog", icon: BoxAdd },
+  { to: "/requests", labelKey: "nav.requests", icon: ClipboardText },
+  { to: "/profile", labelKey: "nav.profile", icon: UserSquare, sellerOnly: true },
+  { to: "/companies", labelKey: "nav.companies", icon: Buildings },
+  { to: "/seller", labelKey: "nav.seller", icon: SecurityUser, sellerOnly: true },
+  { to: "/tariffs", labelKey: "nav.tariffs", icon: DollarCircle },
 ];
 
 export default function SidebarRail() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isSeller = (user?.role || "").toUpperCase() === "SELLER";
   const visibleNavItems = navItems.filter((item) => !item.sellerOnly || isSeller);
@@ -82,11 +82,11 @@ export default function SidebarRail() {
         </NavLink>
         <div className=" h-px bg-ink-200 dark:bg-[#1C1C1C] mb-2 ml-5 shrink-0" />
         <nav className="flex flex-col gap-1 w-full items-start">
-          {visibleNavItems.map(({ to, label, icon: Icon }) => (
+          {visibleNavItems.map(({ to, labelKey, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
-              title={label}
+              title={t(labelKey)}
               className={({ isActive }) =>
                 `relative flex items-center h-11 w-11 group-hover:w-[196px] rounded-xl ml-[14px] mr-2 shrink-0 overflow-hidden transition-[width,color] duration-200 ${isActive
                   ? "text-brand-600 dark:text-brand-400"
@@ -107,7 +107,7 @@ export default function SidebarRail() {
                     <Icon size={20} variant={isActive ? "Bold" : "Linear"} />
                   </span>
                   <span className="relative z-10 whitespace-nowrap text-sm font-medium pr-4 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                    {label}
+                    {t(labelKey)}
                   </span>
                 </>
               )}

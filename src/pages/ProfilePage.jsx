@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import {
   Call,
   Global,
@@ -26,27 +27,28 @@ import { getCompanyBySlug, getMyCompany, getCompaniesMap, getCompanyProducts, ge
 import { buildCompanyMapPins } from "../utils/mapPins";
 import ProductCard from "../components/ui/ProductCard";
 
-function normalizeProduct(p) {
+function normalizeProduct(p, t) {
   return {
     id: p.id,
     slug: p.slug,
     name: p.name,
     price: p.price ?? 0,
     unit: p.currency ?? "UZS",
-    company: p.companyId ? `Компания #${p.companyId}` : "",
+    company: p.companyId ? t("common.companyFallback", { id: p.companyId }) : "",
     image: p.images?.find((img) => img.is_primary)?.url ?? p.images?.[0]?.url ?? null,
     verified: p.status === "ACTIVE" || p.isPromoted,
   };
 }
 
-const VERIFY_BADGE = {
-  VERIFIED: { label: "Верифицирован", cls: "text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-500/15" },
-  PENDING: { label: "На проверке", cls: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10" },
-  DRAFT: { label: "Черновик", cls: "text-ink-500 dark:text-ink-400 bg-ink-100 dark:bg-[#1C1C1C]" },
-  REJECTED: { label: "Отклонён", cls: "text-danger-600 dark:text-danger-400 bg-danger-50 dark:bg-danger-500/10" },
+const VERIFY_BADGE_KEYS = {
+  VERIFIED: { labelKey: "profile.verifiedStatus", cls: "text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-500/15" },
+  PENDING: { labelKey: "profile.pendingStatus", cls: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10" },
+  DRAFT: { labelKey: "profile.draftStatus", cls: "text-ink-500 dark:text-ink-400 bg-ink-100 dark:bg-[#1C1C1C]" },
+  REJECTED: { labelKey: "profile.rejectedStatus", cls: "text-danger-600 dark:text-danger-400 bg-danger-50 dark:bg-danger-500/10" },
 };
 
 export default function ProfilePage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const isOwnProfile = !id;
@@ -101,12 +103,12 @@ export default function ProfilePage() {
     setProductsLoading(true);
     getCompanyProducts(company.slug, { page: 1, per_page: 30 })
       .then((data) => {
-        setProducts((data?.content ?? []).map(normalizeProduct));
+        setProducts((data?.content ?? []).map((p) => normalizeProduct(p, t)));
         setProductsTotal(data?.totalElements ?? 0);
       })
       .catch(() => setProducts([]))
       .finally(() => setProductsLoading(false));
-  }, [company?.slug]);
+  }, [company?.slug, t]);
 
   useEffect(() => {
     if (!company?.id) return;
@@ -163,9 +165,9 @@ export default function ProfilePage() {
             />
           ) : (
             <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-6 sm:p-10 max-w-lg mx-auto text-center transition-colors">
-              <p className="font-semibold text-lg text-ink-900 dark:text-white mb-1">Создание компании недоступно</p>
+              <p className="font-semibold text-lg text-ink-900 dark:text-white mb-1">{t("profile.createUnavailable")}</p>
               <p className="text-sm text-ink-400 dark:text-ink-500">
-                Только пользователи с ролью «Продавец» могут создавать компанию на Sklad Market.
+                {t("profile.createUnavailableDesc")}
               </p>
             </div>
           )}
@@ -178,14 +180,15 @@ export default function ProfilePage() {
     return (
       <AppShell>
         <div className="flex items-center justify-center h-64 text-ink-400">
-          {error || "Компания не найдена"}
+          {error || t("profile.companyNotFound")}
         </div>
       </AppShell>
     );
   }
 
   const verificationStatus = company.verificationStatus ?? company.status ?? "DRAFT";
-  const badge = VERIFY_BADGE[verificationStatus] ?? VERIFY_BADGE.DRAFT;
+  const badgeInfo = VERIFY_BADGE_KEYS[verificationStatus] ?? VERIFY_BADGE_KEYS.DRAFT;
+  const badge = { label: t(badgeInfo.labelKey), cls: badgeInfo.cls };
   const isVerified = verificationStatus === "VERIFIED";
   const initials = (company.name ?? "??").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const createdYear = company.createdAt ? new Date(company.createdAt).getFullYear() : null;
@@ -200,14 +203,14 @@ export default function ProfilePage() {
 
         <div className="hidden sm:flex items-center justify-between mb-5 sm:mb-10 gap-3">
           <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white">
-            {isOwnProfile ? "Профиль компании" : "Компания"}
+            {isOwnProfile ? t("profile.companyProfileTitle") : t("profile.companyTitle")}
           </h1>
           {isOwnProfile && (
             <button
               onClick={() => navigate("/seller")}
               className="flex items-center gap-2 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#2D2D2D] rounded-xl px-3.5 sm:px-12 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-ink-700 dark:text-ink-200 hover:border-ink-300 dark:hover:border-ink-600 transition-colors shrink-0"
             >
-              <SecurityUser size={20} /> <span className="hidden sm:inline">Панель продавца</span>
+              <SecurityUser size={20} /> <span className="hidden sm:inline">{t("profile.sellerDashboard")}</span>
             </button>
           )}
         </div>
@@ -222,7 +225,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="pb-1 mt-8 sm:mb-0">
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    <p className="font-bold text-[24px] sm:text-lg sm:text-2xl text-ink-900 dark:text-white">{company.name}</p>
+                    <p className="font-bold text-[24px] sm:text-lg sm:text-2xl text-ink-900 dark:text-white"><span translate="no" className="notranslate">{company.name}</span></p>
                     <span className={`hidden sm:inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-[4px] ${badge.cls}`}>
                       {isVerified && <TickCircle size={13} />} {badge.label}
                     </span>
@@ -244,14 +247,14 @@ export default function ProfilePage() {
                   disabled={chatLoading}
                   className="flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-2xl sm:rounded-xl transition-colors shrink-0"
                 >
-                  <Message size={18} /> {chatLoading ? "..." : "Написать"}
+                  <Message size={18} /> {chatLoading ? "..." : t("profile.write")}
                 </button>
                 {company.phonePrimary && (
                   <a
                     href={`tel:${company.phonePrimary}`}
                     className="flex items-center justify-center gap-2 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 text-sm font-medium px-4 py-2.5 rounded-2xl sm:rounded-xl text-ink-700 dark:text-ink-200 transition-colors shrink-0"
                   >
-                    <Call size={18} /> Позвонить
+                    <Call size={18} /> {t("profile.call")}
                   </a>
                 )}
                 {hasMapCoords && (
@@ -262,7 +265,7 @@ export default function ProfilePage() {
                       : "border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 text-ink-700 dark:text-ink-200"
                       }`}
                   >
-                    <GlobalSearch size={18} /> Карта
+                    <GlobalSearch size={18} /> {t("profile.map")}
                   </button>
                 )}
               </div>
@@ -288,10 +291,10 @@ export default function ProfilePage() {
               className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-5 transition-colors mb-5"
             >
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <p className="font-semibold text-ink-900 dark:text-white">Карта с магазинами</p>
+                <p className="font-semibold text-ink-900 dark:text-white">{t("profile.mapWithShops")}</p>
                 <div className="flex items-center w-[50%] gap-2">
                   <button className="hidden w-full sm:flex items-center justify-between gap-2 bg-ink-50 dark:bg-[#171717] rounded-xl px-3.5 py-2 text-sm text-ink-700 dark:text-ink-200">
-                    {cityShort ?? "Все регионы"} <ArrowDown2 size={16} />
+                    {cityShort ?? t("profile.allRegions")} <ArrowDown2 size={16} />
                   </button>
                 </div>
               </div>
@@ -305,9 +308,9 @@ export default function ProfilePage() {
             <div className="sm:hidden mb-4">
               <PillToggle
                 options={[
-                  { value: "products", label: "Товары" },
-                  { value: "reviews", label: "Отзывы" },
-                  { value: "info", label: "Информация" },
+                  { value: "products", label: t("profile.tabProducts") },
+                  { value: "reviews", label: t("profile.tabReviews") },
+                  { value: "info", label: t("profile.tabInfo") },
                 ]}
                 value={tab}
                 onChange={setTab}
@@ -324,10 +327,10 @@ export default function ProfilePage() {
               <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] transition-colors">
                 <div className="hidden sm:flex border-b border-ink-100 dark:border-[#1C1C1C] px-2 overflow-x-auto">
                   <TabBtn active={tab === "products"} onClick={() => setTab("products")}>
-                    Товары{productsTotal > 0 && ` (${productsTotal})`}
+                    {t("profile.tabProducts")}{productsTotal > 0 && ` (${productsTotal})`}
                   </TabBtn>
                   <TabBtn active={tab === "reviews"} onClick={() => setTab("reviews")}>
-                    Отзывы{reviews.length > 0 && ` (${reviews.length})`}
+                    {t("profile.tabReviews")}{reviews.length > 0 && ` (${reviews.length})`}
                   </TabBtn>
                 </div>
 
@@ -343,7 +346,7 @@ export default function ProfilePage() {
                       ) : products.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 gap-2 text-ink-400 dark:text-ink-500">
                           <Buildings2 size={36} variant="Linear" />
-                          <p className="text-sm">Нет опубликованных товаров</p>
+                          <p className="text-sm">{t("profile.noProducts")}</p>
                         </div>
                       ) : (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
@@ -366,14 +369,14 @@ export default function ProfilePage() {
                         ))
                       ) : reviews.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-10 gap-2 text-ink-400 dark:text-ink-500">
-                          <p className="text-sm">Пока нет отзывов</p>
+                          <p className="text-sm">{t("profile.noReviews")}</p>
                         </div>
                       ) : (
                         reviews.map((r, i) => (
                           <div key={r.id ?? i} className="border-t border-ink-100 dark:border-[#1C1C1C] pt-4 first:border-0 first:pt-0">
                             <div className="flex items-center justify-between gap-2 mb-1.5">
                               <p className="text-sm font-semibold text-ink-900 dark:text-white flex items-center gap-1">
-                                {r.author ?? r.authorName ?? r.userName ?? r.name ?? "Пользователь"}
+                                {r.author ?? r.authorName ?? r.userName ?? r.name ?? t("profile.anonymousUser")}
                                 {r.verified && <TickCircle size={15} variant="Outline" className="text-brand-500" />}
                               </p>
                               <RatingStars rating={r.rating ?? 0} size={14} />
@@ -401,49 +404,50 @@ export default function ProfilePage() {
 }
 
 function CompanyMetaCards({ company, productsTotal, reviewsCount, createdYear, cityShort, email, bare = false }) {
+  const { t } = useTranslation();
   return (
     <>
       {(company.description || company.shortDescription) && (
         <div className={bare ? "border border-ink-100 dark:border-[#1C1C1C] rounded-2xl p-4" : "bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-5 transition-colors"}>
-          <p className="font-semibold text-ink-900 dark:text-white mb-2">О продавце</p>
+          <p className="font-semibold text-ink-900 dark:text-white mb-2">{t("profile.aboutSeller")}</p>
           <p className="text-sm text-ink-500 dark:text-ink-300 leading-relaxed mb-4">
             {company.description || company.shortDescription}
           </p>
           {(company.rating != null || reviewsCount > 0 || productsTotal > 0 || company.productsCount != null) && (
             <div className="grid grid-cols-3 gap-2 text-center">
-              <Stat value={company.rating ?? "—"} label="Рейтинг" />
-              <Stat value={reviewsCount ?? 0} label="Отзывы" />
-              <Stat value={company.productsCount ?? productsTotal} label="Товаров" />
+              <Stat value={company.rating ?? "—"} label={t("common.rating")} />
+              <Stat value={reviewsCount ?? 0} label={t("common.reviews")} />
+              <Stat value={company.productsCount ?? productsTotal} label={t("common.productsCount")} />
             </div>
           )}
         </div>
       )}
 
       <div className={bare ? "border border-ink-100 dark:border-[#1C1C1C] rounded-2xl p-4" : "bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-5 transition-colors"}>
-        <p className="font-semibold text-ink-900 dark:text-white mb-3">Информация</p>
+        <p className="font-semibold text-ink-900 dark:text-white mb-3">{t("profile.info")}</p>
         {cityShort && (
-          <InfoRow icon={Location} label="Местоположение" value={`${cityShort}, Узбекистан`} />
+          <InfoRow icon={Location} label={t("profile.location")} value={t("profile.locationValue", { city: cityShort })} />
         )}
         {company.industry && (
-          <InfoRow icon={Buildings2} label="Отрасль" value={company.industry} />
+          <InfoRow icon={Buildings2} label={t("profile.industry")} value={company.industry} />
         )}
         {createdYear && (
-          <InfoRow icon={Calendar} label="Основана" value={`${createdYear} год`} />
+          <InfoRow icon={Calendar} label={t("profile.founded")} value={t("profile.foundedValue", { year: createdYear })} />
         )}
-        <InfoRow icon={Box1} label="Товаров" value={company.productsCount ?? productsTotal} />
+        <InfoRow icon={Box1} label={t("common.productsCount")} value={company.productsCount ?? productsTotal} />
       </div>
 
       {(company.phonePrimary || email || company.website) && (
         <div className={bare ? "border border-ink-100 dark:border-[#1C1C1C] rounded-2xl p-4" : "bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-5 transition-colors"}>
-          <p className="font-semibold text-ink-900 dark:text-white mb-3">Контакты</p>
+          <p className="font-semibold text-ink-900 dark:text-white mb-3">{t("profile.contacts")}</p>
           {company.phonePrimary && (
-            <InfoRow icon={Call} label="Телефон" value={company.phonePrimary} href={`tel:${company.phonePrimary}`} />
+            <InfoRow icon={Call} label={t("profile.phone")} value={company.phonePrimary} href={`tel:${company.phonePrimary}`} />
           )}
           {email && (
-            <InfoRow icon={Sms} label="Email" value={email} href={`mailto:${email}`} />
+            <InfoRow icon={Sms} label={t("profile.email")} value={email} href={`mailto:${email}`} />
           )}
           {company.website && (
-            <InfoRow icon={Global} label="Website" value={company.website} href={`https://${company.website.replace(/^https?:\/\//, "")}`} />
+            <InfoRow icon={Global} label={t("profile.website")} value={company.website} href={`https://${company.website.replace(/^https?:\/\//, "")}`} />
           )}
         </div>
       )}

@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { Heart } from "iconsax-reactjs";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import ProductThumb from "./ProductThumb";
 import { useCart } from "../../context/CartContext";
 
 export default function ProductCard({ product, index = 0 }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { addToCart, favorites, toggleFavorite } = useCart();
   const isFav = favorites?.has(product.id);
@@ -45,18 +47,18 @@ export default function ProductCard({ product, index = 0 }) {
           </h3>
           {product.verified && (
             <span className="shrink-0 text-[10px] sm:text-sm px-1.5 sm:px-2 py-[2px] rounded-[5px] bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400">
-              Verified
+              {t("common.verified")}
             </span>
           )}
         </div>
 
         {/* Company name */}
-        <p className="text-[10px] sm:text-[8.25px] font-[400] text-ink-400 dark:text-[#7F7F7F]">{product.company}</p>
+        <p className="text-[10px] sm:text-[8.25px] font-[400] text-ink-400 dark:text-[#7F7F7F]"><span translate="no" className="notranslate">{product.company}</span></p>
 
         {/* Price + Add to cart button */}
         <div className="flex sm:flex-row flex-col items-start sm:items-center justify-between mt-3 gap-2">
           <p className="text-[10px] sm:text-[8.25px] text-ink-500 dark:text-[#7F7F7F] whitespace-nowrap">
-            от <span>{Number(product.price ?? 0).toLocaleString()}</span> {product.unit}
+            {t("common.from")} <span>{Number(product.price ?? 0).toLocaleString()}</span> {product.unit}
           </p>
           <button
             onClick={(e) => {
@@ -65,7 +67,7 @@ export default function ProductCard({ product, index = 0 }) {
             }}
             className="shrink-0 px-2 sm:px-3 dark:text-[#0D0D0D] py-0.5 sm:py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.97] text-white text-[12px] sm:text-[9.43px] font-semibold rounded-full transition-all whitespace-nowrap"
           >
-            Добавить в корзину
+            {t("common.addToCart")}
           </button>
         </div>
       </div>

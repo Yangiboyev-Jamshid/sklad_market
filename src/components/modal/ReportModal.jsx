@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { CloseCircle, Flag } from "iconsax-reactjs";
 import { createReport } from "../../api/api";
 
-const REASONS = [
-  { code: "SAME", label: "Дубликат объявления" },
-  { code: "DUPLICATE", label: "Похожее объявление уже есть" },
-  { code: "FAKE", label: "Поддельное объявление" },
-  { code: "SCAM", label: "Мошенничество" },
-  { code: "OFFENSIVE", label: "Оскорбительный контент" },
+const REASON_KEYS = [
+  { code: "SAME", labelKey: "report.reasonSame" },
+  { code: "DUPLICATE", labelKey: "report.reasonDuplicate" },
+  { code: "FAKE", labelKey: "report.reasonFake" },
+  { code: "SCAM", labelKey: "report.reasonScam" },
+  { code: "OFFENSIVE", labelKey: "report.reasonOffensive" },
 ];
 
 export default function ReportModal({ targetType, targetId, onClose }) {
+  const { t } = useTranslation();
   const [reasonCode, setReasonCode] = useState("");
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
@@ -53,7 +55,7 @@ export default function ReportModal({ targetType, targetId, onClose }) {
           <div className="flex items-center justify-between px-5 py-4 border-b border-ink-100 dark:border-[#1C1C1C]">
             <div className="flex items-center gap-2 text-danger-600 dark:text-danger-400">
               <Flag size={18} variant="Bold" />
-              <span className="font-semibold text-sm">Пожаловаться</span>
+              <span className="font-semibold text-sm">{t("report.title")}</span>
             </div>
             <button
               onClick={onClose}
@@ -69,15 +71,15 @@ export default function ReportModal({ targetType, targetId, onClose }) {
                 <div className="w-12 h-12 rounded-full bg-success-50 dark:bg-success-500/10 flex items-center justify-center">
                   <Flag size={22} variant="Bold" className="text-success-600 dark:text-success-400" />
                 </div>
-                <p className="font-semibold text-ink-900 dark:text-white">Жалоба отправлена</p>
-                <p className="text-sm text-ink-400 dark:text-ink-500">Мы рассмотрим её в ближайшее время</p>
+                <p className="font-semibold text-ink-900 dark:text-white">{t("report.sentTitle")}</p>
+                <p className="text-sm text-ink-400 dark:text-ink-500">{t("report.sentDesc")}</p>
               </div>
             ) : (
               <>
-                <p className="text-sm text-ink-500 dark:text-ink-400 mb-3">Укажите причину жалобы</p>
+                <p className="text-sm text-ink-500 dark:text-ink-400 mb-3">{t("report.chooseReason")}</p>
 
                 <div className="flex flex-col gap-2 mb-4">
-                  {REASONS.map((r) => (
+                  {REASON_KEYS.map((r) => (
                     <button
                       key={r.code}
                       onClick={() => setReasonCode(r.code)}
@@ -98,7 +100,7 @@ export default function ReportModal({ targetType, targetId, onClose }) {
                           <span className="w-1.5 h-1.5 rounded-full bg-white" />
                         )}
                       </span>
-                      {r.label}
+                      {t(r.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -106,7 +108,7 @@ export default function ReportModal({ targetType, targetId, onClose }) {
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  placeholder="Дополнительный комментарий (необязательно)"
+                  placeholder={t("report.commentPlaceholder")}
                   rows={3}
                   maxLength={500}
                   className="w-full bg-ink-50 dark:bg-[#171717] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3.5 py-2.5 text-sm outline-none dark:text-white placeholder:text-ink-400 resize-none mb-1"
@@ -124,7 +126,7 @@ export default function ReportModal({ targetType, targetId, onClose }) {
                   disabled={!reasonCode || loading}
                   className="w-full bg-danger-600 hover:bg-danger-500 disabled:opacity-40 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
                 >
-                  {loading ? "Отправка..." : "Отправить жалобу"}
+                  {loading ? t("report.sending") : t("report.submit")}
                 </button>
               </>
             )}

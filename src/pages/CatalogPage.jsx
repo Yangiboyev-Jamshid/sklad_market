@@ -1,27 +1,29 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { SearchNormal1, ArrowDown2, CloseCircle, GlobalSearch, Filter } from "iconsax-reactjs";
 import AppShell from "../components/layout/AppShell";
 import ProductCard from "../components/ui/ProductCard";
 import MapView from "../components/ui/MapView";
-import { getAllProducts, searchProducts, getCategories, getCatalogMap, getSearchSuggestions, getCatalogFilters, getCategoryCounts } from "../api/api";
+import { getAllProducts, searchProducts, getCategoryTree, getCatalogMap, getSearchSuggestions, getCatalogFilters, getCategoryCounts } from "../api/api";
 import { buildProductMapPins } from "../utils/mapPins";
 
-function normalizeProduct(p) {
+function normalizeProduct(p, t) {
   return {
     id: p.id,
     slug: p.slug,
     name: p.name,
     price: p.price ?? 0,
     unit: p.currency ?? "UZS",
-    company: p.companyId ? `Компания #${p.companyId}` : "",
+    company: p.companyId ? t("common.companyFallback", { id: p.companyId }) : "",
     image: p.imageUrl ?? p.images?.find((img) => img.is_primary)?.url ?? p.images?.[0]?.url ?? null,
     verified: p.status === "ACTIVE",
   };
 }
 
 export default function CatalogPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeCategory, setActiveCategoryState] = useState(searchParams.get("category") ?? "all");
@@ -69,13 +71,16 @@ export default function CatalogPage() {
   }, [view, mapLoaded, navigate]);
 
   useEffect(() => {
-    getCategories({ page: 0, size: 100 })
+    getCategoryTree()
       .then((data) => {
-        const all = (data?.content ?? []).filter((c) => c.isActive && (!c.parentId || c.parentId === 0));
+        const all = (data ?? []).filter((c) => c.isActive);
         all.sort((a, b) => a.sortOrder - b.sortOrder);
         setCategories(all.map((c) => ({
           id: String(c.id),
-          name: c.nameRu || c.nameUz || c.slug,
+          nameRu: c.nameRu,
+          nameUz: c.nameUz,
+          nameEn: c.nameEn,
+          slug: c.slug,
           icon: c.icon,
         })));
       })
@@ -120,11 +125,11 @@ export default function CatalogPage() {
       try {
         if (query.trim()) {
           const data = await searchProducts({ query: query.trim(), page: 1, perPage: 40, category, ...filterParams });
-          setProducts((data?.content ?? []).map(normalizeProduct));
+          setProducts((data?.content ?? []).map((p) => normalizeProduct(p, t)));
           setTotal(data?.totalElements ?? 0);
         } else {
           const data = await getAllProducts({ page: 1, perPage: 40, category, ...filterParams });
-          setProducts((data?.items ?? []).map(normalizeProduct));
+          setProducts((data?.items ?? []).map((p) => normalizeProduct(p, t)));
           setTotal(data?.meta?.total ?? 0);
         }
       } catch {
@@ -134,16 +139,16 @@ export default function CatalogPage() {
       }
     }, query ? 400 : 0);
     return () => clearTimeout(debounceRef.current);
-  }, [query, activeCategory, minPrice, maxPrice, inStockOnly, verifiedOnly]);
+  }, [query, activeCategory, minPrice, maxPrice, inStockOnly, verifiedOnly, t]);
 
   return (
     <AppShell>
       <div className="mx-auto h-full px-4 sm:p-10 py-5 dark:bg-[#121212] bg-[#F9FAFB]">
         <div className="flex flex-col items-center sm:flex-row justify-between gap-3 sm:gap-4 mb-5 sm:mb-6">
           <div className="hidden sm:block ">
-            <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white">Каталог товаров</h1>
+            <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white">{t("catalogPage.title")}</h1>
             <p className="text-sm text-ink-400 dark:text-white mt-1">
-              {loading ? "Загрузка..." : `${total} товаров`}
+              {loading ? t("common.loading") : t("catalogPage.productsCount", { count: total })}
             </p>
           </div>
           <div className="sm:flex grid grid-cols-[1fr_1.1fr] sm:w-auto w-full h-full items-center gap-2 sm:gap-3">
@@ -159,7 +164,7 @@ export default function CatalogPage() {
               onClick={() => setFiltersOpen(true)}
               className="lg:hidden text-sm flex items-center gap-2 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-4 py-2.5 text-sm font-medium text-ink-700 dark:text-ink-200 shrink-0"
             >
-              <Filter size={24} /> Фильтр
+              <Filter size={24} /> {t("catalogPage.filter")}
             </button>
             <button
               onClick={() => setView(view === "grid" ? "map" : "grid")}
@@ -167,7 +172,7 @@ export default function CatalogPage() {
                 }`}
             >
               <GlobalSearch size={24} />
-              Поиск по карте
+              {t("common.searchByMap")}
             </button>
           </div>
         </div>
@@ -217,7 +222,7 @@ export default function CatalogPage() {
                   className="lg:hidden fixed inset-0  overflow-y-auto bg-white dark:bg-[#121212] z-50 p-5"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <p className="font-semibold text-ink-900 dark:text-white">Фильтры</p>
+                    <p className="font-semibold text-ink-900 dark:text-white">{t("catalogPage.filters")}</p>
                     <button onClick={() => setFiltersOpen(false)} className="text-ink-400">
                       <CloseCircle size={24} />
                     </button>
@@ -242,7 +247,7 @@ export default function CatalogPage() {
                     onClick={() => setFiltersOpen(false)}
                     className="w-full bg-brand-600 text-white font-semibold py-3.5 rounded-2xl mt-2"
                   >
-                    Сохранить
+                    {t("catalogPage.save")}
                   </button>
                 </motion.div>
               </>
@@ -256,7 +261,7 @@ export default function CatalogPage() {
                   <div key={i} className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] h-72 animate-pulse" />
                 ))
                 : products.length === 0
-                  ? <p className="col-span-3 text-center py-16 text-ink-400">Товары не найдены</p>
+                  ? <p className="col-span-3 text-center py-16 text-ink-400">{t("catalogPage.productsNotFound")}</p>
                   : products.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)
               }
             </div>
@@ -266,7 +271,7 @@ export default function CatalogPage() {
               animate={{ opacity: 1 }}
               className="sm:bg-white sm:dark:bg-[#0D0D0D] rounded-2xl sm:border border-ink-100 dark:border-ink-800 p-4 sm:p-5 transition-colors"
             >
-              <p className="font-semibold text-ink-900 dark:text-white mb-4">Карта с товарами</p>
+              <p className="font-semibold text-ink-900 dark:text-white mb-4">{t("catalogPage.mapWithProducts")}</p>
               {mapLoading ? (
                 <div className="h-[400px] sm:h-[600px] rounded-2xl bg-ink-100 dark:bg-[#171717] animate-pulse" />
               ) : (
@@ -281,12 +286,13 @@ export default function CatalogPage() {
 }
 
 function SearchBox({ wrapperClass, query, setQuery, suggestions, suggestionsOpen, setSuggestionsOpen }) {
+  const { t } = useTranslation();
   return (
     <div className={`relative ${wrapperClass}`}>
       <div className="flex items-center gap-2 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-4 py-2.5 w-full">
         <SearchNormal1 size={24} className="text-ink-400 shrink-0" />
         <input
-          placeholder="Поиск товара"
+          placeholder={t("common.searchProduct")}
           value={query}
           onChange={(e) => { setQuery(e.target.value); setSuggestionsOpen(true); }}
           onFocus={() => setSuggestionsOpen(true)}
@@ -312,6 +318,12 @@ function SearchBox({ wrapperClass, query, setQuery, suggestions, suggestionsOpen
   );
 }
 
+function categoryDisplayName(c, lang) {
+  if (lang === "uz") return c.nameUz || c.nameRu || c.nameEn || c.slug;
+  if (lang === "en") return c.nameEn || c.nameRu || c.nameUz || c.slug;
+  return c.nameRu || c.nameUz || c.nameEn || c.slug;
+}
+
 function FiltersContent({
   categories = [],
   categoryCounts = {},
@@ -328,6 +340,7 @@ function FiltersContent({
   setMaxPrice,
   showHeader = true,
 }) {
+  const { t, i18n } = useTranslation();
   const resetFilters = () => {
     setActiveCategory("all");
     setInStockOnly(false);
@@ -340,11 +353,11 @@ function FiltersContent({
       {showHeader && (
         <div className="flex items-center gap-2 font-semibold text-ink-900 dark:text-white mb-4">
           <Filter size={20} />
-          Фильтры
+          {t("catalogPage.filters")}
         </div>
       )}
 
-      <p className="text-xs font-medium text-black dark:text-ink-400 mb-2">Категории</p>
+      <p className="text-xs font-medium text-black dark:text-ink-400 mb-2">{t("catalogPage.categories")}</p>
       <div className="flex flex-col gap-1 mb-5">
         <button
           onClick={() => setActiveCategory("all")}
@@ -353,7 +366,7 @@ function FiltersContent({
             : "text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
             }`}
         >
-          Все категории
+          {t("catalogPage.allCategories")}
         </button>
         {categories.map((c) => (
           <button
@@ -364,7 +377,7 @@ function FiltersContent({
               : "text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
               }`}
           >
-            {c.name}
+            {categoryDisplayName(c, i18n.language)}
             {categoryCounts[c.id] > 0 && (
               <span className="text-ink-400 text-xs">{categoryCounts[c.id]}</span>
             )}
@@ -372,37 +385,37 @@ function FiltersContent({
         ))}
       </div>
 
-      <p className="text-xs font-medium text-black dark:text-white mb-2">Цены</p>
+      <p className="text-xs font-medium text-black dark:text-white mb-2">{t("catalogPage.prices")}</p>
       <div className="flex flex-col gap-2 mb-5">
         <input
           type="number"
           value={minPrice}
           onChange={(e) => setMinPrice(e.target.value)}
-          placeholder={filterMeta?.minPrice != null ? `от ${filterMeta.minPrice}` : "от"}
+          placeholder={filterMeta?.minPrice != null ? `${t("catalogPage.priceFrom")} ${filterMeta.minPrice}` : t("catalogPage.priceFrom")}
           className="bg-ink-50 dark:bg-[#0D0D0D] border dark:border-[#2D2D2D] rounded-xl px-4 py-2.5 text-sm outline-none placeholder:text-ink-400 dark:text-white"
         />
         <input
           type="number"
           value={maxPrice}
           onChange={(e) => setMaxPrice(e.target.value)}
-          placeholder={filterMeta?.maxPrice != null ? `до ${filterMeta.maxPrice}` : "до"}
+          placeholder={filterMeta?.maxPrice != null ? `${t("catalogPage.priceTo")} ${filterMeta.maxPrice}` : t("catalogPage.priceTo")}
           className="bg-ink-50 dark:bg-[#0D0D0D] border dark:border-[#2D2D2D] rounded-xl px-4 py-2.5 text-sm outline-none placeholder:text-ink-400 dark:text-white"
         />
       </div>
 
-      <p className="text-xs font-medium text-black dark:text-white mb-2">Регионы</p>
+      <p className="text-xs font-medium text-black dark:text-white mb-2">{t("catalogPage.regions")}</p>
       <button className="w-full flex items-center justify-between bg-ink-50 dark:bg-[#0D0D0D] border dark:border-[#2D2D2D] rounded-xl px-4 py-2.5 text-sm text-ink-400 mb-5">
-        Все регионы <ArrowDown2 size={16} />
+        {t("catalogPage.allRegions")} <ArrowDown2 size={16} />
       </button>
 
-      <ToggleRow label="Только наличии" checked={inStockOnly} onChange={setInStockOnly} />
-      <ToggleRow label="Верифицированные продавцы" checked={verifiedOnly} onChange={setVerifiedOnly} />
+      <ToggleRow label={t("catalogPage.inStockOnly")} checked={inStockOnly} onChange={setInStockOnly} />
+      <ToggleRow label={t("catalogPage.verifiedOnly")} checked={verifiedOnly} onChange={setVerifiedOnly} />
 
       <button
         onClick={resetFilters}
         className="w-full bg-danger-50 dark:bg-danger-500/10 text-danger-600 dark:text-danger-400 font-medium text-sm py-3 rounded-2xl mt-5 hover:bg-danger-100 dark:hover:bg-danger-500/20 transition-colors"
       >
-        Сбросить фильтры
+        {t("catalogPage.resetFilters")}
       </button>
     </>
   );

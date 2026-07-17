@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { ArrowDown2, CloudAdd, Trash, Star1 } from "iconsax-reactjs";
 import {
   updateProduct,
@@ -9,13 +10,21 @@ import {
   getCategories,
 } from "../../api/api";
 
-const UNITS = ["Тонна", "Килограмм", "Штука", "Упаковка", "Литр", "Метр"];
+const UNIT_KEYS = [
+  { value: "Тонна", labelKey: "seller.unitTon" },
+  { value: "Килограмм", labelKey: "seller.unitKg" },
+  { value: "Штука", labelKey: "seller.unitPiece" },
+  { value: "Упаковка", labelKey: "seller.unitPack" },
+  { value: "Литр", labelKey: "seller.unitLiter" },
+  { value: "Метр", labelKey: "seller.unitMeter" },
+];
 
 export default function EditProductModal({ product, onClose, onSaved }) {
+  const { t, i18n } = useTranslation();
   const [name, setName] = useState(product?.name ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [price, setPrice] = useState(product?.price ?? "");
-  const [unit, setUnit] = useState(product?.unit ?? UNITS[0]);
+  const [unit, setUnit] = useState(product?.unit ?? UNIT_KEYS[0].value);
   const [minProduct, setMinProduct] = useState(product?.minProduct ?? "");
   const [categoryId, setCategoryId] = useState(product?.categoryId ?? "");
 
@@ -106,8 +115,8 @@ export default function EditProductModal({ product, onClose, onSaved }) {
     setError("");
     setSuccess("");
     if (submittingRef.current) return;
-    if (!name.trim()) { setError("Введите название товара"); return; }
-    if (!price || isNaN(Number(price))) { setError("Введите корректную цену"); return; }
+    if (!name.trim()) { setError(t("seller.enterProductName")); return; }
+    if (!price || isNaN(Number(price))) { setError(t("seller.enterValidPrice")); return; }
 
     submittingRef.current = true;
     setLoading(true);
@@ -125,7 +134,7 @@ export default function EditProductModal({ product, onClose, onSaved }) {
         regionId: product.regionId,
         districtId: product.districtId,
       });
-      setSuccess("Товар обновлён!");
+      setSuccess(t("seller.productUpdated"));
       setTimeout(() => {
         onSaved?.(updated ?? { ...product, name, description, price: Number(price), currency: "UZS", images });
       }, 900);
@@ -158,37 +167,37 @@ export default function EditProductModal({ product, onClose, onSaved }) {
           className="bg-white dark:bg-[#0D0D0D] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg max-h-[92vh] sm:max-h-[90vh] overflow-y-auto p-5 sm:p-7 relative transition-colors"
         >
           <h2 className="text-lg sm:text-xl text-center font-display font-bold text-ink-900 dark:text-white mb-4 sm:mb-6">
-            Редактировать товар
+            {t("seller.editProductTitle")}
           </h2>
 
-          <Field label="Название товара" value={name} onChange={(e) => setName(e.target.value)} />
+          <Field label={t("seller.productName")} value={name} onChange={(e) => setName(e.target.value)} />
 
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div>
-              <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">Категория</label>
+              <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">{t("product.category")}</label>
               <div className="relative">
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
                   className="w-full appearance-none bg-ink-50 dark:bg-[#171717] rounded-xl px-4 py-3 pr-9 text-sm outline-none text-ink-900 dark:text-white cursor-pointer"
                 >
-                  <option value="">Выберите категорию</option>
+                  <option value="">{t("seller.selectCategory")}</option>
                   {categoriesList.map((c) => (
-                    <option key={c.id} value={c.id}>{c.nameRu || c.nameUz || c.slug}</option>
+                    <option key={c.id} value={c.id}>{i18n.language === "uz" ? (c.nameUz || c.nameRu || c.slug) : i18n.language === "en" ? (c.nameEn || c.nameRu || c.slug) : (c.nameRu || c.nameUz || c.slug)}</option>
                   ))}
                 </select>
                 <ArrowDown2 size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-400" />
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">Единица</label>
+              <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">{t("seller.unit")}</label>
               <div className="relative">
                 <select
                   value={unit}
                   onChange={(e) => setUnit(e.target.value)}
                   className="w-full appearance-none bg-ink-50 dark:bg-[#171717] rounded-xl px-4 py-3 pr-9 text-sm outline-none text-ink-900 dark:text-white cursor-pointer"
                 >
-                  {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                  {UNIT_KEYS.map((u) => <option key={u.value} value={u.value}>{t(u.labelKey)}</option>)}
                 </select>
                 <ArrowDown2 size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-400" />
               </div>
@@ -196,11 +205,11 @@ export default function EditProductModal({ product, onClose, onSaved }) {
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <Field label="Цена" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
-            <Field label="Мин. заказ" type="number" value={minProduct} onChange={(e) => setMinProduct(e.target.value)} />
+            <Field label={t("seller.price")} type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
+            <Field label={t("seller.minOrder")} type="number" value={minProduct} onChange={(e) => setMinProduct(e.target.value)} />
           </div>
 
-          <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">Описание товара</label>
+          <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">{t("seller.productDescription")}</label>
           <textarea
             rows={4}
             value={description}
@@ -211,7 +220,7 @@ export default function EditProductModal({ product, onClose, onSaved }) {
           {/* Existing images */}
           {images.length > 0 && (
             <>
-              <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">Текущие фото</label>
+              <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">{t("seller.currentPhotos")}</label>
               <div className="flex flex-wrap gap-2 mb-3">
                 {images.map((img) => {
                   const busy = imageBusyId === img.id;
@@ -222,7 +231,7 @@ export default function EditProductModal({ product, onClose, onSaved }) {
                         type="button"
                         disabled={busy}
                         onClick={() => handleSetPrimary(img.id)}
-                        title="Сделать главным"
+                        title={t("seller.makePrimary")}
                         className={`absolute bottom-0.5 left-0.5 rounded-full p-0.5 ${img.is_primary ? "bg-brand-500 text-white" : "bg-white/90 dark:bg-[#0D0D0D]/90 text-ink-400"}`}
                       >
                         <Star1 size={12} variant={img.is_primary ? "Bold" : "Linear"} />
@@ -243,7 +252,7 @@ export default function EditProductModal({ product, onClose, onSaved }) {
           )}
 
           {/* Add new images */}
-          <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">Добавить фото</label>
+          <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">{t("seller.addPhoto")}</label>
           <div
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
@@ -251,7 +260,7 @@ export default function EditProductModal({ product, onClose, onSaved }) {
             className="border-2 border-dashed border-ink-200 dark:border-[#1C1C1C] rounded-xl py-6 flex flex-col items-center justify-center text-center mb-3 hover:border-brand-300 dark:hover:border-brand-500 transition-colors cursor-pointer"
           >
             <CloudAdd size={24} className="text-ink-300 dark:text-ink-600 mb-2" />
-            <p className="text-sm text-ink-400">Нажмите или перетащите файлы</p>
+            <p className="text-sm text-ink-400">{t("seller.dropFilesHint")}</p>
           </div>
           <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
 
@@ -271,7 +280,7 @@ export default function EditProductModal({ product, onClose, onSaved }) {
                 disabled={uploading}
                 className="text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 px-3 py-2 rounded-lg transition-colors"
               >
-                {uploading ? "Загрузка..." : "Загрузить"}
+                {uploading ? t("seller.uploading") : t("seller.upload")}
               </button>
             </div>
           )}
@@ -293,7 +302,7 @@ export default function EditProductModal({ product, onClose, onSaved }) {
               onClick={onClose}
               className="bg-ink-100 dark:bg-[#171717] text-ink-600 dark:text-ink-300 font-medium py-3.5 rounded-xl hover:bg-ink-200 dark:hover:bg-[#1E1E1E] transition-colors"
             >
-              Отмена
+              {t("seller.cancel")}
             </button>
             <button
               type="button"
@@ -301,7 +310,7 @@ export default function EditProductModal({ product, onClose, onSaved }) {
               onClick={submit}
               className="bg-brand-600 text-white font-semibold py-3.5 rounded-xl hover:bg-brand-700 disabled:opacity-50 transition-colors"
             >
-              {loading ? "Сохранение..." : "Сохранить"}
+              {loading ? t("seller.saving") : t("seller.save")}
             </button>
           </div>
         </motion.div>

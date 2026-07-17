@@ -203,6 +203,10 @@ export async function getCategories({ page = 0, size = 100 } = {}) {
   return unwrap(http.get("/categories", { params: { page, size } }));
 }
 
+export async function getCategoryTree() {
+  return unwrap(http.get("/categories/tree"));
+}
+
 // ─── Company Favorites ────────────────────────────────────────────────────────
 
 export async function addCompanyFavorite(companyId) {

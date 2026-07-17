@@ -80,7 +80,7 @@ export default function CreateCompanyForm({ onCreated }) {
         </div>
         <p className="font-semibold text-lg text-ink-900 dark:text-white mb-1">Компания создана!</p>
         <p className="text-sm text-ink-400 dark:text-ink-500">
-          «{created.name}» успешно зарегистрирована на Sklad Market
+          «<span translate="no" className="notranslate">{created.name}</span>» успешно зарегистрирована на Sklad Market
         </p>
       </div>
     );

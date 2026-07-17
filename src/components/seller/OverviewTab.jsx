@@ -1,24 +1,28 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Box, I3DSquare, Eye, Heart } from "iconsax-reactjs";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import ProductThumb from "../ui/ProductThumb";
 import { useTheme } from "../../context/ThemeContext";
 import { getMyCompany, getSellerDashboard } from "../../api/api";
 
-const PRODUCT_STATUS_MAP = {
-  PENDING: { label: "На модерации", cls: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400" },
-  ACTIVE: { label: "Активен", cls: "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400" },
-  REJECTED: { label: "Отклонён", cls: "bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400" },
-  ARCHIVED: { label: "Архив", cls: "bg-ink-100 dark:bg-[#1C1C1C] text-ink-500 dark:text-ink-400" },
+const PRODUCT_STATUS_KEYS = {
+  PENDING: { labelKey: "seller.statusPending", cls: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400" },
+  ACTIVE: { labelKey: "seller.statusActive", cls: "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400" },
+  REJECTED: { labelKey: "seller.statusRejected", cls: "bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400" },
+  ARCHIVED: { labelKey: "seller.statusArchived", cls: "bg-ink-100 dark:bg-[#1C1C1C] text-ink-500 dark:text-ink-400" },
 };
 
-function productStatusBadge(status) {
-  const s = PRODUCT_STATUS_MAP[status] ?? { label: status, cls: "bg-ink-100 text-ink-500" };
-  return <span className={`text-xs font-medium px-2 py-1 rounded-[4px] shrink-0 ${s.cls}`}>{s.label}</span>;
+function productStatusBadge(status, t) {
+  const s = PRODUCT_STATUS_KEYS[status];
+  const label = s ? t(s.labelKey) : status;
+  const cls = s?.cls ?? "bg-ink-100 text-ink-500";
+  return <span className={`text-xs font-medium px-2 py-1 rounded-[4px] shrink-0 ${cls}`}>{label}</span>;
 }
 
 function CustomTooltip({ active, payload, label }) {
+  const { t } = useTranslation();
   if (!active || !payload?.length) return null;
   const row = payload[0].payload;
   return (
@@ -26,15 +30,15 @@ function CustomTooltip({ active, payload, label }) {
       <p className="mb-2 text-[10px] text-[#7D8794]">{label}</p>
       <div className="flex gap-5">
         <div>
-          <p className="mb-1 text-sm font-medium text-ink-900 dark:text-white">Просмотры</p>
+          <p className="mb-1 text-sm font-medium text-ink-900 dark:text-white">{t("seller.views")}</p>
           <p className="text-lg font-medium text-[#3B72F6]">{row.views}</p>
         </div>
         <div>
-          <p className="mb-1 text-sm font-medium text-ink-900 dark:text-white">Запросы</p>
+          <p className="mb-1 text-sm font-medium text-ink-900 dark:text-white">{t("seller.requestsShort")}</p>
           <p className="text-lg font-medium text-[#3B72F6]">{row.leads}</p>
         </div>
         <div>
-          <p className="mb-1 text-sm font-medium text-ink-900 dark:text-white">Чаты</p>
+          <p className="mb-1 text-sm font-medium text-ink-900 dark:text-white">{t("seller.chats")}</p>
           <p className="text-lg font-medium text-[#3B72F6]">{row.chats}</p>
         </div>
       </div>
@@ -43,6 +47,7 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function OverviewTab() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const tickColor = theme === "dark" ? "#565C66" : "#667085";
   const gridColor = theme === "dark" ? "#20242A" : "#E5E7EB";
@@ -71,26 +76,26 @@ export default function OverviewTab() {
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-1.5">
-        <StatCard label="Активные товары" value={loading ? "…" : summary?.activeProducts ?? 0} icon={Box} color="brand" />
-        <StatCard label="Запросы" value={loading ? "…" : summary?.leads ?? 0} icon={I3DSquare} color="purple" />
-        <StatCard label="Контакты" value={loading ? "…" : summary?.contacts ?? 0} icon={I3DSquare} color="purple" />
-        <StatCard label="Просмотры" value={loading ? "…" : summary?.totalViews ?? 0} icon={Eye} color="blue" />
-        <StatCard label="Избранное" value={loading ? "…" : summary?.totalFavorites ?? 0} icon={Heart} color="pink" />
+        <StatCard label={t("seller.activeProducts")} value={loading ? "…" : summary?.activeProducts ?? 0} icon={Box} color="brand" />
+        <StatCard label={t("seller.requestsShort")} value={loading ? "…" : summary?.leads ?? 0} icon={I3DSquare} color="purple" />
+        <StatCard label={t("seller.contacts")} value={loading ? "…" : summary?.contacts ?? 0} icon={I3DSquare} color="purple" />
+        <StatCard label={t("seller.views")} value={loading ? "…" : summary?.totalViews ?? 0} icon={Eye} color="blue" />
+        <StatCard label={t("seller.favorites")} value={loading ? "…" : summary?.totalFavorites ?? 0} icon={Heart} color="pink" />
       </div>
 
       <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] px-4 py-5 sm:px-9 sm:py-7 transition-colors">
-        <p className="mb-5 text-2xl font-bold text-ink-900 dark:text-white">Тренд</p>
+        <p className="mb-5 text-2xl font-bold text-ink-900 dark:text-white">{t("seller.trend")}</p>
         <div className="hidden sm:grid sm:grid-cols-3 gap-4 sm:gap-10 mb-3">
           <div>
-            <p className="text-sm font-medium text-[#9AA4B2]">Просмотры</p>
+            <p className="text-sm font-medium text-[#9AA4B2]">{t("seller.views")}</p>
             <p className="text-3xl font-medium text-ink-900 dark:text-white">{trend?.totalViews ?? 0}</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-[#9AA4B2]">Запросы</p>
+            <p className="text-sm font-medium text-[#9AA4B2]">{t("seller.requestsShort")}</p>
             <p className="text-3xl font-medium text-[#3B72F6]">{trend?.totalLeads ?? 0}</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-[#9AA4B2]">Чаты</p>
+            <p className="text-sm font-medium text-[#9AA4B2]">{t("seller.chats")}</p>
             <p className="text-3xl font-medium text-[#3B72F6]">{trend?.totalChats ?? 0}</p>
           </div>
         </div>
@@ -119,7 +124,7 @@ export default function OverviewTab() {
 
       <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-6 transition-colors">
         <div className="flex items-start sm:items-center justify-between mb-4 gap-5">
-          <p className="font-semibold text-[20px] sm:text-[24px] text-ink-900 dark:text-white">Недавние товары</p>
+          <p className="font-semibold text-[20px] sm:text-[24px] text-ink-900 dark:text-white">{t("seller.recentProducts")}</p>
         </div>
         {loading ? (
           <div className="flex flex-col gap-3">
@@ -130,7 +135,7 @@ export default function OverviewTab() {
         ) : recentProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-ink-400 gap-2">
             <Box size={36} />
-            <p className="text-sm">Товаров пока нет</p>
+            <p className="text-sm">{t("seller.noProductsYet")}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -142,9 +147,9 @@ export default function OverviewTab() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-ink-900 dark:text-white truncate">{p.name}</p>
                   <p className="text-[8.25px] text-ink-400 dark:text-ink-500 mt-1">{p.price?.toLocaleString()} {p.currency}</p>
-                  <p className="text-[8.25px] text-ink-400 dark:text-ink-500 mt-1">{p.viewsCount ?? 0} просмотров · {p.favoritesCount ?? 0} в избранном</p>
+                  <p className="text-[8.25px] text-ink-400 dark:text-ink-500 mt-1">{t("product.views", { count: p.viewsCount ?? 0 })} · {t("seller.inFavoritesShort", { count: p.favoritesCount ?? 0 })}</p>
                 </div>
-                {productStatusBadge(p.status)}
+                {productStatusBadge(p.status, t)}
               </div>
             ))}
           </div>

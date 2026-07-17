@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight2, ArrowLeft2, CloseCircle } from 'iconsax-reactjs';
 import { useNavigate } from 'react-router-dom';
-import { getCategories } from '../../api/api';
+import { getCategoryTree } from '../../api/api';
 
 export default function Catalog({ isOpen, onClose }) {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [parents, setParents] = useState([]);
   const [childMap, setChildMap] = useState({});
@@ -15,18 +17,14 @@ export default function Catalog({ isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
-    getCategories({ page: 0, size: 200 })
+    getCategoryTree()
       .then((data) => {
-        const all = (data?.content ?? []).filter((c) => c.isActive);
-        const topLevel = all.filter((c) => !c.parentId || c.parentId === 0);
-        const children = {};
-        all.forEach((c) => {
-          if (c.parentId && c.parentId !== 0) {
-            if (!children[c.parentId]) children[c.parentId] = [];
-            children[c.parentId].push(c);
-          }
-        });
+        const topLevel = (data ?? []).filter((c) => c.isActive);
         topLevel.sort((a, b) => a.sortOrder - b.sortOrder);
+        const children = {};
+        topLevel.forEach((c) => {
+          children[c.id] = (c.children ?? c.subcategories ?? []).filter((s) => s.isActive);
+        });
         setParents(topLevel);
         setChildMap(children);
         if (topLevel.length) setActiveId(topLevel[0].id);
@@ -35,7 +33,11 @@ export default function Catalog({ isOpen, onClose }) {
       .finally(() => setLoading(false));
   }, [isOpen]);
 
-  const catName = (c) => c.nameRu || c.nameUz || c.nameEn || c.slug;
+  const catName = (c) => {
+    if (i18n.language === "uz") return c.nameUz || c.nameRu || c.nameEn || c.slug;
+    if (i18n.language === "en") return c.nameEn || c.nameRu || c.nameUz || c.slug;
+    return c.nameRu || c.nameUz || c.nameEn || c.slug;
+  };
 
   const goToCategory = (cat) => {
     navigate(`/catalog?category=${cat.id}`);
@@ -83,7 +85,7 @@ export default function Catalog({ isOpen, onClose }) {
               </div>
             ) : parents.length === 0 ? (
               <div className="flex-1 flex items-center justify-center py-16 text-sm text-ink-400">
-                Категории не найдены
+                {t("catalogModal.categoriesNotFound")}
               </div>
             ) : (
               <>
@@ -126,11 +128,11 @@ export default function Catalog({ isOpen, onClose }) {
                             onClick={() => goToCategory(cat)}
                             className="text-xs text-brand-600 dark:text-blue-400 hover:underline"
                           >
-                            Все товары →
+                            {t("catalogModal.allProducts")}
                           </button>
                         </div>
                         {subs.length === 0 ? (
-                          <p className="text-sm text-ink-400">Подкатегории не добавлены</p>
+                          <p className="text-sm text-ink-400">{t("catalogModal.subcategoriesEmpty")}</p>
                         ) : (
                           <ul className="grid grid-cols-2 gap-x-12 gap-y-3">
                             {subs.map((sub) => (
@@ -212,7 +214,7 @@ export default function Catalog({ isOpen, onClose }) {
                   <path d="M131.706 13.9062C132.302 14.329 136.626 20.4162 137.391 21.4453L135.333 21.4382C134.385 21.4498 133.39 21.4207 132.438 21.4084C131.408 19.9854 130.375 18.5175 129.262 17.1629C129.788 16.2842 131.034 14.7605 131.706 13.9062Z" fill="#0088FF" />
                 </svg>
               )}
-              <button onClick={handleClose} className="text-ink-400" aria-label="Закрыть">
+              <button onClick={handleClose} className="text-ink-400" aria-label={t("common.close")}>
                 <CloseCircle size={24} />
               </button>
             </div>
@@ -226,7 +228,7 @@ export default function Catalog({ isOpen, onClose }) {
                 </div>
               ) : parents.length === 0 ? (
                 <div className="flex items-center justify-center py-16 text-sm text-ink-400">
-                  Категории не найдены
+                  {t("catalogModal.categoriesNotFound")}
                 </div>
               ) : !mobileParent ? (
                 <ul className="flex flex-col divide-y divide-ink-100 dark:divide-[#1C1C1C]">
@@ -254,10 +256,10 @@ export default function Catalog({ isOpen, onClose }) {
                     onClick={() => goToCategory(mobileParent)}
                     className="w-full text-left py-4 text-sm text-brand-600 dark:text-blue-400 font-semibold"
                   >
-                    Все товары в «{catName(mobileParent)}» →
+                    {t("catalogModal.allProductsIn", { name: catName(mobileParent) })}
                   </button>
                   {(childMap[mobileParent.id] ?? []).length === 0 ? (
-                    <p className="text-sm text-ink-400 py-4">Подкатегории не добавлены</p>
+                    <p className="text-sm text-ink-400 py-4">{t("catalogModal.subcategoriesEmpty")}</p>
                   ) : (
                     <ul className="flex flex-col divide-y divide-ink-100 dark:divide-[#1C1C1C]">
                       {(childMap[mobileParent.id] ?? []).map((sub) => (

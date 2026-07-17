@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Minus, Add, Trash, ShoppingCart, Message, ShieldTick } from "iconsax-reactjs";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import AppShell from "../components/layout/AppShell";
 import ProductThumb from "../components/ui/ProductThumb";
 import { useCart } from "../context/CartContext";
@@ -8,6 +9,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { checkoutRfq, createChat } from "../api/api";
 
 export default function CartPage() {
+  const { t } = useTranslation();
   const { items, cartLoading, updateQty, removeFromCart, emptyCart, total, currency } = useCart();
   const navigate = useNavigate();
 
@@ -76,7 +78,7 @@ export default function CartPage() {
   return (
     <AppShell>
       <div className="p-6 sm:p-10">
-        <h1 className="hidden sm:block text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white mb-5 sm:mb-10">Корзина</h1>
+        <h1 className="hidden sm:block text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white mb-5 sm:mb-10">{t("cart.title")}</h1>
 
         <AnimatePresence>
           {success && (
@@ -86,16 +88,16 @@ export default function CartPage() {
               exit={{ opacity: 0 }}
               className="mb-6 p-4 rounded-2xl bg-success-50 dark:bg-success-500/10 text-success-700 dark:text-success-400 text-sm font-medium text-center"
             >
-              ✓ Запрос успешно отправлен поставщикам!
+              {t("cart.requestSent")}
             </motion.div>
           )}
         </AnimatePresence>
 
         {items.length === 0 ? (
           <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-12 sm:p-16 text-center">
-            <p className="text-ink-500 dark:text-ink-400 mb-4">Ваша корзина пуста</p>
+            <p className="text-ink-500 dark:text-ink-400 mb-4">{t("cart.empty")}</p>
             <Link to="/catalog" className="text-brand-600 dark:text-brand-400 font-medium hover:underline">
-              Перейти в каталог →
+              {t("cart.goToCatalog")}
             </Link>
           </div>
         ) : (
@@ -117,8 +119,8 @@ export default function CartPage() {
                         </div>
                         <div className="min-w-0">
                           <p className="font-semibold text-ink-900 dark:text-white text-sm mb-1 truncate">{item.productName}</p>
-                          <p className="text-xs text-ink-400 dark:text-[#7F7F7F]">{item.companyName}</p>
-                          <p className="text-xs text-ink-400 dark:text-white my-3">Количество</p>
+                          <p className="text-xs text-ink-400 dark:text-[#7F7F7F]"><span translate="no" className="notranslate">{item.companyName}</span></p>
+                          <p className="text-xs text-ink-400 dark:text-white my-3">{t("common.quantity")}</p>
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => updateQty(item.id, item.quantity - 1)}
@@ -143,7 +145,7 @@ export default function CartPage() {
                           {(item.price * item.quantity).toLocaleString()} {item.currency}
                         </p>
                         <p className="text-xs text-ink-400 dark:text-ink-500">
-                          {item.price?.toLocaleString()} {item.currency}/{item.unit ?? "шт."}
+                          {item.price?.toLocaleString()} {item.currency}/{item.unit ?? t("product.unitFallback")}
                         </p>
                       </div>
 
@@ -151,7 +153,7 @@ export default function CartPage() {
                         onClick={() => removeFromCart(item.id)}
                         className="w-full flex items-center justify-center gap-2 bg-danger-50 dark:bg-danger-500/10 text-danger-600 dark:text-danger-400 font-medium py-3 rounded-2xl hover:bg-danger-100 dark:hover:bg-danger-500/20 transition-colors"
                       >
-                        <Trash size={20} /> Удалить
+                        <Trash size={20} /> {t("cart.remove")}
                       </button>
                     </div>
 
@@ -164,10 +166,10 @@ export default function CartPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-ink-900 dark:text-white text-sm mb-1.5 truncate">{item.productName}</p>
-                        <p className="text-xs text-ink-400 dark:text-[#7F7F7F] mb-3">{item.companyName}</p>
+                        <p className="text-xs text-ink-400 dark:text-[#7F7F7F] mb-3"><span translate="no" className="notranslate">{item.companyName}</span></p>
                         <div className="flex flex-wrap items-end justify-between gap-3">
                           <div>
-                            <p className="text-xs text-ink-400 dark:text-white mb-2">Количество</p>
+                            <p className="text-xs text-ink-400 dark:text-white mb-2">{t("common.quantity")}</p>
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => updateQty(item.id, item.quantity - 1)}
@@ -200,7 +202,7 @@ export default function CartPage() {
                             {(item.price * item.quantity).toLocaleString()} {item.currency}
                           </p>
                           <p className="text-xs text-ink-400 dark:text-ink-500">
-                            {item.price?.toLocaleString()} {item.currency}/{item.unit ?? "шт."}
+                            {item.price?.toLocaleString()} {item.currency}/{item.unit ?? t("product.unitFallback")}
                           </p>
                         </div>
                       </div>
@@ -209,13 +211,13 @@ export default function CartPage() {
                 ))}
               </div>
               <Link to="/catalog" className="text-brand-600 dark:text-brand-400 font-medium text-sm flex items-center gap-1.5">
-                + Добавить ещё товаров
+                {t("cart.addMore")}
               </Link>
             </div>
 
             <div className="flex flex-col gap-4 h-fit">
               <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-5 transition-colors">
-                <p className="font-semibold text-xl text-black dark:text-white mb-4">Итог</p>
+                <p className="font-semibold text-xl text-black dark:text-white mb-4">{t("cart.summary")}</p>
                 {items.map((item) => (
                   <div key={item.id} className="flex justify-between mb-4 text-sm py-2 last:border-0">
                     <span className="text-ink-600 dark:text-[#7F7F7F] text-sm truncate pr-2">{item.productName}</span>
@@ -225,19 +227,19 @@ export default function CartPage() {
                   </div>
                 ))}
                 <div className="flex justify-between border-t border-[#DFDFDF] dark:border-[#2D2D2D] items-center pt-4 mt-2">
-                  <span className="font-semibold text-black dark:text-white">Итог</span>
+                  <span className="font-semibold text-black dark:text-white">{t("cart.summary")}</span>
                   <span className="font-bold text-[#155DFC] dark:text-[#2E6FFC] text-lg">
                     {total.toLocaleString()} {currency}
                   </span>
                 </div>
-                <p className="text-xs text-[#7F7F7F] mt-1">Итоговая цена согласовывается с поставщиком</p>
+                <p className="text-xs text-[#7F7F7F] mt-1">{t("cart.summaryNote")}</p>
               </div>
 
               <button
                 onClick={() => setShowForm(true)}
                 className="w-full bg-brand-600 hover:bg-brand-700 text-white dark:text-[#0D0D0D] font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors"
               >
-                <ShoppingCart size={20} /> Отправить запрос
+                <ShoppingCart size={20} /> {t("cart.sendRequest")}
               </button>
 
               <button
@@ -245,16 +247,16 @@ export default function CartPage() {
                 disabled={contactingSeller}
                 className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-brand-400 disabled:opacity-50 font-medium py-3.5 rounded-2xl flex items-center justify-center gap-2 text-ink-700 dark:text-ink-200 transition-colors"
               >
-                <Message size={18} /> Написать продавцу
+                <Message size={18} /> {t("common.writeToSeller")}
               </button>
 
               <div className="bg-[#FFFFFF] border border-[#F0F0F0] dark:border-[#1C1C1C] dark:bg-[#0D0D0D] rounded-2xl p-5 flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <ShieldTick size={24} variant="Outline" className="text-success-600 dark:text-success-400 shrink-0" />
-                  <p className="text-sm font-semibold text-[#7F7F7F]">Безопасная сделка</p>
+                  <p className="text-sm font-semibold text-[#7F7F7F]">{t("cart.safeDeal")}</p>
                 </div>
                 <p className="text-xs text-[#7F7F7F] leading-relaxed">
-                  Ваш запрос направляется напрямую поставщику. Цены и условия согласовываются в переписке.
+                  {t("cart.safeDealDesc")}
                 </p>
               </div>
             </div>
@@ -281,30 +283,30 @@ export default function CartPage() {
             >
               <div className="relative mb-4 sm:mb-6">
                 <h2 className="text-lg sm:text-xl text-center font-display font-bold text-ink-900 dark:text-white">
-                  Контактные данные
+                  {t("cart.contactDetails")}
                 </h2>
               </div>
 
               <div className="flex flex-col gap-4">
-                <Field label="Ваше имя *" value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Иван Иванов" />
+                <Field label={t("cart.nameLabel")} value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder={t("cart.namePlaceholder")} />
                 <Field
-                  label="Телефон *"
+                  label={t("cart.phoneLabel")}
                   inputMode="tel"
                   value={contactPhone}
                   onChange={(e) => setContactPhone(e.target.value.replace(/[^\d+\s\-()]/g, ""))}
-                  placeholder="+998 90 000 00 00"
+                  placeholder={t("cart.phonePlaceholder")}
                 />
-                <Field label="Email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="you@mail.com" />
+                <Field label={t("cart.emailLabel")} type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="you@mail.com" />
                 <Field
-                  label="Адрес доставки"
+                  label={t("cart.addressLabel")}
                   value={deliveryAddress}
                   onChange={(e) => setDeliveryAddress(e.target.value)}
-                  placeholder="г. Ташкент, ..."
+                  placeholder={t("cart.addressPlaceholder")}
                 />
                 <div>
-                  <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">Комментарий</label>
+                  <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">{t("cart.commentLabel")}</label>
                   <textarea
-                    placeholder="Комментарий к запросу"
+                    placeholder={t("cart.commentPlaceholder")}
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     rows={3}
@@ -316,7 +318,7 @@ export default function CartPage() {
                   disabled={sending || !contactName.trim() || !contactPhone.trim()}
                   className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors mt-1"
                 >
-                  {sending ? "Отправка..." : "Подтвердить и отправить"}
+                  {sending ? t("cart.sending") : t("cart.submit")}
                 </button>
               </div>
             </motion.div>

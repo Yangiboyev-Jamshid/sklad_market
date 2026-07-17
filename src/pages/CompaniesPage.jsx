@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { SearchNormal1, Buildings2, GlobalSearch } from "iconsax-reactjs";
 import AppShell from "../components/layout/AppShell";
 import CompanyCard from "../components/ui/CompanyCard";
@@ -28,6 +29,7 @@ const DEFAULT_MAP_PINS = [
 ];
 
 export default function CompaniesPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [companies, setCompanies] = useState([]);
@@ -86,16 +88,16 @@ export default function CompaniesPage() {
       <div className="p-5 sm:p-10">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-5 sm:mb-10">
           <div className="sm:block hidden">
-            <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white">Компании</h1>
+            <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white">{t("companies.title")}</h1>
             <p className="text-sm text-ink-400 mt-1">
-              {loading ? "Загрузка..." : `${total} компаний`}
+              {loading ? t("common.loading") : t("companies.count", { count: total })}
             </p>
           </div>
           <div className="flex-col sm:flex-row flex sm:w-auto w-full h-full items-center gap-2 sm:gap-3">
             <div className="flex items-center w-full sm:w-auto gap-2 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-4 py-2.5 sm:w-64">
               <SearchNormal1 size={24} className="text-ink-400 shrink-0" />
               <input
-                placeholder="Поиск товара"
+                placeholder={t("common.searchCompany")}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder:text-ink-400 dark:text-white"
@@ -107,7 +109,7 @@ export default function CompaniesPage() {
                 }`}
             >
               <GlobalSearch size={24} />
-              Поиск по карте
+              {t("common.searchByMap")}
             </button>
           </div>
         </div>
@@ -118,7 +120,7 @@ export default function CompaniesPage() {
             animate={{ opacity: 1 }}
             className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-5 transition-colors"
           >
-            <p className="font-semibold text-ink-900 dark:text-white mb-4">Карта компаний</p>
+            <p className="font-semibold text-ink-900 dark:text-white mb-4">{t("companies.map")}</p>
             {mapLoading ? (
               <div className="h-[400px] sm:h-[600px] rounded-2xl bg-ink-100 dark:bg-[#171717] animate-pulse" />
             ) : (
@@ -134,8 +136,8 @@ export default function CompaniesPage() {
         ) : companies.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-ink-400 gap-3">
             <Buildings2 size={48} />
-            <p className="text-sm font-medium">Компании не найдены</p>
-            {query && <p className="text-xs text-ink-400">Попробуйте другой запрос</p>}
+            <p className="text-sm font-medium">{t("companies.notFound")}</p>
+            {query && <p className="text-xs text-ink-400">{t("common.tryAnotherQuery")}</p>}
           </div>
         ) : (
           <div className="sm:px-[60px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">

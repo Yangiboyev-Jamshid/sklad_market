@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Edit2, Trash, Archive } from "iconsax-reactjs";
 import { getMyCompany, getMyProducts, deleteProduct, archiveProduct } from "../../api/api";
 import EditProductModal from "./EditProductModal";
 import ProductThumb from "../ui/ProductThumb";
 
 export default function ProductsTab() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState(null); 
@@ -19,7 +21,7 @@ export default function ProductsTab() {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Удалить товар?")) return;
+    if (!window.confirm(t("seller.confirmDeleteProduct"))) return;
     setActionId(id);
     try {
       await deleteProduct(id);
@@ -50,19 +52,21 @@ export default function ProductsTab() {
 
   const statusBadge = (status) => {
     const map = {
-      PENDING: { label: "На модерации", cls: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400" },
-      ACTIVE: { label: "Активен", cls: "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400" },
-      REJECTED: { label: "Отклонён", cls: "bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400" },
-      ARCHIVED: { label: "Архив", cls: "bg-ink-100 dark:bg-[#1C1C1C] text-ink-500 dark:text-ink-400" },
+      PENDING: { labelKey: "seller.statusPending", cls: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400" },
+      ACTIVE: { labelKey: "seller.statusActive", cls: "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400" },
+      REJECTED: { labelKey: "seller.statusRejected", cls: "bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400" },
+      ARCHIVED: { labelKey: "seller.statusArchived", cls: "bg-ink-100 dark:bg-[#1C1C1C] text-ink-500 dark:text-ink-400" },
     };
-    const s = map[status] ?? { label: status, cls: "bg-ink-100 text-ink-500" };
-    return <span className={`text-[9px] font-medium px-2 py-0.5 rounded-full ${s.cls}`}>{s.label}</span>;
+    const s = map[status];
+    const label = s ? t(s.labelKey) : status;
+    const cls = s?.cls ?? "bg-ink-100 text-ink-500";
+    return <span className={`text-[9px] font-medium px-2 py-0.5 rounded-full ${cls}`}>{label}</span>;
   };
 
   return (
     <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-6 transition-colors">
       <p className="font-semibold text-[24px] text-ink-900 dark:text-white mb-4 sm:mb-5">
-        Список товаров
+        {t("seller.productsList")}
       </p>
 
       {loading ? (
@@ -72,7 +76,7 @@ export default function ProductsTab() {
           ))}
         </div>
       ) : products.length === 0 ? (
-        <p className="text-center py-12 text-ink-400">У вас нет товаров</p>
+        <p className="text-center py-12 text-ink-400">{t("seller.noProducts")}</p>
       ) : (
         <div className="flex flex-col gap-3">
           {products.map((p) => {
@@ -93,10 +97,10 @@ export default function ProductsTab() {
                       {statusBadge(p.status)}
                     </div>
                     <p className="text-[8.25px] mt-3 text-ink-400">
-                      {p.price} {p.currency} · {p.priceType === "NEGOTIABLE" ? "Договорная" : "Фикс."}
+                      {p.price} {p.currency} · {p.priceType === "NEGOTIABLE" ? t("seller.priceNegotiable") : t("seller.priceFixed")}
                     </p>
                     {p.rejectReason && (
-                      <p className="text-[9px] text-red-500 mt-1">Причина отклонения: {p.rejectReason}</p>
+                      <p className="text-[9px] text-red-500 mt-1">{t("seller.rejectReason", { reason: p.rejectReason })}</p>
                     )}
                   </div>
                 </div>
@@ -104,31 +108,31 @@ export default function ProductsTab() {
                   <button
                     disabled={busy}
                     onClick={() => setEditingProduct(p)}
-                    title="Редактировать"
+                    title={t("seller.edit")}
                     className="w-full flex items-center mt-3 gap-2 text-black dark:text-white rounded-xl justify-center p-3 sm:w-auto hover:text-brand-500 transition-colors p-1 sm:border-none border"
                   >
                     <Edit2 size={20} />
-                    <p className="sm:hidden flex">Редоктировать</p>
+                    <p className="sm:hidden flex">{t("seller.edit")}</p>
                   </button>
                   {p.status !== "ARCHIVED" && (
                     <button
                       disabled={busy}
                       onClick={() => handleArchive(p.id)}
-                      title="Архивировать"
+                      title={t("seller.archive")}
                       className="w-full flex items-center mt-3 gap-2 text-black dark:text-white rounded-xl justify-center p-3 sm:w-auto hover:text-amber-500 transition-colors p-1 sm:border-none border"
                     >
                       <Archive size={20} />
-                      <p className="sm:hidden flex">Архивировать</p>
+                      <p className="sm:hidden flex">{t("seller.archive")}</p>
                     </button>
                   )}
                   <button
                     disabled={busy}
                     onClick={() => handleDelete(p.id)}
-                    title="Удалить"
+                    title={t("seller.delete")}
                     className="w-full flex items-center mt-3 gap-2 text-black dark:text-white rounded-xl justify-center p-3 sm:w-auto hover:text-red-500 transition-colors p-1 sm:border-none border"
                   >
                     <Trash size={20} />
-                    <p className="sm:hidden flex">Удалить</p>
+                    <p className="sm:hidden flex">{t("seller.delete")}</p>
                   </button>
                 </div>
               </div>

@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Box, I3DSquare, Buildings2, Flag } from "iconsax-reactjs";
 import ProductThumb from "../ui/ProductThumb";
 import { getAdminDashboard, getProductModerationQueue, getCompanyModerationQueue } from "../../api/api";
 
 export default function ModOverviewTab() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [pendingProducts, setPendingProducts] = useState([]);
   const [pendingCompanies, setPendingCompanies] = useState([]);
@@ -25,18 +27,18 @@ export default function ModOverviewTab() {
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-1.5">
-        <StatCard label="На проверке товаров" value={stats?.pendingProducts ?? (loading ? "…" : 0)} icon={Box} color="dark:bg-[#5860BB] bg-[#4851B1]" />
-        <StatCard label="Компании в ожидании" value={stats?.pendingCompanies ?? (loading ? "…" : 0)} icon={I3DSquare} color="bg-[#9C48B1] dark:bg-[#A758BB]" />
-        <StatCard label="Жалобы" value={stats?.openReports ?? (loading ? "…" : 0)} icon={Flag} color="bg-[#9C48B1] dark:bg-[#A758BB]" />
+        <StatCard label={t("moderator.pendingProducts")} value={stats?.pendingProducts ?? (loading ? "…" : 0)} icon={Box} color="dark:bg-[#5860BB] bg-[#4851B1]" />
+        <StatCard label={t("moderator.pendingCompanies")} value={stats?.pendingCompanies ?? (loading ? "…" : 0)} icon={I3DSquare} color="bg-[#9C48B1] dark:bg-[#A758BB]" />
+        <StatCard label={t("moderator.openReports")} value={stats?.openReports ?? (loading ? "…" : 0)} icon={Flag} color="bg-[#9C48B1] dark:bg-[#A758BB]" />
       </div>
 
       <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-6 transition-colors">
-        <p className="font-semibold text-ink-900 text-[24px] dark:text-white mb-4">Ожидают проверки</p>
+        <p className="font-semibold text-ink-900 text-[24px] dark:text-white mb-4">{t("moderator.awaitingReview")}</p>
         <div className="flex flex-col gap-3">
           {loading ? (
             [1, 2, 3].map((i) => <div key={i} className="h-16 rounded-xl bg-ink-100 dark:bg-[#171717] animate-pulse" />)
           ) : pendingProducts.length === 0 && pendingCompanies.length === 0 ? (
-            <p className="text-center py-8 text-ink-400 text-sm">Нет объектов, ожидающих проверки</p>
+            <p className="text-center py-8 text-ink-400 text-sm">{t("moderator.noItemsAwaitingReview")}</p>
           ) : (
             <>
               {pendingProducts.map((p) => (
@@ -49,7 +51,7 @@ export default function ModOverviewTab() {
                     <p className="text-xs text-[#7F7F7F] mt-3">{p.price} {p.currency}</p>
                   </div>
                   <span className="text-xs font-medium px-2.5 sm:px-3 py-1 rounded-[4px] whitespace-nowrap bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                    Товар
+                    {t("moderator.productBadge")}
                   </span>
                 </div>
               ))}
@@ -60,10 +62,10 @@ export default function ModOverviewTab() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-ink-900 dark:text-white truncate">{c.name}</p>
-                    {c.stir && <p className="text-xs text-[#7F7F7F] mt-3">ИНН: {c.stir}</p>}
+                    {c.stir && <p className="text-xs text-[#7F7F7F] mt-3">{t("moderator.stir")}: {c.stir}</p>}
                   </div>
                   <span className="text-xs font-medium px-2.5 sm:px-3 py-1 rounded-[4px] whitespace-nowrap bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                    Компания
+                    {t("moderator.companyBadge")}
                   </span>
                 </div>
               ))}

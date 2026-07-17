@@ -76,11 +76,7 @@ function App() {
                     <CatalogPage />
                   </Suspense>
                 } />
-                <Route path="/products-explore" element={
-                  <Suspense fallback={<Loader />}>
-                    <CatalogPage />
-                  </Suspense>
-                } />
+                <Route path="/products-explore" element={<Navigate to="/catalog" replace />} />
                 <Route path="/product/:id" element={
                   <Suspense fallback={<Loader />}>
                     <ProductPage />

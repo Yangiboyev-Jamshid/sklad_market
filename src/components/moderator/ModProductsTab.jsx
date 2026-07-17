@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import PillToggle from "../ui/PillToggle";
 import ProductThumb from "../ui/ProductThumb";
 import { getProductModerationQueue, getMyCompany, getMyProducts, approveProduct, rejectProduct } from "../../api/api";
@@ -10,6 +11,7 @@ function primaryImage(p) {
 }
 
 export default function ModProductsTab() {
+  const { t } = useTranslation();
   const [subTab, setSubTab] = useState("pending");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,7 @@ export default function ModProductsTab() {
   };
 
   const handleReject = async (id) => {
-    const comment = window.prompt("Причина отклонения:") ?? "";
+    const comment = window.prompt(t("moderator.rejectReasonPrompt")) ?? "";
     setActionId(id);
     try {
       await rejectProduct(id, { reasonCode: "OTHER", comment });
@@ -67,9 +69,9 @@ export default function ModProductsTab() {
       <div className="overflow-x-auto">
         <PillToggle
           options={[
-            { value: "pending", label: "Товары на проверке" },
-            { value: "mine", label: "Мои товары" },
-            { value: "draft", label: "Черновик" },
+            { value: "pending", label: t("moderator.productsPending") },
+            { value: "mine", label: t("moderator.myProducts") },
+            { value: "draft", label: t("moderator.draftPill") },
           ]}
           value={subTab}
           onChange={setSubTab}
@@ -79,7 +81,7 @@ export default function ModProductsTab() {
 
       <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-6 transition-colors">
         <p className="font-semibold text-ink-900 text-[24px] dark:text-white mb-4">
-          {subTab === "pending" ? "Товары на проверке" : subTab === "mine" ? "Мои товары" : "Черновики"}
+          {subTab === "pending" ? t("moderator.productsPending") : subTab === "mine" ? t("moderator.myProducts") : t("moderator.drafts")}
         </p>
         {loading ? (
           <div className="flex flex-col gap-3">
@@ -88,7 +90,7 @@ export default function ModProductsTab() {
             ))}
           </div>
         ) : products.length === 0 ? (
-          <p className="text-center py-12 text-ink-400">Товаров нет</p>
+          <p className="text-center py-12 text-ink-400">{t("moderator.noProducts")}</p>
         ) : (
           <div className="flex flex-col gap-3">
             {products.map((p) => {
@@ -102,12 +104,12 @@ export default function ModProductsTab() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-ink-900 dark:text-white">{p.name}</p>
-                      <p className="text-xs text-[#7F7F7F] mb-1">Компания #{p.companyId}</p>
+                      <p className="text-xs text-[#7F7F7F] mb-1">{t("common.companyFallback", { id: p.companyId })}</p>
                       {p.shortDescription && (
                         <p className="text-xs text-black dark:text-white mt-1">{p.shortDescription}</p>
                       )}
                       {p.rejectReason && (
-                        <p className="text-[11px] text-danger-500 mt-1">Причина отклонения: {p.rejectReason}</p>
+                        <p className="text-[11px] text-danger-500 mt-1">{t("seller.rejectReason", { reason: p.rejectReason })}</p>
                       )}
                       <p className="text-[11px] text-ink-300 dark:text-[#7F7F7F] mt-1">
                         {p.createdAt ? new Date(p.createdAt).toLocaleDateString("ru-RU") : ""}
@@ -123,14 +125,14 @@ export default function ModProductsTab() {
                           onClick={() => handleApprove(p.id)}
                           className="flex items-center gap-1.5 bg-success-500 hover:bg-success-600 text-white dark:text-black text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-xl transition-colors whitespace-nowrap"
                         >
-                          <GrFormCheckmark className="text-[20px]" /> Одобрить
+                          <GrFormCheckmark className="text-[20px]" /> {t("moderator.approve")}
                         </button>
                         <button
                           disabled={busy}
                           onClick={() => handleReject(p.id)}
                           className="flex items-center gap-1.5 bg-danger-500 hover:bg-danger-600 text-white dark:text-black text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-xl transition-colors whitespace-nowrap"
                         >
-                          <IoIosClose className="text-[20px]" /> Отклонить
+                          <IoIosClose className="text-[20px]" /> {t("moderator.reject")}
                         </button>
                       </div>
                     )}

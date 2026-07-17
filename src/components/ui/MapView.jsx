@@ -260,7 +260,7 @@ export default function MapView({ pins = [], height = "h-[460px]", center }) {
                           {item.name}
                           {item.verified !== false && <span className="text-brand-500">✓</span>}
                         </p>
-                        <p className="text-[11px] text-ink-400">{item.company}</p>
+                        <p className="text-[11px] text-ink-400"><span translate="no" className="notranslate">{item.company}</span></p>
                       </div>
                       {item.rating != null && (
                         <div className="flex items-center gap-0.5">
