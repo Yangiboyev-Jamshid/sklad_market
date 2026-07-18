@@ -17,7 +17,7 @@ function CategoryIcon({ src, size = 'md' }) {
         <img
           src={src}
           alt=""
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover scale-[1.3]"
           onError={() => setErrored(true)}
         />
       ) : (
