@@ -9,6 +9,7 @@ import ModCompaniesTab from "../components/moderator/ModCompaniesTab";
 import ComplaintsTab from "../components/moderator/ComplaintsTab";
 import AccountsTab from "../components/moderator/AccountsTab";
 import BannersTab from "../components/moderator/BannersTab";
+import CategoriesTab from "../components/moderator/CategoriesTab";
 
 const tabs = [
   { id: "overview", labelKey: "moderator.tabOverview", Component: ModOverviewTab },
@@ -17,6 +18,7 @@ const tabs = [
   { id: "complaints", labelKey: "moderator.tabComplaints", Component: ComplaintsTab },
   { id: "accounts", labelKey: "moderator.tabAccounts", Component: AccountsTab },
   { id: "banners", labelKey: "moderator.tabBanners", Component: BannersTab, adminOnly: true },
+  { id: "categories", labelKey: "moderator.tabCategories", Component: CategoriesTab, adminOnly: true },
 ];
 
 export default function ModeratorDashboardPage() {

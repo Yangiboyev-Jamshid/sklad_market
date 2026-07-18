@@ -210,6 +210,25 @@ export async function getCategoryTree() {
   return unwrap(http.get("/categories/tree"));
 }
 
+export async function getAdminCategories() {
+  return unwrap(http.get("/admin/categories"));
+}
+
+export async function createCategory(data, file) {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("request", new Blob([JSON.stringify(data)], { type: "application/json" }));
+  return unwrap(http.post("/categories/create", form));
+}
+
+export async function updateCategory(id, data) {
+  return unwrap(http.put(`/categories/update/${id}`, data));
+}
+
+export async function deleteCategory(id) {
+  return unwrap(http.delete(`/categories/delete/${id}`));
+}
+
 // ─── Company Favorites ────────────────────────────────────────────────────────
 
 export async function addCompanyFavorite(companyId) {

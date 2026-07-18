@@ -435,6 +435,27 @@
     "save": "Сохранить",
     "cancel": "Отмена",
     "create": "Создать",
-    "delete": "Удалить"
+    "delete": "Удалить",
+    "tabCategories": "Категории",
+    "categoriesManagement": "Управление категориями",
+    "noCategoriesFound": "Категории не найдены",
+    "addCategory": "Добавить категорию",
+    "editCategory": "Редактировать категорию",
+    "deleteCategoryConfirm": "Удалить эту категорию?",
+    "colIcon": "Иконка",
+    "colName": "Название",
+    "categoryActive": "Активна",
+    "categoryInactive": "Неактивна",
+    "categoryNameUz": "Название (узб.)",
+    "categoryNameRu": "Название (рус.)",
+    "categoryNameEn": "Название (англ.)",
+    "categorySlug": "Slug",
+    "categoryParent": "Родительская категория",
+    "noParentOption": "Без родителя (верхний уровень)",
+    "categorySortOrder": "Порядок сортировки",
+    "categoryIcon": "Иконка",
+    "enterCategoryRequiredFields": "Заполните название на всех трёх языках и slug",
+    "enterCategoryIcon": "Загрузите иконку категории",
+    "iconLockedAfterCreate": "Иконку можно задать только при создании категории — изменить её позже нельзя"
   }
 }

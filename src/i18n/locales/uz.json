@@ -435,6 +435,27 @@
     "save": "Saqlash",
     "cancel": "Bekor qilish",
     "create": "Yaratish",
-    "delete": "O'chirish"
+    "delete": "O'chirish",
+    "tabCategories": "Kategoriyalar",
+    "categoriesManagement": "Kategoriyalarni boshqarish",
+    "noCategoriesFound": "Kategoriyalar topilmadi",
+    "addCategory": "Kategoriya qo'shish",
+    "editCategory": "Kategoriyani tahrirlash",
+    "deleteCategoryConfirm": "Bu kategoriyani o'chirasizmi?",
+    "colIcon": "Belgi",
+    "colName": "Nomi",
+    "categoryActive": "Faol",
+    "categoryInactive": "Nofaol",
+    "categoryNameUz": "Nomi (o'zbekcha)",
+    "categoryNameRu": "Nomi (ruscha)",
+    "categoryNameEn": "Nomi (inglizcha)",
+    "categorySlug": "Slug",
+    "categoryParent": "Ota kategoriya",
+    "noParentOption": "Ota kategoriyasiz (yuqori daraja)",
+    "categorySortOrder": "Tartib raqami",
+    "categoryIcon": "Belgi (icon)",
+    "enterCategoryRequiredFields": "Nomni uchala tilda ham va slug'ni to'ldiring",
+    "enterCategoryIcon": "Kategoriya belgisini yuklang",
+    "iconLockedAfterCreate": "Belgi faqat kategoriya yaratilganda belgilanadi va keyinchalik o'zgartirib bo'lmaydi"
   }
 }

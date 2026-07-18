@@ -435,6 +435,27 @@
     "save": "Save",
     "cancel": "Cancel",
     "create": "Create",
-    "delete": "Delete"
+    "delete": "Delete",
+    "tabCategories": "Categories",
+    "categoriesManagement": "Category management",
+    "noCategoriesFound": "No categories found",
+    "addCategory": "Add category",
+    "editCategory": "Edit category",
+    "deleteCategoryConfirm": "Delete this category?",
+    "colIcon": "Icon",
+    "colName": "Name",
+    "categoryActive": "Active",
+    "categoryInactive": "Inactive",
+    "categoryNameUz": "Name (Uzbek)",
+    "categoryNameRu": "Name (Russian)",
+    "categoryNameEn": "Name (English)",
+    "categorySlug": "Slug",
+    "categoryParent": "Parent category",
+    "noParentOption": "No parent (top-level)",
+    "categorySortOrder": "Sort order",
+    "categoryIcon": "Icon",
+    "enterCategoryRequiredFields": "Fill in the name in all three languages and the slug",
+    "enterCategoryIcon": "Upload a category icon",
+    "iconLockedAfterCreate": "The icon can only be set when creating a category and can't be changed afterwards"
   }
 }
