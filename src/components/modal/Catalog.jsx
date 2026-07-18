@@ -5,13 +5,11 @@ import { ArrowRight2, ArrowLeft2, CloseCircle, Box } from 'iconsax-reactjs';
 import { useNavigate } from 'react-router-dom';
 import { getCategoryTree } from '../../api/api';
 
-function CategoryIcon({ src, size = 'md' }) {
+function CategoryIcon({ src }) {
   const [errored, setErrored] = useState(false);
-  const box = size === 'lg' ? 'w-11 h-11' : size === 'sm' ? 'w-8 h-8' : 'w-9 h-9';
-  const iconSize = size === 'lg' ? 22 : size === 'sm' ? 16 : 18;
   return (
     <span
-      className={`${box} shrink-0 rounded-xl bg-ink-50 dark:bg-[#171717] border border-gray-100 dark:border-[#232323] flex items-center justify-center overflow-hidden`}
+      className="w-6 h-6 shrink-0 rounded-lg bg-ink-50 dark:bg-[#171717] border border-gray-100 dark:border-[#232323] flex items-center justify-center overflow-hidden"
     >
       {src && !errored ? (
         <img
@@ -21,7 +19,7 @@ function CategoryIcon({ src, size = 'md' }) {
           onError={() => setErrored(true)}
         />
       ) : (
-        <Box size={iconSize} className="text-ink-300 dark:text-ink-600" variant="Bulk" />
+        <Box size={14} className="text-ink-300 dark:text-ink-600" variant="Bulk" />
       )}
     </span>
   );
@@ -119,7 +117,7 @@ export default function Catalog({ isOpen, onClose }) {
                             }`}
                         >
                           <span className="flex items-center gap-2.5 font-medium min-w-0">
-                            <CategoryIcon src={cat.iconUrl} size="sm" />
+                            <CategoryIcon src={cat.iconUrl} />
                             <span className="truncate">{catName(cat)}</span>
                           </span>
                           <ArrowRight2 size={18} className={`shrink-0 ${activeId === cat.id ? 'dark:text-white' : ''}`} />
@@ -142,7 +140,7 @@ export default function Catalog({ isOpen, onClose }) {
                       >
                         <div className="flex items-center justify-between mb-6">
                           <div className="flex items-center gap-3">
-                            <CategoryIcon src={cat.iconUrl} size="lg" />
+                            <CategoryIcon src={cat.iconUrl} />
                             <h2 className="text-lg font-bold text-gray-900 dark:text-white">{catName(cat)}</h2>
                           </div>
                           <button
@@ -176,7 +174,6 @@ export default function Catalog({ isOpen, onClose }) {
             )}
           </motion.div>
 
-          {/* Mobile full-screen catalog */}
           <motion.div
             key="panel-mobile"
             initial={{ opacity: 0, x: 24 }}
