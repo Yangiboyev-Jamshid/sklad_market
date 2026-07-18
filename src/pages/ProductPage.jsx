@@ -21,6 +21,7 @@ import AppShell from "../components/layout/AppShell";
 import ProductThumb from "../components/ui/ProductThumb";
 import ProductCard from "../components/ui/ProductCard";
 import RatingStars from "../components/ui/RatingStars";
+import AddToCartButton from "../components/ui/AddToCartButton";
 import ReportModal from "../components/modal/ReportModal";
 import { useCart } from "../context/CartContext";
 import { getProductBySlug, getAllProducts, getProductReviews, createChat } from "../api/api";
@@ -70,7 +71,7 @@ export default function ProductPage() {
   const [similar, setSimilar] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
-  const { addToCart, favorites, toggleFavorite } = useCart();
+  const { favorites, toggleFavorite } = useCart();
   const navigate = useNavigate();
   const isFav = product ? favorites?.has(product.id) : false;
 
@@ -230,12 +231,14 @@ export default function ProductPage() {
               {t("product.total", { total: product.price * (Number(qty) || 0), currency: displayText(product.currency) })}
             </p>
 
-            <button
-              onClick={() => addToCart({ id: product.id, name: product.name, price: product.price, qty: Number(qty) || 1 })}
+            <AddToCartButton
+              product={{ id: product.id, name: product.name, price: product.price, qty: Number(qty) || 1 }}
+              imageUrl={primaryImage}
+              iconSize={18}
               className="w-full bg-brand-600 dark:text-[#0D0D0D] hover:bg-brand-700 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 mb-2 transition-colors"
             >
               <ShoppingCart size={18} /> {t("common.addToCart")}
-            </button>
+            </AddToCartButton>
 
             <button
               onClick={handleOpenChat}

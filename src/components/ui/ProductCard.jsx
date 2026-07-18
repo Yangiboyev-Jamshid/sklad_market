@@ -3,12 +3,13 @@ import { Heart } from "iconsax-reactjs";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import ProductThumb from "./ProductThumb";
+import AddToCartButton from "./AddToCartButton";
 import { useCart } from "../../context/CartContext";
 
 export default function ProductCard({ product, index = 0 }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { addToCart, favorites, toggleFavorite } = useCart();
+  const { favorites, toggleFavorite } = useCart();
   const isFav = favorites?.has(product.id);
 
   return (
@@ -60,15 +61,14 @@ export default function ProductCard({ product, index = 0 }) {
           <p className="text-[10px] sm:text-[8.25px] text-ink-500 dark:text-[#7F7F7F] whitespace-nowrap">
             {t("common.from")} <span>{Number(product.price ?? 0).toLocaleString()}</span> {product.unit}
           </p>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              addToCart(product);
-            }}
+          <AddToCartButton
+            product={product}
+            imageUrl={product.image}
+            iconSize={12}
             className="shrink-0 px-2 sm:px-3 dark:text-[#0D0D0D] py-0.5 sm:py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.97] text-white text-[12px] sm:text-[9.43px] font-semibold rounded-full transition-all whitespace-nowrap"
           >
             {t("common.addToCart")}
-          </button>
+          </AddToCartButton>
         </div>
       </div>
     </motion.div>

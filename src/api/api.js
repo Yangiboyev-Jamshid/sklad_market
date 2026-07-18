@@ -187,6 +187,13 @@ export async function updateCompany(id, data) {
   return cacheCompanyDetail({ ...company, lat: data.lat, lng: data.lng });
 }
 
+export async function updateCompanyLocation(companyId, { lat, lng }) {
+  const company = await unwrap(
+    http.put("/companies/update/location", { lat: String(lat), lng: String(lng) }, { params: { companyId } })
+  );
+  return cacheCompanyDetail({ ...company, id: company?.id ?? companyId, lat: String(lat), lng: String(lng) });
+}
+
 export async function submitCompanyVerification(id) {
   return unwrap(http.post(`/companies/${id}/submit-verification`));
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -8,12 +8,14 @@ import ProductCard from "../components/ui/ProductCard";
 import CompanyCard from "../components/ui/CompanyCard";
 import PillToggle from "../components/ui/PillToggle";
 import MapView from "../components/ui/MapView";
+import { useCart } from "../context/CartContext";
 import { getFavorites, getCompanyFavorites, getCatalogMap, getCompaniesMap } from "../api/api";
 import { buildProductMapPins, buildCompanyMapPins } from "../utils/mapPins";
 
 export default function FavoritesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { favorites, companyFavorites } = useCart();
   const [tab, setTab] = useState("products");
   const [products, setProducts] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -41,6 +43,30 @@ export default function FavoritesPage() {
       .catch(() => setCompanies([]))
       .finally(() => setLoadingC(false));
   }, []);
+
+  // Drop a card the instant its heart is unliked elsewhere (CartContext's
+  // `favorites` set), instead of waiting for a refetch/reload. Only react to
+  // true -> false transitions so the still-loading (empty) set on first
+  // render can't wipe the freshly-fetched list.
+  const prevFavoritesRef = useRef(null);
+  useEffect(() => {
+    if (!favorites) return;
+    if (prevFavoritesRef.current) {
+      const prev = prevFavoritesRef.current;
+      setProducts((list) => list.filter((p) => !prev.has(p.id) || favorites.has(p.id)));
+    }
+    prevFavoritesRef.current = favorites;
+  }, [favorites]);
+
+  const prevCompanyFavoritesRef = useRef(null);
+  useEffect(() => {
+    if (!companyFavorites) return;
+    if (prevCompanyFavoritesRef.current) {
+      const prev = prevCompanyFavoritesRef.current;
+      setCompanies((list) => list.filter((c) => !prev.has(c.id) || companyFavorites.has(c.id)));
+    }
+    prevCompanyFavoritesRef.current = companyFavorites;
+  }, [companyFavorites]);
 
   useEffect(() => {
     // Wait for favorites to finish loading — building the map from `products`

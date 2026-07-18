@@ -25,6 +25,7 @@ import { useAuth } from "../context/AuthContext";
 import { getCompanyBySlug, getMyCompany, getCompaniesMap, getCompanyProducts, getCompanyReviews, createChat } from "../api/api";
 import { buildCompanyMapPins } from "../utils/mapPins";
 import ProductCard from "../components/ui/ProductCard";
+import { getPublicCompanyExtras } from "../utils/companyExtras";
 
 function normalizeProduct(p, t) {
   return {
@@ -71,6 +72,16 @@ export default function ProfilePage() {
   const [companyMapLoaded, setCompanyMapLoaded] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [logoFallback, setLogoFallback] = useState(null);
+
+  useEffect(() => {
+    if (company?.logoUrl || !company?.id) return;
+    let cancelled = false;
+    getPublicCompanyExtras().then((map) => {
+      if (!cancelled) setLogoFallback({ id: company.id, logoUrl: map.get(company.id)?.logoUrl ?? null });
+    });
+    return () => { cancelled = true; };
+  }, [company?.logoUrl, company?.id]);
 
   useEffect(() => {
     if (!showMap || companyMapLoaded) return;
@@ -192,6 +203,7 @@ export default function ProfilePage() {
   const initials = (company.name ?? "??").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const cityShort = company.city ?? company.address?.split(",")[0]?.trim();
   const email = company.email ?? (company.website ? `info@${company.website.replace(/^www\./, "")}` : null);
+  const logoUrl = company.logoUrl ?? (logoFallback?.id === company.id ? logoFallback.logoUrl : null);
 
   const hasMapCoords = company.lat && company.lng;
 
@@ -214,12 +226,24 @@ export default function ProfilePage() {
         </div>
 
         <div className="relative bg-white sm:pb-8 pt-20 dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] overflow-hidden mb-5 sm:mb-6 transition-colors">
-          <div className="absolute top-0 left-0 right-0 bottom-[80%] sm:bottom-[50%] rounded-2xl -z-1 bg-[#DEECFF] dark:bg-[#00183A]"></div>
+          <div className="absolute top-0 left-0 right-0 bottom-[80%] sm:bottom-[50%] rounded-2xl -z-1 overflow-hidden bg-[#DEECFF] dark:bg-[#00183A]">
+            {logoUrl && (
+              <img src={logoUrl} alt="" className="w-full h-full object-cover" />
+            )}
+          </div>
           <div className="px-4 sm:px-6 pb-5 sm:pb-6 relative z-1">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-12 sm:-mt-10">
               <div className="flex items-start sm:items-end gap-3 sm:gap-4">
                 <div className="p-5 sm:p-10 rounded-full bg-white dark:bg-[#0D0D0D] text-white flex items-center justify-center font-bold text-lg sm:text-2xl shadow-card shrink-0 overflow-hidden">
-                  <span className="bg-brand-600 w-[48px] h-[48px] sm:w-[130px] sm:h-[130px] rounded-3xl flex items-center justify-center text-[17px] sm:text-[46px]">{initials}</span>
+                  {logoUrl ? (
+                    <img
+                      src={logoUrl}
+                      alt={company.name}
+                      className="w-[48px] h-[48px] sm:w-[130px] sm:h-[130px] rounded-3xl object-cover"
+                    />
+                  ) : (
+                    <span className="bg-brand-600 w-[48px] h-[48px] sm:w-[130px] sm:h-[130px] rounded-3xl flex items-center justify-center text-[17px] sm:text-[46px]">{initials}</span>
+                  )}
                 </div>
                 <div className="pb-1 mt-8 sm:mb-0">
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">

@@ -37,7 +37,7 @@ export default function BannerCarousel({ banners }) {
   };
 
   return (
-    <div className="relative group/carousel">
+    <div className="relative">
       <div
         ref={containerRef}
         onScroll={handleScroll}
@@ -64,16 +64,16 @@ export default function BannerCarousel({ banners }) {
           <button
             onClick={goPrev}
             aria-label="Previous banner"
-            className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/30 text-white backdrop-blur-sm opacity-100 sm:opacity-0 sm:group-hover/carousel:opacity-100 hover:bg-black/50 active:scale-90 transition-all"
+            className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white dark:bg-black text-ink-900 dark:text-white backdrop-blur-sm hover:bg-ink-100 dark:hover:bg-[#1C1C1C] active:scale-90 transition-all"
           >
-            <ArrowLeft2 size={18} variant="Bold" />
+            <ArrowLeft2 size={20} />
           </button>
           <button
             onClick={goNext}
             aria-label="Next banner"
-            className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/30 text-white backdrop-blur-sm opacity-100 sm:opacity-0 sm:group-hover/carousel:opacity-100 hover:bg-black/50 active:scale-90 transition-all"
+            className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white dark:bg-black text-ink-900 dark:text-white backdrop-blur-sm hover:bg-ink-100 dark:hover:bg-[#1C1C1C] active:scale-90 transition-all"
           >
-            <ArrowRight2 size={18} variant="Bold" />
+            <ArrowRight2 size={20} />
           </button>
         </>
       )}

@@ -4,25 +4,11 @@ import { ArrowRight, TickCircle, Heart } from "iconsax-reactjs";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useCart } from "../../context/CartContext";
-import { getCompanyBySlug, getPublicCompanies } from "../../api/api";
+import { getCompanyBySlug } from "../../api/api";
+import { getPublicCompanyExtras } from "../../utils/companyExtras";
 
 const VERIFIED_STATUSES = ["VERIFIED", "ACTIVE"];
 
-let publicExtrasPromise = null;
-function getPublicCompanyExtras() {
-  if (!publicExtrasPromise) {
-    publicExtrasPromise = getPublicCompanies({ page: 1, per_page: 100 })
-      .then((data) => {
-        const map = new Map();
-        (data?.content ?? []).forEach((c) => {
-          map.set(c.id, { logoUrl: c.logoUrl ?? null, companyCreatedDate: c.companyCreatedDate ?? null });
-        });
-        return map;
-      })
-      .catch(() => new Map());
-  }
-  return publicExtrasPromise;
-}
 const descriptionCache = new Map();
 function rememberDescription(c) {
   if (!c?.id) return;

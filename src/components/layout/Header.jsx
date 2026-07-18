@@ -19,13 +19,14 @@ import {
   Setting,
   TickCircle,
 } from "iconsax-reactjs";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useAnimation } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useTheme } from "../../context/ThemeContext";
 import MobileMenu from "./MobileMenu";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { cartIconRefs } from "../../utils/cartFly";
 
 const NOTIF_LABEL_KEYS = {
   PRODUCT_CREATED: "header.notifProductCreated",
@@ -99,6 +100,18 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const pageTitle = getPageTitle(location.pathname, t);
+  const cartBumpControls = useAnimation();
+
+  useEffect(() => {
+    const handler = () => {
+      cartBumpControls.start({
+        scale: [1, 1.35, 0.9, 1.08, 1],
+        transition: { duration: 0.5, ease: "easeInOut" },
+      });
+    };
+    window.addEventListener("cart-bump", handler);
+    return () => window.removeEventListener("cart-bump", handler);
+  }, [cartBumpControls]);
 
   useEffect(() => {
     if (!user) return;
@@ -348,28 +361,52 @@ export default function Header() {
 
           <Link
             to="/cart"
+            ref={(el) => { cartIconRefs.desktop = el; }}
             className="relative hidden sm:inline-flex text-ink-500 dark:text-[#CDD1D6] hover:text-ink-900 dark:hover:text-white transition-colors"
           >
-            <ShoppingCart size={22} variant="Linear" />
-            {items?.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-brand-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
-                {items.length}
-              </span>
-            )}
+            <motion.span animate={cartBumpControls} className="inline-flex">
+              <ShoppingCart size={22} variant="Linear" />
+            </motion.span>
+            <AnimatePresence>
+              {items?.length > 0 && (
+                <motion.span
+                  key={items.length}
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.5, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                  className="absolute -top-1.5 -right-1.5 bg-brand-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center"
+                >
+                  {items.length}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </Link>
 
           <div className="relative sm:hidden" ref={cartMenuRef}>
             <button
+              ref={(el) => { cartIconRefs.mobile = el; }}
               onClick={() => setCartMenuOpen((v) => !v)}
               className="relative text-ink-500 dark:text-[#CDD1D6] hover:text-ink-900 dark:hover:text-white transition-colors"
               aria-label={t("header.quickActions")}
             >
-              <ShoppingCart size={22} variant="Linear" />
-              {items?.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-brand-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
-                  {items.length}
-                </span>
-              )}
+              <motion.span animate={cartBumpControls} className="inline-flex">
+                <ShoppingCart size={22} variant="Linear" />
+              </motion.span>
+              <AnimatePresence>
+                {items?.length > 0 && (
+                  <motion.span
+                    key={items.length}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.5, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                    className="absolute -top-1.5 -right-1.5 bg-brand-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center"
+                  >
+                    {items.length}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
 
             <AnimatePresence>

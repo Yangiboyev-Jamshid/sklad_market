@@ -128,9 +128,12 @@ export default function CartPage() {
                             >
                               <Minus size={20} />
                             </button>
-                            <span className="w-16 py-2 rounded-xl border dark:border-[#2D2D2D] text-center font-medium text-sm dark:text-white">
-                              {item.quantity}
-                            </span>
+                            <QuantityInput
+                              key={item.quantity}
+                              item={item}
+                              updateQty={updateQty}
+                              className="w-16 py-2 rounded-xl border dark:border-[#2D2D2D] text-center font-medium text-sm dark:text-white bg-transparent outline-none focus:border-brand-400"
+                            />
                             <button
                               onClick={() => updateQty(item.id, item.quantity + 1)}
                               className="p-2 rounded-lg border border-ink-200 dark:border-[#1C1C1C] flex items-center justify-center text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-[#171717]"
@@ -177,9 +180,12 @@ export default function CartPage() {
                               >
                                 <Minus size={20} />
                               </button>
-                              <span className="w-[127px] py-2 rounded-xl border dark:border-[#2D2D2D] text-center font-medium text-sm dark:text-white">
-                                {item.quantity}
-                              </span>
+                              <QuantityInput
+                                key={item.quantity}
+                                item={item}
+                                updateQty={updateQty}
+                                className="w-[127px] py-2 rounded-xl border dark:border-[#2D2D2D] text-center font-medium text-sm dark:text-white bg-transparent outline-none focus:border-brand-400"
+                              />
                               <button
                                 onClick={() => updateQty(item.id, item.quantity + 1)}
                                 className="p-2 rounded-lg border border-ink-200 dark:border-[#1C1C1C] flex items-center justify-center text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-[#171717]"
@@ -326,6 +332,35 @@ export default function CartPage() {
         )}
       </AnimatePresence>
     </AppShell>
+  );
+}
+
+function QuantityInput({ item, updateQty, className }) {
+  const [value, setValue] = useState(String(item.quantity));
+
+  const commit = () => {
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed < 1) {
+      setValue(String(item.quantity));
+      return;
+    }
+    if (parsed !== item.quantity) updateQty(item.id, parsed);
+    else setValue(String(parsed));
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      value={value}
+      onChange={(e) => setValue(e.target.value.replace(/[^\d]/g, ""))}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.target.blur();
+      }}
+      className={className}
+    />
   );
 }
 

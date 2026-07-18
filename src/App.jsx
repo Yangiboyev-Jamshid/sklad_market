@@ -5,6 +5,7 @@ import { CartProvider } from "./context/CartContext";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { lazy, Suspense } from "react";
 import Loader from "./components/ui/Loader";
+import FlyToCartLayer from "./components/ui/FlyToCartLayer";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"))
 const HomePage = lazy(() => import("./pages/HomePage"))
@@ -135,6 +136,7 @@ function App() {
                 } />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              <FlyToCartLayer />
             </CartProvider>
           </AuthProvider>
         </AntDThemeBridge>

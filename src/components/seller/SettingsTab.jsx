@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Export, TickCircle, Edit2, CloseCircle, ShieldTick } from "iconsax-reactjs";
+import { Export, TickCircle, Edit2, CloseCircle, ShieldTick, Location } from "iconsax-reactjs";
 import {
   getMyCompany,
   updateCompany,
+  updateCompanyLocation,
   uploadCompanyLogo,
   submitCompanyVerification,
 } from "../../api/api";
 import CreateCompanyForm from "../company/CreateCompanyForm";
+import MapView from "../ui/MapView";
 import { useAuth } from "../../context/AuthContext";
 import { geocodeAddress } from "../../utils/geo";
 import { tariffPlans } from "../../data/mockData";
@@ -61,6 +63,10 @@ export default function SettingsTab() {
   const [logoUploading, setLogoUploading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const logoInputRef = useRef(null);
+
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [pickedCoords, setPickedCoords] = useState(null);
+  const [savingLocation, setSavingLocation] = useState(false);
 
   useEffect(() => {
     getMyCompany()
@@ -174,6 +180,31 @@ export default function SettingsTab() {
       setError(err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const toggleMapPicker = () => {
+    if (!showMapPicker) {
+      const hasCoords = company?.lat && company?.lng;
+      setPickedCoords(hasCoords ? { lat: Number(company.lat), lng: Number(company.lng) } : null);
+    }
+    setShowMapPicker((v) => !v);
+  };
+
+  const saveLocation = async () => {
+    if (!company || !pickedCoords) return;
+    setSavingLocation(true);
+    setError("");
+    try {
+      const updated = await updateCompanyLocation(company.id, pickedCoords);
+      setCompany((prev) => ({ ...prev, ...updated, lat: String(pickedCoords.lat), lng: String(pickedCoords.lng) }));
+      setShowMapPicker(false);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2500);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingLocation(false);
     }
   };
 
@@ -419,6 +450,37 @@ export default function SettingsTab() {
               </div>
             );
           })}
+        </div>
+
+        <div className="pt-4 mt-2 border-t border-[#F0F0F0] dark:border-[#1C1C1C]">
+          <button
+            onClick={toggleMapPicker}
+            className="flex items-center gap-2 text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline"
+          >
+            <Location size={16} /> {showMapPicker ? t("seller.hideMap") : t("seller.changeOnMap")}
+          </button>
+
+          {showMapPicker && (
+            <div className="mt-3 flex flex-col gap-3">
+              <MapView height="h-[280px] sm:h-[380px]" center={pickedCoords} onPick={setPickedCoords} />
+              <p className="text-xs text-ink-400 dark:text-ink-500">{t("seller.tapMapToSetLocation")}</p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={saveLocation}
+                  disabled={!pickedCoords || savingLocation}
+                  className="flex-1 sm:flex-none sm:px-6 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors"
+                >
+                  {savingLocation ? t("seller.saving") : t("seller.saveLocation")}
+                </button>
+                <button
+                  onClick={() => setShowMapPicker(false)}
+                  className="px-4 py-2.5 rounded-xl border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 text-sm font-medium text-ink-600 dark:text-ink-300 transition-colors"
+                >
+                  {t("seller.cancel")}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

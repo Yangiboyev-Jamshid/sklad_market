@@ -22,7 +22,7 @@ function hasCoords(p) {
   return !!p && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
 }
 
-export default function MapView({ pins = [], height = "h-[460px]", center }) {
+export default function MapView({ pins = [], height = "h-[460px]", center, onPick }) {
   const { theme } = useTheme();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -30,6 +30,7 @@ export default function MapView({ pins = [], height = "h-[460px]", center }) {
   const pinsRef = useRef(pins);
   const centerRef = useRef(center);
   const myLocationRef = useRef(null);
+  const onPickRef = useRef(onPick);
   const [active, setActive] = useState(null);
   const [ready, setReady] = useState(false);
   const [positions, setPositions] = useState({});
@@ -43,6 +44,10 @@ export default function MapView({ pins = [], height = "h-[460px]", center }) {
   useEffect(() => {
     myLocationRef.current = myLocation;
   }, [myLocation]);
+
+  useEffect(() => {
+    onPickRef.current = onPick;
+  }, [onPick]);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -110,6 +115,8 @@ export default function MapView({ pins = [], height = "h-[460px]", center }) {
     setReady(true);
 
     map.on("move zoom", recomputePositions);
+    const handleClick = (e) => onPickRef.current?.({ lat: e.latlng.lat, lng: e.latlng.lng });
+    map.on("click", handleClick);
     const onResize = () => {
       map.invalidateSize();
       recomputePositions();
@@ -119,6 +126,7 @@ export default function MapView({ pins = [], height = "h-[460px]", center }) {
     return () => {
       window.removeEventListener("resize", onResize);
       map.off("move zoom", recomputePositions);
+      map.off("click", handleClick);
       map.remove();
       mapRef.current = null;
     };
@@ -176,7 +184,7 @@ export default function MapView({ pins = [], height = "h-[460px]", center }) {
   }, [pins, center, myLocation, ready, height, recomputePositions]);
 
   return (
-    <div className={`relative w-full ${height} rounded-2xl overflow-hidden transition-colors`}>
+    <div className={`relative w-full ${height} rounded-2xl overflow-hidden transition-colors ${onPick ? "cursor-crosshair" : ""}`}>
       <div ref={containerRef} className="absolute inset-0 z-0" />
 
       {center && positions.__center && (
