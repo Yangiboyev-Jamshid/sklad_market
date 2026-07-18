@@ -285,7 +285,7 @@ export default function CartPage() {
               exit={{ opacity: 0, y: 60, scale: 0.98 }}
               transition={{ type: "spring", stiffness: 350, damping: 30 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-[#0D0D0D] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md max-h-[92vh] sm:max-h-[90vh] overflow-y-auto p-5 sm:p-7 relative transition-colors"
+              className="bg-white dark:bg-[#0D0D0D] rounded-t-xl sm:rounded-3xl w-full sm:max-w-md max-h-[92vh] sm:max-h-[90vh] overflow-y-auto p-5 sm:p-7 relative transition-colors"
             >
               <div className="relative mb-4 sm:mb-6">
                 <h2 className="text-lg sm:text-xl text-center font-display font-bold text-ink-900 dark:text-white">

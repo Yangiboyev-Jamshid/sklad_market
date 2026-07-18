@@ -331,7 +331,7 @@ function BannerFormModal({ open, onClose, banner, defaultPlacement, onSaved }) {
             transition={{ type: "spring", stiffness: 350, damping: 30 }}
             onClick={(e) => e.stopPropagation()}
             style={{ scrollbarWidth: "none" }}
-            className="bg-white dark:bg-[#0D0D0D] rounded-t-3xl sm:rounded-3xl w-full max-w-[35rem] max-h-[92vh] sm:max-h-[90vh] overflow-y-auto p-5 sm:p-7 relative transition-colors"
+            className="bg-white dark:bg-[#0D0D0D] rounded-t-xl sm:rounded-3xl w-full max-w-[35rem] max-h-[92vh] sm:max-h-[90vh] overflow-y-auto p-5 sm:p-7 relative transition-colors"
           >
             <h2 className="text-lg sm:text-xl text-center font-display font-bold text-ink-900 dark:text-white mb-4 sm:mb-6">
               {isEdit ? t("moderator.editBanner") : t("moderator.addBanner")}
