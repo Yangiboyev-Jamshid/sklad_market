@@ -42,6 +42,7 @@
     "markAllRead": "Mark all as read",
     "noNotifications": "No notifications",
     "quickActions": "Quick actions",
+    "myProfile": "My profile",
     "companyProfile": "Company profile",
     "settings": "Settings",
     "logout": "Log out",
@@ -398,7 +399,8 @@
     "blocked": "Blocked",
     "unblock": "Unblock",
     "openAccountMenu": "Open account menu",
-    "changeRole": "Change role",
+    "grantAdmin": "Grant admin access",
+    "confirmGrantAdmin": "Grant this user admin access? This can't be undone from here — there's currently no way to demote an admin back to buyer/seller.",
     "roleBuyer": "Buyer",
     "roleSeller": "Seller",
     "roleAdmin": "Admin",
@@ -428,6 +430,8 @@
     "enterBannerStartsAt": "Enter a start date",
     "enterBannerEndsAt": "Enter an end date",
     "bannerActive": "Active",
+    "bannerStatusUnknown": "Unknown",
+    "bannerStatusUnknownHint": "The banner list doesn't include status or end date — they're only known after you create or edit a banner in this session.",
     "bannerImage": "Image",
     "uploadImage": "Upload image",
     "changeImage": "Change image",
@@ -455,7 +459,23 @@
     "categorySortOrder": "Sort order",
     "categoryIcon": "Icon",
     "enterCategoryRequiredFields": "Fill in the name in all three languages and the slug",
-    "enterCategoryIcon": "Upload a category icon",
-    "iconLockedAfterCreate": "The icon can only be set when creating a category and can't be changed afterwards"
+    "enterCategoryIcon": "Upload a category icon"
+  },
+  "account": {
+    "title": "My profile",
+    "saved": "Saved",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "noName": "No name set",
+    "save": "Save",
+    "saving": "Saving...",
+    "changePhoto": "Change photo",
+    "photoUploadFailed": "The server didn't return a link to the uploaded photo",
+    "nameRequired": "Enter your first and last name",
+    "allFieldsRequired": "Position, Telegram, and additional phone are required to save your profile",
+    "position": "Position",
+    "positionPlaceholder": "e.g. Sales manager",
+    "telegram": "Telegram",
+    "extraPhone": "Additional phone"
   }
 }

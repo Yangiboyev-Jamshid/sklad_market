@@ -31,11 +31,11 @@ export default function SellerDashboardPage() {
   return (
     <AppShell>
       <div className="p-5 sm:p-10">
-        <div className="hidden sm:flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white">{t("seller.dashboardTitle")}</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
+          <h1 className="hidden sm:block text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white">{t("seller.dashboardTitle")}</h1>
           <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center justify-center gap-2 bg-[#1A94FF] hover:bg-brand-700 text-white dark:text-black text-sm font-semibold px-2.5 py-3 rounded-xl transition-colors shrink-0"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1A94FF] hover:bg-brand-700 text-white dark:text-black text-sm font-semibold px-2.5 py-3 rounded-xl transition-colors shrink-0"
           >
             <AddCircle size={24} /> {t("seller.addProduct")}
           </button>

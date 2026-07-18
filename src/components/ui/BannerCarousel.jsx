@@ -52,7 +52,7 @@ export default function BannerCarousel({ banners }) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            className={`overflow-hidden relative h-44 sm:h-56 w-full shrink-0 snap-center flex items-center justify-center ${b.href ? "cursor-pointer" : "cursor-default"}`}
+            className={`overflow-hidden relative h-44 sm:h-[50vh] w-full shrink-0 snap-center flex items-center justify-center ${b.href ? "cursor-pointer" : "cursor-default"}`}
           >
             <img src={b.img} alt="banner" className="object-cover w-full h-full" />
           </motion.a>

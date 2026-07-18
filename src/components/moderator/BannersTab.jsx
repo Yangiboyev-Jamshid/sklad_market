@@ -25,8 +25,11 @@ function StatusBadge({ isActive }) {
   const { t } = useTranslation();
   if (isActive == null) {
     return (
-      <span className="inline-flex w-fit items-center justify-center rounded-[4px] px-2 py-1 text-xs bg-ink-100 dark:bg-[#171717] text-ink-400">
-        —
+      <span
+        title={t("moderator.bannerStatusUnknownHint")}
+        className="inline-flex w-fit items-center justify-center rounded-[4px] px-2 py-1 text-xs bg-ink-100 dark:bg-[#171717] text-ink-400 whitespace-nowrap"
+      >
+        {t("moderator.bannerStatusUnknown")}
       </span>
     );
   }
@@ -60,12 +63,13 @@ function IconButton({ onClick, label, danger, children }) {
     <button
       onClick={onClick}
       aria-label={label}
-      className={`p-2 rounded-xl transition-colors ${danger
+      className={`p-2 rounded-xl border sm:border-none w-full sm:w-auto flex items-center gap-2 justify-center transition-colors ${danger
         ? "text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
         : "text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-[#171717]"
         }`}
     >
       {children}
+      <span className="sm:hidden flex">{danger ? "Удалить" : "Редоктировать"}</span>
     </button>
   );
 }
@@ -156,6 +160,10 @@ export default function BannersTab() {
         className="mb-6 max-w-full w-full"
       />
 
+      <p className="text-xs text-ink-400 bg-ink-50 dark:bg-[#171717] rounded-xl px-3 py-2 mb-4">
+        {t("moderator.bannerStatusUnknownHint")}
+      </p>
+
       {loading ? (
         <div className="flex flex-col gap-3 px-3 sm:px-0">
           {[1, 2, 3].map((i) => (
@@ -177,8 +185,8 @@ export default function BannersTab() {
                   </div>
                   <StatusBadge isActive={b.isActive ?? null} />
                 </div>
-                <div className="flex items-center justify-end gap-1 border-t border-[#F0F0F0] dark:border-[#1C1C1C] pt-2">
-                  <IconButton onClick={() => openEdit(b)} label={t("moderator.editBanner")}>
+                <div className="flex flex-col sm:flex-row items-center justify-end gap-2 border-t border-[#F0F0F0] dark:border-[#1C1C1C] pt-2">
+                  <IconButton onClick={() => openEdit(b)} label={t("moderator.editBanner")} >
                     <Edit2 size={18} />
                   </IconButton>
                   <IconButton onClick={() => handleDelete(b)} label={t("moderator.delete")} danger>
@@ -313,7 +321,7 @@ function BannerFormModal({ open, onClose, banner, defaultPlacement, onSaved }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-ink-900/40 backdrop-blur-sm z-50 flex items-center justify-center sm:p-4"
+          className="fixed inset-0 bg-ink-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4"
           onClick={onClose}
         >
           <motion.div

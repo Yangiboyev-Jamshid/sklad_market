@@ -1,17 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { getAdminUsers, blockUser, unblockUser, setUserRole } from "../../api/api";
+import { getAdminUsers, blockUser, unblockUser, grantAdminRole } from "../../api/api";
 import { useAuth } from "../../context/AuthContext";
 import { IoIosMore } from "react-icons/io";
 
 const HEADER_KEYS = ["moderator.colUsers", "moderator.colRoles", "moderator.colLogin", "moderator.colRegDate", "moderator.colWarnings", "moderator.colStatus"];
-
-const ROLES = [
-  { value: "BUYER", labelKey: "moderator.roleBuyer" },
-  { value: "SELLER", labelKey: "moderator.roleSeller" },
-  { value: "ADMIN", labelKey: "moderator.roleAdmin" },
-  { value: "SUPER_ADMIN", labelKey: "moderator.roleSuperAdmin" },
-];
 
 function formatDate(iso) {
   if (!iso) return "—";
@@ -33,30 +26,25 @@ function StatusBadge({ status }) {
   );
 }
 
-function AccountMenu({ a, isSuperAdmin, onToggleBlock, onChangeRole, t }) {
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN"];
+
+function AccountMenu({ a, isSuperAdmin, onToggleBlock, onGrantAdmin, t }) {
+  const alreadyAdmin = ADMIN_ROLES.includes((a.roles || "").toUpperCase());
   return (
-    <div className="absolute right-0 top-8 bg-white dark:bg-[#171717] border border-ink-100 dark:border-[#1C1C1C] rounded-xl shadow-popover z-10 w-48 py-1">
+    <div className="absolute right-0 top-8 bg-white dark:bg-[#171717] border border-ink-100 dark:border-[#1C1C1C] rounded-xl shadow-popover z-10 w-52 py-1">
       <button
         onClick={() => onToggleBlock(a)}
         className="w-full text-left px-4 py-2.5 text-sm text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10 rounded-xl"
       >
         {a.status === "BLOCKED" ? t("moderator.unblock") : t("moderator.block")}
       </button>
-      {isSuperAdmin && (
-        <>
-          <div className="px-4 pt-2 pb-1 text-xs text-ink-400 dark:text-ink-500 border-t border-ink-100 dark:border-[#1C1C1C] mt-1">
-            {t("moderator.changeRole")}
-          </div>
-          {ROLES.filter((r) => r.value !== a.roles).map((r) => (
-            <button
-              key={r.value}
-              onClick={() => onChangeRole(a, r.value)}
-              className="w-full text-left px-4 py-2 text-sm hover:bg-ink-50 dark:hover:bg-[#1C1C1C] rounded-xl"
-            >
-              {t(r.labelKey)}
-            </button>
-          ))}
-        </>
+      {isSuperAdmin && !alreadyAdmin && (
+        <button
+          onClick={() => onGrantAdmin(a)}
+          className="w-full text-left px-4 py-2.5 text-sm hover:bg-ink-50 dark:hover:bg-[#1C1C1C] rounded-xl border-t border-ink-100 dark:border-[#1C1C1C] mt-1"
+        >
+          {t("moderator.grantAdmin")}
+        </button>
       )}
     </div>
   );
@@ -115,12 +103,13 @@ export default function AccountsTab() {
     }
   };
 
-  const changeRole = async (a, role) => {
+  const grantAdmin = async (a) => {
     setMenuOpen(null);
+    if (!window.confirm(t("moderator.confirmGrantAdmin"))) return;
     setActionId(a.id);
     try {
-      await setUserRole(a.id, role);
-      setAccounts((prev) => prev.map((x) => (x.id === a.id ? { ...x, roles: role } : x)));
+      await grantAdminRole(a.id);
+      setAccounts((prev) => prev.map((x) => (x.id === a.id ? { ...x, roles: "ADMIN" } : x)));
     } catch (err) {
       alert(err.message);
     } finally {
@@ -161,7 +150,7 @@ export default function AccountsTab() {
                       <IoIosMore className="text-[24px]" />
                     </button>
                     {menuOpen === a.id && (
-                      <AccountMenu a={a} isSuperAdmin={isSuperAdmin} onToggleBlock={toggleBlock} onChangeRole={changeRole} t={t} />
+                      <AccountMenu a={a} isSuperAdmin={isSuperAdmin} onToggleBlock={toggleBlock} onGrantAdmin={grantAdmin} t={t} />
                     )}
                   </div>
                 </div>
@@ -212,7 +201,7 @@ export default function AccountsTab() {
                       <IoIosMore className="text-[24px]" />
                     </button>
                     {menuOpen === a.id && (
-                      <AccountMenu a={a} isSuperAdmin={isSuperAdmin} onToggleBlock={toggleBlock} onChangeRole={changeRole} t={t} />
+                      <AccountMenu a={a} isSuperAdmin={isSuperAdmin} onToggleBlock={toggleBlock} onGrantAdmin={grantAdmin} t={t} />
                     )}
                   </div>
                 </div>

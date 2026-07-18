@@ -42,6 +42,7 @@
     "markAllRead": "Прочитать все",
     "noNotifications": "Нет уведомлений",
     "quickActions": "Быстрые действия",
+    "myProfile": "Мой профиль",
     "companyProfile": "Профиль компании",
     "settings": "Настройка",
     "logout": "Выйти из аккаунта",
@@ -398,7 +399,8 @@
     "blocked": "Заблокирован",
     "unblock": "Разблокировать",
     "openAccountMenu": "Открыть меню аккаунта",
-    "changeRole": "Изменить роль",
+    "grantAdmin": "Выдать права админа",
+    "confirmGrantAdmin": "Выдать этому пользователю права администратора? Отменить это здесь нельзя — сейчас нет способа понизить админа обратно до покупателя/продавца.",
     "roleBuyer": "Покупатель",
     "roleSeller": "Продавец",
     "roleAdmin": "Админ",
@@ -428,6 +430,8 @@
     "enterBannerStartsAt": "Укажите дату начала",
     "enterBannerEndsAt": "Укажите дату окончания",
     "bannerActive": "Активен",
+    "bannerStatusUnknown": "Неизвестно",
+    "bannerStatusUnknownHint": "Список баннеров не содержит статус и дату окончания — они становятся известны только после создания или редактирования баннера в этой сессии.",
     "bannerImage": "Изображение",
     "uploadImage": "Загрузить изображение",
     "changeImage": "Заменить изображение",
@@ -455,7 +459,23 @@
     "categorySortOrder": "Порядок сортировки",
     "categoryIcon": "Иконка",
     "enterCategoryRequiredFields": "Заполните название на всех трёх языках и slug",
-    "enterCategoryIcon": "Загрузите иконку категории",
-    "iconLockedAfterCreate": "Иконку можно задать только при создании категории — изменить её позже нельзя"
+    "enterCategoryIcon": "Загрузите иконку категории"
+  },
+  "account": {
+    "title": "Мой профиль",
+    "saved": "Сохранено",
+    "firstName": "Имя",
+    "lastName": "Фамилия",
+    "noName": "Имя не указано",
+    "save": "Сохранить",
+    "saving": "Сохранение...",
+    "changePhoto": "Изменить фото",
+    "photoUploadFailed": "Сервер не вернул ссылку на загруженное фото",
+    "nameRequired": "Введите имя и фамилию",
+    "allFieldsRequired": "Должность, Telegram и дополнительный телефон обязательны для сохранения профиля",
+    "position": "Должность",
+    "positionPlaceholder": "например, менеджер по продажам",
+    "telegram": "Telegram",
+    "extraPhone": "Дополнительный телефон"
   }
 }

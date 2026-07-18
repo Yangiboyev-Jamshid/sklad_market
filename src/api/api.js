@@ -50,6 +50,33 @@ export async function verifyAccount({ username, code }) {
   return { message };
 }
 
+// ─── User profile ─────────────────────────────────────────────────────────────
+
+export async function getMyUserProfile() {
+  return unwrap(http.get("/users"));
+}
+
+export async function updateMyUserProfile(data) {
+  return unwrap(http.put("/users", data));
+}
+
+export async function uploadUserPhoto(file) {
+  return unwrap(http.post("/users/upload/photo", toSingleFileForm(file)));
+}
+
+export async function setUserPhoto(photoId) {
+  // Swagger says JSON body { photoId }, but the backend's ":photo" bind param
+  // never resolved from the body in testing — try it as a query param instead,
+  // sending photoId both ways so whichever the backend actually reads works.
+  return unwrap(
+    http.put("/users/update/photo", { photoId, photo: photoId }, { params: { photo: photoId, photoId } })
+  );
+}
+
+export async function getMyUserContext() {
+  return unwrap(http.get("/users/me/context"));
+}
+
 // ─── Favorites (products) ──────────────────────────────────────────────────────
 
 export async function addFavorite(productId) {
@@ -221,7 +248,13 @@ export async function createCategory(data, file) {
   return unwrap(http.post("/categories/create", form));
 }
 
-export async function updateCategory(id, data) {
+export async function updateCategory(id, data, file) {
+  if (file) {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("request", new Blob([JSON.stringify(data)], { type: "application/json" }));
+    return unwrap(http.put(`/categories/update/${id}`, form));
+  }
   return unwrap(http.put(`/categories/update/${id}`, data));
 }
 
@@ -430,8 +463,11 @@ export async function unblockUser(userId) {
   return unwrap(http.put(`/admin/users/${userId}/unblock`));
 }
 
-export async function setUserRole(userId, role) {
-  return unwrap(http.put(`/admin/users/set-admin/${userId}`, null, { params: { role } }));
+// Despite its old name, this endpoint has no "role" parameter at all (confirmed
+// via swagger) — it unconditionally grants ADMIN. There is no backend
+// capability to set a user to BUYER/SELLER/SUPER_ADMIN or to demote an admin.
+export async function grantAdminRole(userId) {
+  return unwrap(http.put(`/admin/users/set-admin/${userId}`));
 }
 
 // ─── Admin: companies ─────────────────────────────────────────────────────────

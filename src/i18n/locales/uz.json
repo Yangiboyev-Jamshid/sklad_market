@@ -42,6 +42,7 @@
     "markAllRead": "Barchasini o'qilgan deb belgilash",
     "noNotifications": "Bildirishnomalar yo'q",
     "quickActions": "Tezkor amallar",
+    "myProfile": "Mening profilim",
     "companyProfile": "Kompaniya profili",
     "settings": "Sozlamalar",
     "logout": "Hisobdan chiqish",
@@ -398,7 +399,8 @@
     "blocked": "Bloklangan",
     "unblock": "Blokdan chiqarish",
     "openAccountMenu": "Hisob menyusini ochish",
-    "changeRole": "Rolni o'zgartirish",
+    "grantAdmin": "Admin huquqini berish",
+    "confirmGrantAdmin": "Bu foydalanuvchiga admin huquqini berasizmi? Buni shu yerdan bekor qilib bo'lmaydi — hozircha adminni qaytadan xaridor/sotuvchiga tushirish imkoniyati yo'q.",
     "roleBuyer": "Xaridor",
     "roleSeller": "Sotuvchi",
     "roleAdmin": "Admin",
@@ -428,6 +430,8 @@
     "enterBannerStartsAt": "Boshlanish sanasini kiriting",
     "enterBannerEndsAt": "Tugash sanasini kiriting",
     "bannerActive": "Faol",
+    "bannerStatusUnknown": "Noma'lum",
+    "bannerStatusUnknownHint": "Bannerlar ro'yxatida status va tugash sanasi qaytmaydi — ular faqat shu sessiyada banner yaratilgan yoki tahrirlangandan keyin ma'lum bo'ladi.",
     "bannerImage": "Rasm",
     "uploadImage": "Rasm yuklash",
     "changeImage": "Rasmni almashtirish",
@@ -455,7 +459,23 @@
     "categorySortOrder": "Tartib raqami",
     "categoryIcon": "Belgi (icon)",
     "enterCategoryRequiredFields": "Nomni uchala tilda ham va slug'ni to'ldiring",
-    "enterCategoryIcon": "Kategoriya belgisini yuklang",
-    "iconLockedAfterCreate": "Belgi faqat kategoriya yaratilganda belgilanadi va keyinchalik o'zgartirib bo'lmaydi"
+    "enterCategoryIcon": "Kategoriya belgisini yuklang"
+  },
+  "account": {
+    "title": "Mening profilim",
+    "saved": "Saqlandi",
+    "firstName": "Ism",
+    "lastName": "Familiya",
+    "noName": "Ism kiritilmagan",
+    "save": "Saqlash",
+    "saving": "Saqlanmoqda...",
+    "changePhoto": "Rasmni almashtirish",
+    "photoUploadFailed": "Server yuklangan rasm havolasini qaytarmadi",
+    "nameRequired": "Ism va familiyangizni kiriting",
+    "allFieldsRequired": "Profilni saqlash uchun Lavozim, Telegram va qo'shimcha telefon ham to'ldirilishi shart",
+    "position": "Lavozim",
+    "positionPlaceholder": "masalan, sotuv menejeri",
+    "telegram": "Telegram",
+    "extraPhone": "Qo'shimcha telefon"
   }
 }

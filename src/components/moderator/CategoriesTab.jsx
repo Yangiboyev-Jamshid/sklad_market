@@ -12,15 +12,13 @@ import {
 
 const HEADER_KEYS = ["moderator.colIcon", "moderator.colName", "moderator.colStatus", "moderator.colActions"];
 
-// The admin listing endpoint doesn't return parentId, only the public tree
-// endpoint does — merge the two by id so we can show/edit hierarchy at all.
-function mergeWithParents(adminList, tree) {
-  const parentMap = new Map((tree ?? []).map((t) => [t.id, t.parentId ?? null]));
-  return (adminList ?? []).map((c) => ({ ...c, parentId: parentMap.get(c.id) ?? null }));
+function mergeWithTree(adminList, tree) {
+  const treeMap = new Map((tree ?? []).map((t) => [t.id, t]));
+  return (adminList ?? []).map((c) => {
+    const t = treeMap.get(c.id);
+    return { ...c, parentId: t?.parentId ?? null, iconUrl: c.iconUrl ?? t?.iconUrl ?? null };
+  });
 }
-
-// Two-level display: top-level categories, each followed by its own children,
-// both sorted by sortOrder — mirrors how the storefront's own category tree reads.
 function orderForDisplay(categories) {
   const byParent = new Map();
   categories.forEach((c) => {
@@ -40,7 +38,6 @@ function orderForDisplay(categories) {
       seen.add(child.id);
     });
   });
-  // Defensive: a child whose parent got filtered/archived elsewhere still needs to show up.
   categories.forEach((c) => {
     if (!seen.has(c.id)) result.push({ ...c, depth: 0 });
   });
@@ -62,9 +59,15 @@ function StatusBadge({ isActive }) {
 }
 
 function CategoryThumb({ iconUrl, className }) {
+  const [broken, setBroken] = useState(false);
+  const showImage = iconUrl && !broken;
   return (
     <div className={`rounded-xl overflow-hidden bg-ink-50 dark:bg-[#171717] shrink-0 flex items-center justify-center ${className}`}>
-      {iconUrl ? <img src={iconUrl} alt="" className="w-full h-full object-cover" /> : <span className="text-ink-300">—</span>}
+      {showImage ? (
+        <img src={iconUrl} alt="" onError={() => setBroken(true)} className="w-full h-full object-cover" />
+      ) : (
+        <span className="text-ink-300">—</span>
+      )}
     </div>
   );
 }
@@ -74,12 +77,13 @@ function IconButton({ onClick, label, danger, children }) {
     <button
       onClick={onClick}
       aria-label={label}
-      className={`p-2 rounded-xl transition-colors ${danger
+      className={`p-2 rounded-xl border sm:border-none w-full sm:w-auto flex items-center gap-2 justify-center transition-colors ${danger
         ? "text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10"
         : "text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-[#171717]"
         }`}
     >
       {children}
+      <span className="sm:hidden flex">{danger ? "Удалить" : "Редоктировать"}</span>
     </button>
   );
 }
@@ -96,7 +100,7 @@ export default function CategoriesTab() {
     setLoading(true);
     try {
       const [adminList, tree] = await Promise.all([getAdminCategories(), getCategoryTree()]);
-      setCategories(mergeWithParents(adminList, tree));
+      setCategories(mergeWithTree(adminList, tree));
     } catch {
       setCategories([]);
     } finally {
@@ -162,7 +166,7 @@ export default function CategoriesTab() {
                 className={`border border-[#F0F0F0] dark:border-[#1C1C1C] rounded-2xl p-4 ${actionId === c.id ? "opacity-50" : ""}`}
               >
                 <div className="flex items-start gap-3 mb-3">
-                  <CategoryThumb iconUrl={c.iconUrl} className="w-12 h-12" />
+                  <CategoryThumb key={c.iconUrl} iconUrl={c.iconUrl} className="w-12 h-12" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-ink-900 dark:text-white truncate">
                       {c.depth > 0 && "↳ "}{c.nameUz}
@@ -171,12 +175,12 @@ export default function CategoriesTab() {
                   </div>
                   <StatusBadge isActive={c.isActive} />
                 </div>
-                <div className="flex items-center justify-end gap-1 border-t border-[#F0F0F0] dark:border-[#1C1C1C] pt-2">
+                <div className="flex flex-col sm:flex-row items-center justify-end gap-2 border-t border-[#F0F0F0] dark:border-[#1C1C1C] pt-2">
                   <IconButton onClick={() => openEdit(c)} label={t("moderator.editCategory")}>
-                    <Edit2 size={18} />
+                    <Edit2 size={20} />
                   </IconButton>
                   <IconButton onClick={() => handleDelete(c)} label={t("moderator.delete")} danger>
-                    <Trash size={18} />
+                    <Trash size={20} />
                   </IconButton>
                 </div>
               </div>
@@ -195,7 +199,7 @@ export default function CategoriesTab() {
               {rows.map((c) => (
                 <div key={c.id} className={`group grid grid-cols-4 items-center text-black dark:text-white py-3 mt-4 rounded-2xl border border-[#F0F0F0] dark:border-[#1C1C1C] ${actionId === c.id ? "opacity-50" : ""}`}>
                   <div className="px-4 border-r border-[#333333]">
-                    <CategoryThumb iconUrl={c.iconUrl} className="w-12 h-12" />
+                    <CategoryThumb key={c.iconUrl} iconUrl={c.iconUrl} className="w-12 h-12" />
                   </div>
                   <div className="px-5 border-r border-[#333333] min-w-0" style={{ paddingLeft: `${20 + c.depth * 20}px` }}>
                     <p className="font-normal truncate">{c.depth > 0 && "↳ "}{c.nameUz}</p>
@@ -206,10 +210,10 @@ export default function CategoriesTab() {
                   </div>
                   <div className="px-5 flex items-center gap-1">
                     <IconButton onClick={() => openEdit(c)} label={t("moderator.editCategory")}>
-                      <Edit2 size={18} />
+                      <Edit2 size={20} />
                     </IconButton>
                     <IconButton onClick={() => handleDelete(c)} label={t("moderator.delete")} danger>
-                      <Trash size={18} />
+                      <Trash size={20} />
                     </IconButton>
                   </div>
                 </div>
@@ -291,7 +295,7 @@ function CategoryFormModal({ open, onClose, category, parentOptions, onSaved }) 
         isActive,
       };
       if (isEdit) {
-        await updateCategory(category.id, payload);
+        await updateCategory(category.id, payload, file);
       } else {
         await createCategory(payload, file);
       }
@@ -310,7 +314,7 @@ function CategoryFormModal({ open, onClose, category, parentOptions, onSaved }) 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-ink-900/40 backdrop-blur-sm z-50 flex items-center justify-center sm:p-4"
+          className="fixed inset-0 bg-ink-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4"
           onClick={onClose}
         >
           <motion.div
@@ -367,31 +371,23 @@ function CategoryFormModal({ open, onClose, category, parentOptions, onSaved }) 
             <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">
               {t("moderator.categoryIcon")}
             </label>
-            {isEdit ? (
-              <div className="flex items-center gap-3 mb-3">
-                <CategoryThumb iconUrl={preview} className="w-14 h-14" />
-                <p className="text-xs text-ink-400">{t("moderator.iconLockedAfterCreate")}</p>
-              </div>
-            ) : (
-              <>
-                <div
-                  onDrop={(e) => { e.preventDefault(); handleFile(e.dataTransfer.files); }}
-                  onDragOver={(e) => e.preventDefault()}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-ink-200 dark:border-[#1C1C1C] rounded-xl py-6 flex flex-col items-center justify-center text-center mb-3 hover:border-brand-300 dark:hover:border-brand-500 transition-colors cursor-pointer overflow-hidden"
-                >
-                  {preview ? (
-                    <img src={preview} alt="" className="max-h-24 rounded-lg object-contain" />
-                  ) : (
-                    <>
-                      <CloudAdd size={26} className="text-ink-300 dark:text-ink-600 mb-2" />
-                      <p className="text-sm text-ink-400">{t("moderator.uploadImage")}</p>
-                    </>
-                  )}
-                </div>
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files)} />
-              </>
-            )}
+            <div
+              onDrop={(e) => { e.preventDefault(); handleFile(e.dataTransfer.files); }}
+              onDragOver={(e) => e.preventDefault()}
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-ink-200 dark:border-[#1C1C1C] rounded-xl py-6 flex flex-col items-center justify-center text-center mb-3 hover:border-brand-300 dark:hover:border-brand-500 transition-colors cursor-pointer overflow-hidden"
+            >
+              {preview ? (
+                <img src={preview} alt="" className="max-h-24 rounded-lg object-contain" />
+              ) : (
+                <>
+                  <CloudAdd size={26} className="text-ink-300 dark:text-ink-600 mb-2" />
+                  <p className="text-sm text-ink-400">{t("moderator.uploadImage")}</p>
+                </>
+              )}
+            </div>
+            {isEdit && <p className="text-xs text-ink-400 mb-3">{t("moderator.changeImage")}</p>}
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files)} />
 
             {error && (
               <p className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-2.5 mb-4">

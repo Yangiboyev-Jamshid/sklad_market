@@ -18,6 +18,7 @@ const ChatPage = lazy(() => import("./pages/ChatPage"))
 const AiAgentPage = lazy(() => import("./pages/AiAgentPage"))
 const CompaniesPage = lazy(() => import("./pages/CompaniesPage"))
 const ProfilePage = lazy(() => import("./pages/ProfilePage"))
+const UserProfilePage = lazy(() => import("./pages/UserProfilePage"))
 const SellerDashboardPage = lazy(() => import("./pages/SellerDashboardPage"))
 const ModeratorDashboardPage = lazy(() => import("./pages/ModeratorDashboardPage"))
 const TariffsPage = lazy(() => import("./pages/TariffsPage"))
@@ -117,6 +118,11 @@ function App() {
                 <Route path="/company/:id" element={
                   <Suspense fallback={<Loader />}>
                     <ProfilePage />
+                  </Suspense>
+                } />
+                <Route path="/account" element={
+                  <Suspense fallback={<Loader />}>
+                    <UserProfilePage />
                   </Suspense>
                 } />
                 <Route path="/seller" element={

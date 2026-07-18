@@ -18,6 +18,7 @@ import {
   Buildings,
   Setting,
   TickCircle,
+  UserSquare,
 } from "iconsax-reactjs";
 import { AnimatePresence, motion, useAnimation } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -458,8 +459,8 @@ export default function Header() {
                 onClick={() => setProfileOpen((v) => !v)}
                 className="flex items-center gap-2 pl-2 dark:border-[#1C1C1C]"
               >
-                <div className="w-9 h-9 rounded-full border border-ink-100 dark:bg-[#0D0D0D] flex items-center justify-center text-ink-500 dark:text-ink-300">
-                  <Profile size={16} variant="Linear" />
+                <div className="w-9 h-9 rounded-full border border-ink-100 dark:bg-[#0D0D0D] flex items-center justify-center text-ink-500 dark:text-ink-300 overflow-hidden">
+                  {user.photoUrl ? <img src={user.photoUrl} alt="" className="w-full h-full object-cover" /> : <Profile size={16} variant="Linear" />}
                 </div>
                 <div className="text-left hidden lg:block">
                   <p className="text-[14px] text-nowrap font-semibold text-ink-900 dark:text-white leading-tight">{user.name}</p>
@@ -478,14 +479,15 @@ export default function Header() {
                     className="absolute right-0 top-14 w-72 bg-[#FAFAFA] dark:bg-[#121212] rounded-2xl shadow-popover border border-ink-100 dark:border-[#1C1C1C] p-2 z-50"
                   >
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-[#0D0D0D] mb-1">
-                      <div className="w-10 h-10 rounded-full border border-ink-200 dark:bg-[#0D0D0D] flex items-center justify-center text-ink-600 dark:text-[#8A8A8A]">
-                        <Profile size={18} variant="Linear" />
+                      <div className="w-10 h-10 rounded-full border border-ink-200 dark:bg-[#0D0D0D] flex items-center justify-center text-ink-600 dark:text-[#8A8A8A] overflow-hidden">
+                        {user.photoUrl ? <img src={user.photoUrl} alt="" className="w-full h-full object-cover" /> : <Profile size={18} variant="Linear" />}
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-ink-900 dark:text-white">{user.name}</p>
                         <p className="text-xs text-ink-400">{user.username}</p>
                       </div>
                     </div>
+                    <DropdownItem icon={UserSquare} label={t("header.myProfile")} onClick={() => { navigate("/account"); setProfileOpen(false); }} />
                     {isSeller && (
                       <DropdownItem icon={Element3} label={t("nav.seller")} onClick={() => { navigate("/seller"); setProfileOpen(false); }} />
                     )}
