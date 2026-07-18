@@ -15,7 +15,7 @@ import { useAuth } from "../../context/AuthContext";
 const navItems = [
   { to: "/", labelKey: "nav.home", icon: Home2 },
   { to: "/catalog", labelKey: "nav.catalog", icon: BoxAdd },
-  { to: "/requests", labelKey: "nav.requests", icon: ClipboardText },
+  { to: "/requests", labelKey: "nav.requests", icon: ClipboardText, hideForModerator: true },
   { to: "/profile", labelKey: "nav.profile", icon: UserSquare, sellerOnly: true },
   { to: "/companies", labelKey: "nav.companies", icon: Buildings },
   { to: "/seller", labelKey: "nav.seller", icon: SecurityUser, sellerOnly: true },
@@ -25,8 +25,12 @@ const navItems = [
 export default function SidebarRail() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const isSeller = (user?.role || "").toUpperCase() === "SELLER";
-  const visibleNavItems = navItems.filter((item) => !item.sellerOnly || isSeller);
+  const roleUpper = (user?.role || "").toUpperCase();
+  const isSeller = roleUpper === "SELLER";
+  const isModerator = roleUpper.includes("MODERATOR") || roleUpper.includes("ADMIN");
+  const visibleNavItems = navItems.filter(
+    (item) => (!item.sellerOnly || isSeller) && (!item.hideForModerator || !isModerator)
+  );
   return (
     <aside className="hidden md:block relative w-[72px] shrink-0">
       <div className="group absolute inset-y-0 left-0 z-40 w-[72px] hover:w-64 flex flex-col items-start bg-white dark:bg-[#0D0D0D] border-r border-ink-200/70 dark:border-[#1E1E1E] py-4 gap-1 overflow-hidden shadow-none hover:shadow-popover transition-[width] duration-200 ease-out">

@@ -45,7 +45,6 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
   const [extrasFallback, setExtrasFallback] = useState(null);
   const company = detail ? mergeDefined(companyProp, detail) : companyProp;
   const logoUrl = company.logoUrl ?? extrasFallback?.logoUrl ?? null;
-  const createdAt = company.createdAt ?? extrasFallback?.createdAt ?? null;
   const description = company.shortDescription ?? company.description ?? descriptionCache.get(company.id) ?? null;
   const isFav = companyFavorites?.has(company.id);
 
@@ -79,7 +78,6 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
     .toUpperCase();
 
   const isVerified = VERIFIED_STATUSES.includes(company.verificationStatus) || company.verified;
-  const createdYear = createdAt ? new Date(createdAt).getFullYear() : null;
 
   return (
     <motion.div
@@ -101,9 +99,6 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
             <p className="text-xs text-ink-400 dark:text-ink-500">
               {[company.industry, company.city ?? company.address?.split(",")[0]?.trim()].filter(Boolean).join(" ")}
             </p>
-            {createdYear && (
-              <p className="text-xs text-ink-400 dark:text-ink-500 mt-0.5">{t("companyCard.since", { year: createdYear })}</p>
-            )}
           </div>
         </div>
         <button

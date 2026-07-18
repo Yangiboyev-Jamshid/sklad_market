@@ -7,7 +7,6 @@ import {
   Global,
   Location,
   Buildings2,
-  Calendar,
   Box1,
   TickCircle,
   Message,
@@ -191,7 +190,6 @@ export default function ProfilePage() {
   const badge = { label: t(badgeInfo.labelKey), cls: badgeInfo.cls };
   const isVerified = verificationStatus === "VERIFIED";
   const initials = (company.name ?? "??").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-  const createdYear = company.createdAt ? new Date(company.createdAt).getFullYear() : null;
   const cityShort = company.city ?? company.address?.split(",")[0]?.trim();
   const email = company.email ?? (company.website ? `info@${company.website.replace(/^www\./, "")}` : null);
 
@@ -321,7 +319,7 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 sm:gap-6">
 
               <div className="hidden lg:flex flex-col gap-4">
-                <CompanyMetaCards company={company} productsTotal={productsTotal} reviewsCount={reviews.length} createdYear={createdYear} cityShort={cityShort} email={email} />
+                <CompanyMetaCards company={company} productsTotal={productsTotal} reviewsCount={reviews.length} cityShort={cityShort} email={email} />
               </div>
 
               <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] transition-colors">
@@ -390,7 +388,7 @@ export default function ProfilePage() {
 
                   {tab === "info" && (
                     <div className="sm:hidden flex flex-col gap-4">
-                      <CompanyMetaCards company={company} productsTotal={productsTotal} createdYear={createdYear} cityShort={cityShort} email={email} bare />
+                      <CompanyMetaCards company={company} productsTotal={productsTotal} cityShort={cityShort} email={email} bare />
                     </div>
                   )}
                 </div>
@@ -403,7 +401,7 @@ export default function ProfilePage() {
   );
 }
 
-function CompanyMetaCards({ company, productsTotal, reviewsCount, createdYear, cityShort, email, bare = false }) {
+function CompanyMetaCards({ company, productsTotal, reviewsCount, cityShort, email, bare = false }) {
   const { t } = useTranslation();
   return (
     <>
@@ -430,9 +428,6 @@ function CompanyMetaCards({ company, productsTotal, reviewsCount, createdYear, c
         )}
         {company.industry && (
           <InfoRow icon={Buildings2} label={t("profile.industry")} value={company.industry} />
-        )}
-        {createdYear && (
-          <InfoRow icon={Calendar} label={t("profile.founded")} value={t("profile.foundedValue", { year: createdYear })} />
         )}
         <InfoRow icon={Box1} label={t("common.productsCount")} value={company.productsCount ?? productsTotal} />
       </div>

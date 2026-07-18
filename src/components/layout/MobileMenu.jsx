@@ -26,7 +26,7 @@ import LanguageSwitcher from "./LanguageSwitcher";
 const navItems = [
   { to: "/", labelKey: "nav.home", icon: Home2 },
   { to: "/catalog", labelKey: "nav.catalog", icon: BoxAdd },
-  { to: "/requests", labelKey: "nav.requests", icon: ClipboardText },
+  { to: "/requests", labelKey: "nav.requests", icon: ClipboardText, hideForModerator: true },
   { to: "/profile", labelKey: "nav.profile", icon: UserSquare, sellerOnly: true },
   { to: "/companies", labelKey: "nav.companies", icon: Buildings },
   { to: "/seller", labelKey: "nav.seller", icon: SecurityUser, sellerOnly: true },
@@ -43,7 +43,10 @@ export default function MobileMenu({ open, onClose }) {
   const isSeller = roleUpper === "SELLER";
   const isModerator = roleUpper.includes("MODERATOR") || roleUpper.includes("ADMIN");
   const visibleNavItems = navItems.filter(
-    (item) => (!item.sellerOnly || isSeller) && (!item.moderatorOnly || isModerator)
+    (item) =>
+      (!item.sellerOnly || isSeller) &&
+      (!item.moderatorOnly || isModerator) &&
+      (!item.hideForModerator || !isModerator)
   );
 
   return (
