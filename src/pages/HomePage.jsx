@@ -107,7 +107,7 @@ export default function HomePage() {
                 placeholder={t("common.searchProduct")}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="sm:w-full min-w-0 max-w-[200px] bg-transparent outline-none text-sm placeholder:text-ink-400 dark:text-white"
+                className="sm:w-full min-w-0 bg-transparent outline-none text-sm placeholder:text-ink-400 dark:text-white"
               />
             </div>
           </div>
