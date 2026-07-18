@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { ArrowDown2, CloudAdd, Trash } from "iconsax-reactjs";
 import PillToggle from "../ui/PillToggle";
-import { createProduct, publishProduct, uploadProductImages, getCategories, getMyCompany } from "../../api/api";
+import { createProduct, publishProduct, uploadProductImages, getCategoryTree, getMyCompany } from "../../api/api";
+import { flattenCategoryTree } from "../../utils/categories";
 
 const UNIT_KEYS = [
   { value: "Тонна", labelKey: "seller.unitTon" },
@@ -15,7 +16,7 @@ const UNIT_KEYS = [
 ];
 
 export default function AddProductModal({ open, onClose, companyId }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [saleType, setSaleType] = useState("WHOLESALE");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -37,12 +38,8 @@ export default function AddProductModal({ open, onClose, companyId }) {
 
   useEffect(() => {
     if (!open) return;
-    getCategories({ page: 0, size: 200 })
-      .then((data) => {
-        const all = (data?.content ?? []).filter((c) => c.isActive);
-        all.sort((a, b) => a.sortOrder - b.sortOrder);
-        setCategoriesList(all);
-      })
+    getCategoryTree()
+      .then((data) => setCategoriesList(flattenCategoryTree(data)))
       .catch(() => {});
 
     getMyCompany()
@@ -189,7 +186,7 @@ export default function AddProductModal({ open, onClose, companyId }) {
                     <option value="">{t("seller.selectCategory")}</option>
                     {categoriesList.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {i18n.language === "uz" ? (c.nameUz || c.nameRu || c.slug) : i18n.language === "en" ? (c.nameEn || c.nameRu || c.slug) : (c.nameRu || c.nameUz || c.slug)}
+                        {c.depth > 0 ? `— ${c.name || c.slug}` : (c.name || c.slug)}
                       </option>
                     ))}
                   </select>

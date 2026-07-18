@@ -73,15 +73,13 @@ export default function CatalogPage() {
   useEffect(() => {
     getCategoryTree()
       .then((data) => {
-        const all = (data ?? []).filter((c) => c.isActive);
-        all.sort((a, b) => a.sortOrder - b.sortOrder);
+        const all = [...(data ?? [])];
+        all.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
         setCategories(all.map((c) => ({
           id: String(c.id),
-          nameRu: c.nameRu,
-          nameUz: c.nameUz,
-          nameEn: c.nameEn,
+          name: c.name,
           slug: c.slug,
-          icon: c.icon,
+          iconUrl: c.iconUrl,
         })));
       })
       .catch(() => { });
@@ -318,10 +316,8 @@ function SearchBox({ wrapperClass, query, setQuery, suggestions, suggestionsOpen
   );
 }
 
-function categoryDisplayName(c, lang) {
-  if (lang === "uz") return c.nameUz || c.nameRu || c.nameEn || c.slug;
-  if (lang === "en") return c.nameEn || c.nameRu || c.nameUz || c.slug;
-  return c.nameRu || c.nameUz || c.nameEn || c.slug;
+function categoryDisplayName(c) {
+  return c?.name ?? c?.slug ?? "";
 }
 
 function FiltersContent({
@@ -340,7 +336,7 @@ function FiltersContent({
   setMaxPrice,
   showHeader = true,
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const resetFilters = () => {
     setActiveCategory("all");
     setInStockOnly(false);
@@ -377,7 +373,7 @@ function FiltersContent({
               : "text-ink-700 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-ink-800"
               }`}
           >
-            {categoryDisplayName(c, i18n.language)}
+            {categoryDisplayName(c)}
             {categoryCounts[c.id] > 0 && (
               <span className="text-ink-400 text-xs">{categoryCounts[c.id]}</span>
             )}

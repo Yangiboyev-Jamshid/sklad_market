@@ -7,8 +7,9 @@ import {
   uploadProductImages,
   deleteProductImage,
   setProductPrimaryImage,
-  getCategories,
+  getCategoryTree,
 } from "../../api/api";
+import { flattenCategoryTree } from "../../utils/categories";
 
 const UNIT_KEYS = [
   { value: "Тонна", labelKey: "seller.unitTon" },
@@ -20,7 +21,7 @@ const UNIT_KEYS = [
 ];
 
 export default function EditProductModal({ product, onClose, onSaved }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [name, setName] = useState(product?.name ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [price, setPrice] = useState(product?.price ?? "");
@@ -42,12 +43,8 @@ export default function EditProductModal({ product, onClose, onSaved }) {
   const submittingRef = useRef(false);
 
   useEffect(() => {
-    getCategories({ page: 0, size: 200 })
-      .then((data) => {
-        const all = (data?.content ?? []).filter((c) => c.isActive);
-        all.sort((a, b) => a.sortOrder - b.sortOrder);
-        setCategoriesList(all);
-      })
+    getCategoryTree()
+      .then((data) => setCategoriesList(flattenCategoryTree(data)))
       .catch(() => {});
   }, []);
 
@@ -183,7 +180,7 @@ export default function EditProductModal({ product, onClose, onSaved }) {
                 >
                   <option value="">{t("seller.selectCategory")}</option>
                   {categoriesList.map((c) => (
-                    <option key={c.id} value={c.id}>{i18n.language === "uz" ? (c.nameUz || c.nameRu || c.slug) : i18n.language === "en" ? (c.nameEn || c.nameRu || c.slug) : (c.nameRu || c.nameUz || c.slug)}</option>
+                    <option key={c.id} value={c.id}>{c.depth > 0 ? `— ${c.name || c.slug}` : (c.name || c.slug)}</option>
                   ))}
                 </select>
                 <ArrowDown2 size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-400" />

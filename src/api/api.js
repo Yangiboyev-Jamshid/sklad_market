@@ -199,10 +199,6 @@ export async function uploadCompanyLogo(id, file) {
 
 // ─── Categories ───────────────────────────────────────────────────────────────
 
-export async function getCategories({ page = 0, size = 100 } = {}) {
-  return unwrap(http.get("/categories", { params: { page, size } }));
-}
-
 export async function getCategoryTree() {
   return unwrap(http.get("/categories/tree"));
 }

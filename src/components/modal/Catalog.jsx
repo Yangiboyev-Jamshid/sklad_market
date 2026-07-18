@@ -1,12 +1,34 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight2, ArrowLeft2, CloseCircle } from 'iconsax-reactjs';
+import { ArrowRight2, ArrowLeft2, CloseCircle, Box } from 'iconsax-reactjs';
 import { useNavigate } from 'react-router-dom';
 import { getCategoryTree } from '../../api/api';
 
+function CategoryIcon({ src, size = 'md' }) {
+  const [errored, setErrored] = useState(false);
+  const box = size === 'lg' ? 'w-11 h-11' : size === 'sm' ? 'w-8 h-8' : 'w-9 h-9';
+  const iconSize = size === 'lg' ? 22 : size === 'sm' ? 16 : 18;
+  return (
+    <span
+      className={`${box} shrink-0 rounded-xl bg-ink-50 dark:bg-[#171717] border border-gray-100 dark:border-[#232323] flex items-center justify-center overflow-hidden`}
+    >
+      {src && !errored ? (
+        <img
+          src={src}
+          alt=""
+          className="w-full h-full object-cover"
+          onError={() => setErrored(true)}
+        />
+      ) : (
+        <Box size={iconSize} className="text-ink-300 dark:text-ink-600" variant="Bulk" />
+      )}
+    </span>
+  );
+}
+
 export default function Catalog({ isOpen, onClose }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [parents, setParents] = useState([]);
   const [childMap, setChildMap] = useState({});
@@ -19,11 +41,11 @@ export default function Catalog({ isOpen, onClose }) {
     setLoading(true);
     getCategoryTree()
       .then((data) => {
-        const topLevel = (data ?? []).filter((c) => c.isActive);
-        topLevel.sort((a, b) => a.sortOrder - b.sortOrder);
+        const topLevel = [...(data ?? [])];
+        topLevel.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
         const children = {};
         topLevel.forEach((c) => {
-          children[c.id] = (c.children ?? c.subcategories ?? []).filter((s) => s.isActive);
+          children[c.id] = [...(c.children ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
         });
         setParents(topLevel);
         setChildMap(children);
@@ -33,11 +55,7 @@ export default function Catalog({ isOpen, onClose }) {
       .finally(() => setLoading(false));
   }, [isOpen]);
 
-  const catName = (c) => {
-    if (i18n.language === "uz") return c.nameUz || c.nameRu || c.nameEn || c.slug;
-    if (i18n.language === "en") return c.nameEn || c.nameRu || c.nameUz || c.slug;
-    return c.nameRu || c.nameUz || c.nameEn || c.slug;
-  };
+  const catName = (c) => c?.name ?? c?.slug ?? "";
 
   const goToCategory = (cat) => {
     navigate(`/catalog?category=${cat.id}`);
@@ -95,16 +113,16 @@ export default function Catalog({ isOpen, onClose }) {
                       <li key={cat.id}>
                         <button
                           onClick={() => setActiveId(cat.id)}
-                          className={`w-full flex items-center rounded-xl justify-between px-6 py-3 text-sm transition-colors ${activeId === cat.id
+                          className={`w-full flex items-center rounded-xl justify-between gap-2 px-4 py-2.5 text-sm transition-colors ${activeId === cat.id
                               ? 'bg-[#F5F5F5] dark:bg-[#171717] dark:text-white'
                               : 'hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-700 dark:text-ink-200'
                             }`}
                         >
-                          <span className="flex items-center gap-2 font-medium">
-                            {cat.icon && <span>{cat.icon}</span>}
-                            {catName(cat)}
+                          <span className="flex items-center gap-2.5 font-medium min-w-0">
+                            <CategoryIcon src={cat.iconUrl} size="sm" />
+                            <span className="truncate">{catName(cat)}</span>
                           </span>
-                          <ArrowRight2 size={20} className={activeId === cat.id ? 'dark:text-white' : ''} />
+                          <ArrowRight2 size={18} className={`shrink-0 ${activeId === cat.id ? 'dark:text-white' : ''}`} />
                         </button>
                       </li>
                     ))}
@@ -123,7 +141,10 @@ export default function Catalog({ isOpen, onClose }) {
                         transition={{ duration: 0.18 }}
                       >
                         <div className="flex items-center justify-between mb-6">
-                          <h2 className="text-lg font-bold text-gray-900 dark:text-white">{catName(cat)}</h2>
+                          <div className="flex items-center gap-3">
+                            <CategoryIcon src={cat.iconUrl} size="lg" />
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">{catName(cat)}</h2>
+                          </div>
                           <button
                             onClick={() => goToCategory(cat)}
                             className="text-xs text-brand-600 dark:text-blue-400 hover:underline"
@@ -240,8 +261,8 @@ export default function Catalog({ isOpen, onClose }) {
                           onClick={() => (hasChildren ? setMobileParent(cat) : goToCategory(cat))}
                           className="w-full flex items-center justify-between py-4 text-left text-[15px] font-medium text-ink-700 dark:text-ink-200"
                         >
-                          <span className="flex items-center gap-2">
-                            {cat.icon && <span>{cat.icon}</span>}
+                          <span className="flex items-center gap-3">
+                            <CategoryIcon src={cat.iconUrl} />
                             {catName(cat)}
                           </span>
                           <ArrowRight2 size={18} className="text-ink-300 dark:text-ink-600 shrink-0" />
