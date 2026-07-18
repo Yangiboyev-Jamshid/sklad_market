@@ -16,14 +16,14 @@ const tabs = [
   { id: "companies", labelKey: "moderator.tabCompanies", Component: ModCompaniesTab },
   { id: "complaints", labelKey: "moderator.tabComplaints", Component: ComplaintsTab },
   { id: "accounts", labelKey: "moderator.tabAccounts", Component: AccountsTab },
-  { id: "banners", labelKey: "moderator.tabBanners", Component: BannersTab, superAdminOnly: true },
+  { id: "banners", labelKey: "moderator.tabBanners", Component: BannersTab, adminOnly: true },
 ];
 
 export default function ModeratorDashboardPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const isSuperAdmin = (user?.role || "").toUpperCase().includes("SUPER_ADMIN");
-  const visibleTabs = useMemo(() => tabs.filter((tab) => !tab.superAdminOnly || isSuperAdmin), [isSuperAdmin]);
+  const isAdmin = (user?.role || "").toUpperCase().includes("ADMIN");
+  const visibleTabs = useMemo(() => tabs.filter((tab) => !tab.adminOnly || isAdmin), [isAdmin]);
   const [activeTab, setActiveTab] = useState("overview");
   const ActiveComponent = visibleTabs.find((tab) => tab.id === activeTab)?.Component || ModOverviewTab;
 
