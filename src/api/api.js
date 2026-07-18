@@ -404,6 +404,10 @@ export async function unblockUser(userId) {
   return unwrap(http.put(`/admin/users/${userId}/unblock`));
 }
 
+export async function setUserRole(userId, role) {
+  return unwrap(http.put(`/admin/users/set-admin/${userId}`, null, { params: { role } }));
+}
+
 // ─── Admin: companies ─────────────────────────────────────────────────────────
 
 export async function getCompanyModerationQueue() {

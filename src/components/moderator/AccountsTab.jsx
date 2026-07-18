@@ -1,9 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { getAdminUsers, blockUser, unblockUser } from "../../api/api";
+import { getAdminUsers, blockUser, unblockUser, setUserRole } from "../../api/api";
+import { useAuth } from "../../context/AuthContext";
 import { IoIosMore } from "react-icons/io";
 
 const HEADER_KEYS = ["moderator.colUsers", "moderator.colRoles", "moderator.colLogin", "moderator.colRegDate", "moderator.colWarnings", "moderator.colStatus"];
+
+const ROLES = [
+  { value: "BUYER", labelKey: "moderator.roleBuyer" },
+  { value: "SELLER", labelKey: "moderator.roleSeller" },
+  { value: "ADMIN", labelKey: "moderator.roleAdmin" },
+  { value: "SUPER_ADMIN", labelKey: "moderator.roleSuperAdmin" },
+];
 
 function formatDate(iso) {
   if (!iso) return "—";
@@ -25,8 +33,39 @@ function StatusBadge({ status }) {
   );
 }
 
+function AccountMenu({ a, isSuperAdmin, onToggleBlock, onChangeRole, t }) {
+  return (
+    <div className="absolute right-0 top-8 bg-white dark:bg-[#171717] border border-ink-100 dark:border-[#1C1C1C] rounded-xl shadow-popover z-10 w-48 py-1">
+      <button
+        onClick={() => onToggleBlock(a)}
+        className="w-full text-left px-4 py-2.5 text-sm text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10 rounded-xl"
+      >
+        {a.status === "BLOCKED" ? t("moderator.unblock") : t("moderator.block")}
+      </button>
+      {isSuperAdmin && (
+        <>
+          <div className="px-4 pt-2 pb-1 text-xs text-ink-400 dark:text-ink-500 border-t border-ink-100 dark:border-[#1C1C1C] mt-1">
+            {t("moderator.changeRole")}
+          </div>
+          {ROLES.filter((r) => r.value !== a.roles).map((r) => (
+            <button
+              key={r.value}
+              onClick={() => onChangeRole(a, r.value)}
+              className="w-full text-left px-4 py-2 text-sm hover:bg-ink-50 dark:hover:bg-[#1C1C1C] rounded-xl"
+            >
+              {t(r.labelKey)}
+            </button>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function AccountsTab() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const isSuperAdmin = (user?.role || "").toUpperCase().includes("SUPER_ADMIN");
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(null);
@@ -76,6 +115,19 @@ export default function AccountsTab() {
     }
   };
 
+  const changeRole = async (a, role) => {
+    setMenuOpen(null);
+    setActionId(a.id);
+    try {
+      await setUserRole(a.id, role);
+      setAccounts((prev) => prev.map((x) => (x.id === a.id ? { ...x, roles: role } : x)));
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setActionId(null);
+    }
+  };
+
   return (
     <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] px-4 py-6 sm:p-4 transition-colors">
       <p className="font-semibold text-[24px] leading-tight text-ink-900 dark:text-white mb-6 ml-3 sm:mb-7">{t("moderator.accountsManagement")}</p>
@@ -109,14 +161,7 @@ export default function AccountsTab() {
                       <IoIosMore className="text-[24px]" />
                     </button>
                     {menuOpen === a.id && (
-                      <div className="absolute right-0 top-8 bg-white dark:bg-[#171717] border border-ink-100 dark:border-[#1C1C1C] rounded-xl shadow-popover z-10 w-40">
-                        <button
-                          onClick={() => toggleBlock(a)}
-                          className="w-full text-left px-4 py-2.5 text-sm text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10 rounded-xl"
-                        >
-                          {a.status === "BLOCKED" ? t("moderator.unblock") : t("moderator.block")}
-                        </button>
-                      </div>
+                      <AccountMenu a={a} isSuperAdmin={isSuperAdmin} onToggleBlock={toggleBlock} onChangeRole={changeRole} t={t} />
                     )}
                   </div>
                 </div>
@@ -167,14 +212,7 @@ export default function AccountsTab() {
                       <IoIosMore className="text-[24px]" />
                     </button>
                     {menuOpen === a.id && (
-                      <div className="absolute right-0 top-8 bg-white dark:bg-[#171717] border border-ink-100 dark:border-[#1C1C1C] rounded-xl shadow-popover z-10 w-40">
-                        <button
-                          onClick={() => toggleBlock(a)}
-                          className="w-full text-left px-4 py-2.5 text-sm text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10 rounded-xl"
-                        >
-                          {a.status === "BLOCKED" ? t("moderator.unblock") : t("moderator.block")}
-                        </button>
-                      </div>
+                      <AccountMenu a={a} isSuperAdmin={isSuperAdmin} onToggleBlock={toggleBlock} onChangeRole={changeRole} t={t} />
                     )}
                   </div>
                 </div>
