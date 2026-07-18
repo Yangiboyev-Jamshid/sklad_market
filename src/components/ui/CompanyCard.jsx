@@ -15,7 +15,7 @@ function getPublicCompanyExtras() {
       .then((data) => {
         const map = new Map();
         (data?.content ?? []).forEach((c) => {
-          map.set(c.id, { logoUrl: c.logoUrl ?? null, createdAt: c.createdAt ?? null });
+          map.set(c.id, { logoUrl: c.logoUrl ?? null, companyCreatedDate: c.companyCreatedDate ?? null });
         });
         return map;
       })
@@ -45,6 +45,7 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
   const [extrasFallback, setExtrasFallback] = useState(null);
   const company = detail ? mergeDefined(companyProp, detail) : companyProp;
   const logoUrl = company.logoUrl ?? extrasFallback?.logoUrl ?? null;
+  const companyCreatedDate = company.companyCreatedDate ?? extrasFallback?.companyCreatedDate ?? null;
   const description = company.shortDescription ?? company.description ?? descriptionCache.get(company.id) ?? null;
   const isFav = companyFavorites?.has(company.id);
 
@@ -62,13 +63,13 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
   }, [companyProp.slug]);
 
   useEffect(() => {
-    if ((companyProp.logoUrl && companyProp.createdAt) || !companyProp.id) return;
+    if ((companyProp.logoUrl && companyProp.companyCreatedDate) || !companyProp.id) return;
     let cancelled = false;
     getPublicCompanyExtras().then((map) => {
       if (!cancelled) setExtrasFallback(map.get(companyProp.id) ?? null);
     });
     return () => { cancelled = true; };
-  }, [companyProp.logoUrl, companyProp.createdAt, companyProp.id]);
+  }, [companyProp.logoUrl, companyProp.companyCreatedDate, companyProp.id]);
 
   const initials = (company.name ?? "??")
     .split(" ")
@@ -99,6 +100,11 @@ export default function CompanyCard({ company: companyProp, index = 0 }) {
             <p className="text-xs text-ink-400 dark:text-ink-500">
               {[company.industry, company.city ?? company.address?.split(",")[0]?.trim()].filter(Boolean).join(" ")}
             </p>
+            {companyCreatedDate && (
+              <p className="text-xs text-ink-400 dark:text-ink-500">
+                {new Date(companyCreatedDate).toLocaleDateString("ru-RU", { day: "2-digit", month: "short", year: "numeric" })}
+              </p>
+            )}
           </div>
         </div>
         <button

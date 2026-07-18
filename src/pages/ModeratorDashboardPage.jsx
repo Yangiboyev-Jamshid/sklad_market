@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import AppShell from "../components/layout/AppShell";
+import { useAuth } from "../context/AuthContext";
 import ModOverviewTab from "../components/moderator/ModOverviewTab";
 import ModProductsTab from "../components/moderator/ModProductsTab";
 import ModCompaniesTab from "../components/moderator/ModCompaniesTab";
 import ComplaintsTab from "../components/moderator/ComplaintsTab";
 import AccountsTab from "../components/moderator/AccountsTab";
+import BannersTab from "../components/moderator/BannersTab";
 
 const tabs = [
   { id: "overview", labelKey: "moderator.tabOverview", Component: ModOverviewTab },
@@ -14,12 +16,16 @@ const tabs = [
   { id: "companies", labelKey: "moderator.tabCompanies", Component: ModCompaniesTab },
   { id: "complaints", labelKey: "moderator.tabComplaints", Component: ComplaintsTab },
   { id: "accounts", labelKey: "moderator.tabAccounts", Component: AccountsTab },
+  { id: "banners", labelKey: "moderator.tabBanners", Component: BannersTab, superAdminOnly: true },
 ];
 
 export default function ModeratorDashboardPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const isSuperAdmin = (user?.role || "").toUpperCase().includes("SUPER_ADMIN");
+  const visibleTabs = useMemo(() => tabs.filter((tab) => !tab.superAdminOnly || isSuperAdmin), [isSuperAdmin]);
   const [activeTab, setActiveTab] = useState("overview");
-  const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.Component || ModOverviewTab;
+  const ActiveComponent = visibleTabs.find((tab) => tab.id === activeTab)?.Component || ModOverviewTab;
 
   return (
     <AppShell>
@@ -27,7 +33,7 @@ export default function ModeratorDashboardPage() {
         <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white mb-5 sm:mb-6">{t("moderator.dashboardTitle")}</h1>
 
         <div style={{ scrollbarWidth: "none" }} className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-transparent sm:border-ink-100 dark:border-[#1C1C1C] px-4 py-2 flex gap-3 mb-5 sm:mb-6 overflow-x-auto transition-colors">
-          {tabs.map((tab) => (
+          {visibleTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}

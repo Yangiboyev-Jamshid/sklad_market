@@ -453,3 +453,25 @@ export async function warnReportedUser(id, message) {
 export async function blockReportTarget(id, reason) {
   return unwrap(http.put(`/admin/reports/${id}/block-target`, { reason }));
 }
+
+// ─── Admin: banners ───────────────────────────────────────────────────────────
+
+export async function getAdminBanners(placementCode) {
+  return unwrap(http.get("/admin/banners/getAll", { params: { placementCode } }));
+}
+
+export async function createBanner(data) {
+  return unwrap(http.post("/admin/banners", data));
+}
+
+export async function updateBanner(id, data) {
+  return unwrap(http.put(`/admin/banners/${id}`, data));
+}
+
+export async function deleteBanner(id) {
+  return unwrap(http.delete(`/admin/banners/${id}`));
+}
+
+export async function uploadBannerImage(id, file) {
+  return unwrap(http.post(`/admin/banners/${id}/image`, toSingleFileForm(file)));
+}

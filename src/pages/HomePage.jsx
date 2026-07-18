@@ -116,32 +116,37 @@ export default function HomePage() {
 
         <div className="mb-6 sm:mb-8 relative z-1">
           {bannersLoading ? (
-            <div className="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-32 sm:h-40 w-[80%] xs:w-[72%] sm:w-[280px] lg:w-[312px] shrink-0 rounded-2xl bg-ink-100 dark:bg-[#1C1C1C] animate-pulse"
-                />
-              ))}
-            </div>
+            <div className="h-32 sm:h-40 rounded-2xl bg-ink-100 dark:bg-[#1C1C1C] animate-pulse" />
           ) : banners.length === 0 ? (
             < div className="flex flex-col items-center justify-center h-32 sm:h-40 rounded-2xl border border-dashed border-ink-200 dark:border-[#2A2A2A] gap-2 text-ink-400 dark:text-ink-600">
               <Image size={32} />
               <p className="text-sm">{t("home.bannersEmpty")}</p>
             </div>
           ) : (
-            <div className="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0">
-              {banners.map((b, i) => (
-                <motion.div
-                  key={b.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="overflow-hidden relative h-32 sm:h-40 w-[80%] xs:w-[72%] sm:w-[280px] lg:w-[320px] shrink-0 snap-center rounded-2xl flex items-center justify-center cursor-pointer hover:scale-[1.01] transition-transform"
-                >
-                  <img src={b.img} alt="banner" className="object-cover w-full h-full" />
-                </motion.div>
-              ))}
+            <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0">
+              {banners.map((b, i) => {
+                // Up to 4 banners split the row evenly (1 banner = full width,
+                // 2 = 50/50, 3 = thirds, 4 = quarters). 5+ banners keep the
+                // quarter width so only 4 fit in view at once and the rest
+                // are reached by swiping/scrolling the row.
+                const visibleSlots = Math.min(banners.length, 4);
+                const basis = `calc((100% - ${(visibleSlots - 1) * 1}rem) / ${visibleSlots})`;
+                return (
+                  <motion.a
+                    key={b.id}
+                    href={b.href || undefined}
+                    target={b.href ? "_blank" : undefined}
+                    rel={b.href ? "noopener noreferrer" : undefined}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    style={{ flex: `0 0 ${basis}` }}
+                    className={`overflow-hidden relative h-32 sm:h-40 snap-center rounded-2xl flex items-center justify-center hover:scale-[1.01] transition-transform ${b.href ? "cursor-pointer" : "cursor-default"}`}
+                  >
+                    <img src={b.img} alt="banner" className="object-cover w-full h-full" />
+                  </motion.a>
+                );
+              })}
             </div>
           )}
         </div>
