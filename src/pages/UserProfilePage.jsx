@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Camera, Buildings } from "iconsax-reactjs";
 import AppShell from "../components/layout/AppShell";
 import { useAuth } from "../context/AuthContext";
-import { getMyUserProfile, updateMyUserProfile, uploadUserPhoto, setUserPhoto } from "../api/api";
+import { getMyUserProfile, updateMyUserProfile, uploadUserPhoto } from "../api/api";
 
 const ROLE_LABEL_KEYS = {
   BUYER: "moderator.roleBuyer",
@@ -55,10 +55,8 @@ export default function UserProfilePage() {
     setError("");
     try {
       const uploaded = await uploadUserPhoto(file);
-      if (!uploaded?.id) throw new Error(t("account.photoUploadFailed"));
-      await setUserPhoto(uploaded.id);
+      if (!uploaded?.url) throw new Error(t("account.photoUploadFailed"));
       setPhotoPreview(uploaded.url);
-      await refreshUser();
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2500);
     } catch (err) {
