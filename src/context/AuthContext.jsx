@@ -37,6 +37,9 @@ export function AuthProvider({ children }) {
 
     setUser(userData);
     localStorage.setItem("skladx_user", JSON.stringify(userData));
+    // the login response doesn't carry the photo/company context — pull it
+    // right away so the header avatar is correct without a full page reload
+    refreshUser();
   };
 
   const logout = () => {

@@ -59,6 +59,17 @@ function stripUrlExtension(url) {
   return url.replace(/\.[a-zA-Z0-9]+$/, "");
 }
 
+// the user-photo endpoints sometimes double up the bucket segment
+// (".../skalad-market/skalad-market/<id>"), which 404s — collapse it.
+function dedupeUrlSegment(url) {
+  if (!url) return url;
+  return url.replace(/\/([^/]+)\/\1\//, "/$1/");
+}
+
+function normalizePhotoUrl(url) {
+  return stripUrlExtension(dedupeUrlSegment(url));
+}
+
 export async function getMyUserProfile() {
   return unwrap(http.get("/users"));
 }
@@ -69,12 +80,18 @@ export async function updateMyUserProfile(data) {
 
 export async function uploadUserPhoto(file) {
   const data = await unwrap(http.post("/users/upload/photo", toSingleFileForm(file)));
-  return data ? { ...data, url: stripUrlExtension(data.url) } : data;
+  return data ? { ...data, url: normalizePhotoUrl(data.url) } : data;
+}
+
+// the attach service looks up photos by their exact id as returned by
+// upload — stripping the extension here 400s with "attach not found".
+export async function setUserPhoto(photoId) {
+  return unwrap(http.put("/users/update/photo", { photoId }));
 }
 
 export async function getMyUserContext() {
   const data = await unwrap(http.get("/users/me/context"));
-  return data ? { ...data, photoUrl: stripUrlExtension(data.photoUrl) } : data;
+  return data ? { ...data, photoUrl: normalizePhotoUrl(data.photoUrl) } : data;
 }
 
 // ─── Favorites (products) ──────────────────────────────────────────────────────
@@ -327,6 +344,10 @@ export async function getSellerLeads({ page = 1, perPage = 20, status, companyId
 
 export async function updateLeadStatus(id, { status, closeReason } = {}) {
   return unwrap(http.put(`/leads/${id}/status`, { status, closeReason }));
+}
+
+export async function cancelLead(id) {
+  return unwrap(http.delete(`/leads/cancel/${id}`));
 }
 
 // ─── Seller Dashboard ───────────────────────────────────────────────────────────

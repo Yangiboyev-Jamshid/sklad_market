@@ -31,6 +31,7 @@ export default function MapView({ pins = [], height = "h-[460px]", center, onPic
   const centerRef = useRef(center);
   const myLocationRef = useRef(null);
   const onPickRef = useRef(onPick);
+  const didInitialFitRef = useRef(false);
   const [active, setActive] = useState(null);
   const [ready, setReady] = useState(false);
   const [positions, setPositions] = useState({});
@@ -163,17 +164,23 @@ export default function MapView({ pins = [], height = "h-[460px]", center, onPic
     const map = mapRef.current;
     if (!map || !ready) return;
 
-    const points = [];
-    pins.forEach((p) => {
-      if (hasCoords(p)) points.push([p.lat, p.lng]);
-    });
-    if (hasCoords(center)) points.push([center.lat, center.lng]);
-    if (hasCoords(myLocation)) points.push([myLocation.lat, myLocation.lng]);
+    // in pick mode, fit the view once so the map opens on the saved location,
+    // then leave it alone — re-fitting on every click would fight panning/zooming
+    if (!onPick || !didInitialFitRef.current) {
+      const points = [];
+      pins.forEach((p) => {
+        if (hasCoords(p)) points.push([p.lat, p.lng]);
+      });
+      if (hasCoords(center)) points.push([center.lat, center.lng]);
+      if (hasCoords(myLocation)) points.push([myLocation.lat, myLocation.lng]);
 
-    if (points.length === 1) {
-      map.setView(points[0], SINGLE_POINT_ZOOM, { animate: false });
-    } else if (points.length > 1) {
-      map.fitBounds(L.latLngBounds(points), { padding: [56, 56], maxZoom: FIT_MAX_ZOOM, animate: false });
+      if (points.length === 1) {
+        map.setView(points[0], SINGLE_POINT_ZOOM, { animate: false });
+      } else if (points.length > 1) {
+        map.fitBounds(L.latLngBounds(points), { padding: [56, 56], maxZoom: FIT_MAX_ZOOM, animate: false });
+      }
+
+      if (onPick) didInitialFitRef.current = true;
     }
 
     const id = requestAnimationFrame(() => {
@@ -181,7 +188,7 @@ export default function MapView({ pins = [], height = "h-[460px]", center, onPic
       recomputePositions();
     });
     return () => cancelAnimationFrame(id);
-  }, [pins, center, myLocation, ready, height, recomputePositions]);
+  }, [pins, center, myLocation, ready, height, recomputePositions, onPick]);
 
   return (
     <div className={`relative w-full ${height} rounded-2xl overflow-hidden transition-colors ${onPick ? "cursor-crosshair" : ""}`}>

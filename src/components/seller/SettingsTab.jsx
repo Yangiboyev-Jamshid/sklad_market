@@ -11,7 +11,7 @@ import {
 import CreateCompanyForm from "../company/CreateCompanyForm";
 import MapView from "../ui/MapView";
 import { useAuth } from "../../context/AuthContext";
-import { geocodeAddress, reverseGeocode } from "../../utils/geo";
+import { geocodeAddress } from "../../utils/geo";
 import { tariffPlans } from "../../data/mockData";
 
 const VERIFICATION_BADGE_KEYS = {
@@ -197,15 +197,12 @@ export default function SettingsTab() {
     setSavingLocation(true);
     setError("");
     try {
-      const { address: resolvedAddress } = await reverseGeocode(pickedCoords.lat, pickedCoords.lng);
-      const address = resolvedAddress || company.address;
-      const updated = await updateCompanyLocation(company.id, { ...pickedCoords, address });
+      const updated = await updateCompanyLocation(company.id, { ...pickedCoords, address: company.address });
       const next = {
         ...company,
         ...updated,
         lat: String(pickedCoords.lat),
         lng: String(pickedCoords.lng),
-        address,
       };
 
       setCompany(next);
@@ -386,7 +383,7 @@ export default function SettingsTab() {
                 <input
                   value={profileDraft[f.key] ?? ""}
                   onChange={(e) => setProfileDraft((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                  className="bg-ink-50 dark:bg-[#171717] border border-brand-400 dark:border-brand-500 rounded-xl px-3 py-1.5 text-sm outline-none dark:text-white text-right w-1/2"
+                  className="bg-ink-50 dark:bg-[#171717] border border-brand-400 dark:border-brand-500 rounded-xl px-3 py-1.5 text-sm outline-none dark:text-white"
                 />
               ) : (
                 <p className="text-sm font-medium text-ink-900 dark:text-white truncate text-left">{company?.[f.key] || "—"}</p>

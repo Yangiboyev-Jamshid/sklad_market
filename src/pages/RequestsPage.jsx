@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Box, Calendar, Moneys } from "iconsax-reactjs";
 import { IoIosClose } from "react-icons/io";
 import AppShell from "../components/layout/AppShell";
-import { getLeads, updateLeadStatus } from "../api/api";
+import { getLeads, cancelLead } from "../api/api";
 
 const STATUS_KEYS = {
   NEW:       { labelKey: "seller.statusNew",       cls: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-400" },
@@ -32,13 +32,14 @@ export default function RequestsPage() {
   const { t } = useTranslation();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [actionId, setActionId] = useState(null);
   const submittingIdsRef = useRef(new Set());
 
   useEffect(() => {
     getLeads({ page: 1, perPage: 50 })
       .then((data) => setLeads(data?.items ?? []))
-      .catch(() => setLeads([]))
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
@@ -47,8 +48,8 @@ export default function RequestsPage() {
     submittingIdsRef.current.add(id);
     setActionId(id);
     try {
-      const updated = await updateLeadStatus(id, { status: "CANCELED" });
-      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status: updated?.status ?? "CANCELED" } : l)));
+      await cancelLead(id);
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status: "CANCELED" } : l)));
     } catch (err) {
       alert(err.message);
     } finally {
@@ -68,6 +69,12 @@ export default function RequestsPage() {
             <span className="text-sm font-medium text-ink-400 dark:text-ink-500">{leads.length}</span>
           )}
         </div>
+
+        {error && (
+          <div className="text-sm text-danger-600 dark:text-danger-400 bg-danger-50 dark:bg-danger-500/10 rounded-2xl p-3 text-center mb-4">
+            {error}
+          </div>
+        )}
 
         {loading ? (
           <div className="flex flex-col gap-3">
