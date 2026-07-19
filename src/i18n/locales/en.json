@@ -186,7 +186,8 @@
     "contacts": "Contacts",
     "phone": "Phone",
     "email": "Email",
-    "website": "Website"
+    "website": "Website",
+    "stir": "Tax ID"
   },
   "favorites": {
     "title": "Favorites",

@@ -71,7 +71,9 @@ export default function ForgotPasswordPage() {
         className="flex flex-col items-center mb-6 sm:mb-8"
       >
         <img src={logo} alt="" width={117} height={121} className="object-contain" />
-        <p className="mt-2 text-[#464646] dark:text-white font-bold text-[24px] sm:text-[32px]">Sklad Market</p>
+        <p className="mt-2 font-display font-extrabold text-[28px] sm:text-[32px] leading-none">
+          <span className="text-[#0B1F33] dark:text-white">Sklad</span> <span className="text-[#039484]">Market</span>
+        </p>
       </motion.div>
 
       <motion.div

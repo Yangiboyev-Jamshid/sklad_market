@@ -252,6 +252,11 @@ export default function ProfilePage() {
                       {isVerified && <TickCircle size={13} />} {badge.label}
                     </span>
                   </div>
+                  {company.stir && (
+                    <p className="text-sm text-ink-400 dark:text-ink-500 mt-0.5">
+                      {t("profile.stir")}: {company.stir}
+                    </p>
+                  )}
                   <p className="text-sm text-ink-400 dark:text-ink-500 mb-3 mt-0.5">
                     {[company.industry, cityShort].filter(Boolean).join(" ")}
                   </p>

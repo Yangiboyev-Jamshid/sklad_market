@@ -186,9 +186,9 @@ export default function Header() {
 
         <Link
           to="/"
-          className="hidden sm:block text-2xl font-extrabold text-ink-900 dark:text-white tracking-tight shrink-0"
+          className="hidden sm:block font-display text-2xl font-extrabold tracking-tight shrink-0"
         >
-          {t("common.brand")}
+          <span className="text-[#0B1F33] dark:text-white">Sklad</span> <span className="text-[#039484]">Market</span>
         </Link>
 
         <p className="sm:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-base font-semibold text-ink-900 dark:text-white">

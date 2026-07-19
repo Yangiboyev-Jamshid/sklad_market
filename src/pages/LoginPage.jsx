@@ -115,13 +115,17 @@ export default function LoginPage() {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col items-center mb-6 sm:mb-8"
       >
-        <div className="hidden sm:flex flex-col items-center justify-center text-[#464646] dark:text-white font-bold text-[32px]">
+        <div className="hidden sm:flex flex-col items-center justify-center">
           <img src={logo} alt="" width={117} height={121} className="object-contain" />
-          SKLAD-MARKET
+          <p className="mt-1 font-display font-extrabold text-[32px] leading-none">
+            <span className="text-[#0B1F33] dark:text-white">Sklad</span> <span className="text-[#039484]">Market</span>
+          </p>
         </div>
-        <div className="sm:hidden flex flex-col items-center justify-center text-[#464646] dark:text-white font-bold text-[18px]">
+        <div className="sm:hidden flex flex-col items-center justify-center">
           <img src={logo} alt="" width={68} height={70} className="object-contain" />
-          SKLAD-MARKET
+          <p className="mt-1 font-display font-extrabold text-[18px] leading-none">
+            <span className="text-[#0B1F33] dark:text-white">Sklad</span> <span className="text-[#039484]">Market</span>
+          </p>
         </div>
       </motion.div>
 

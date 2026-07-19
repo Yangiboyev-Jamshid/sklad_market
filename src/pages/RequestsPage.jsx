@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Box } from "iconsax-reactjs";
+import { Box, Calendar, Moneys } from "iconsax-reactjs";
 import { IoIosClose } from "react-icons/io";
 import AppShell from "../components/layout/AppShell";
 import { getLeads, updateLeadStatus } from "../api/api";
@@ -13,11 +13,19 @@ const STATUS_KEYS = {
   CANCELED:  { labelKey: "seller.statusCanceled",   cls: "bg-danger-50 dark:bg-danger-500/15 text-danger-600 dark:text-danger-400" },
 };
 
+const ACCENT_CLS = {
+  NEW: "bg-success-500",
+  VIEWED: "bg-warning-500",
+  CONTACTED: "bg-brand-500",
+  CLOSED: "bg-ink-300 dark:bg-ink-600",
+  CANCELED: "bg-danger-500",
+};
+
 function badge(status, t) {
   const s = STATUS_KEYS[status];
   const label = s ? t(s.labelKey) : status;
   const cls = s?.cls ?? "bg-ink-100 text-ink-500";
-  return <span className={`text-[9px] font-medium px-2 py-0.5 rounded-full ${cls}`}>{label}</span>;
+  return <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${cls}`}>{label}</span>;
 }
 
 export default function RequestsPage() {
@@ -52,48 +60,67 @@ export default function RequestsPage() {
   return (
     <AppShell>
       <div className="p-5 sm:p-10">
-        <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white mb-5 sm:mb-6">
-          {t("requests.title")}
-        </h1>
+        <div className="flex items-baseline gap-3 mb-5 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white">
+            {t("requests.title")}
+          </h1>
+          {!loading && leads.length > 0 && (
+            <span className="text-sm font-medium text-ink-400 dark:text-ink-500">{leads.length}</span>
+          )}
+        </div>
 
-        <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-6 transition-colors">
-          {loading ? (
-            <div className="flex flex-col gap-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-20 rounded-xl bg-ink-100 dark:bg-[#171717] animate-pulse" />
-              ))}
+        {loading ? (
+          <div className="flex flex-col gap-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-28 rounded-2xl bg-ink-100 dark:bg-[#171717] animate-pulse" />
+            ))}
+          </div>
+        ) : leads.length === 0 ? (
+          <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] flex flex-col items-center justify-center py-20 text-ink-400 gap-3 transition-colors">
+            <div className="w-16 h-16 rounded-2xl bg-ink-50 dark:bg-[#171717] flex items-center justify-center">
+              <Box size={28} />
             </div>
-          ) : leads.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-ink-400 gap-2">
-              <Box size={36} />
-              <p className="text-sm">{t("requests.empty")}</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {leads.map((lead) => {
-                const busy = actionId === lead.id;
-                const items = lead.items ?? [];
-                const total = items.reduce((sum, it) => sum + (it.priceSnapshot ?? 0) * (it.quantity ?? 0), 0);
-                return (
-                  <div
-                    key={lead.id}
-                    className={`flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 border border-ink-100 dark:border-[#1C1C1C] rounded-xl p-4 transition-opacity ${busy ? "opacity-50" : ""}`}
-                  >
+            <p className="text-sm">{t("requests.empty")}</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 sm:gap-4">
+            {leads.map((lead) => {
+              const busy = actionId === lead.id;
+              const items = lead.items ?? [];
+              const total = items.reduce((sum, it) => sum + (it.priceSnapshot ?? 0) * (it.quantity ?? 0), 0);
+              return (
+                <div
+                  key={lead.id}
+                  className={`relative overflow-hidden bg-white dark:bg-[#0D0D0D] border border-ink-100 dark:border-[#1C1C1C] rounded-2xl p-4 sm:p-5 transition-opacity ${busy ? "opacity-50" : ""}`}
+                >
+                  <span className={`absolute left-0 top-0 bottom-0 w-1 ${ACCENT_CLS[lead.status] ?? "bg-ink-200"}`} />
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                         <p className="text-sm font-semibold text-ink-900 dark:text-white">
                           {t("requests.requestNumber", { id: lead.id })}
                         </p>
                         {badge(lead.status, t)}
                       </div>
                       {items.length > 0 && (
-                        <p className="text-xs text-ink-400 truncate">
+                        <p className="text-xs text-ink-500 dark:text-ink-400 truncate mb-2">
                           {items.map((it) => `${it.productNameSnapshot} × ${it.quantity}`).join(", ")}
                         </p>
                       )}
-                      <div className="flex items-center gap-3 mt-1 text-[10px] text-ink-400">
-                        {total > 0 && <span>{t("seller.sum", { amount: total.toLocaleString() })}</span>}
-                        {lead.neededDate && <span>{t("seller.until", { date: lead.neededDate })}</span>}
+                      <div className="flex items-center gap-4 text-xs text-ink-400 dark:text-ink-500">
+                        {total > 0 && (
+                          <span className="flex items-center gap-1.5 font-medium text-ink-700 dark:text-ink-200">
+                            <Moneys size={14} className="text-brand-500 shrink-0" />
+                            {t("seller.sum", { amount: total.toLocaleString() })}
+                          </span>
+                        )}
+                        {lead.neededDate && (
+                          <span className="flex items-center gap-1.5">
+                            <Calendar size={14} className="shrink-0" />
+                            {t("seller.until", { date: lead.neededDate })}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -101,17 +128,17 @@ export default function RequestsPage() {
                       <button
                         disabled={busy}
                         onClick={() => cancelRequest(lead.id)}
-                        className="shrink-0 flex items-center justify-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-danger-300 hover:text-danger-600 dark:hover:text-danger-400 text-xs font-medium px-3 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap"
+                        className="shrink-0 flex items-center justify-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-danger-300 hover:bg-danger-50 dark:hover:bg-danger-500/10 hover:text-danger-600 dark:hover:text-danger-400 text-xs font-medium px-3 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap"
                       >
                         <IoIosClose className="text-[18px]" /> {t("requests.cancel")}
                       </button>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </AppShell>
   );

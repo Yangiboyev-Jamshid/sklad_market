@@ -172,13 +172,22 @@ export async function getMyCompany() {
   // can silently smuggle an outdated status through. summary (GET /companies) is
   // the only source that's guaranteed fresh for verificationStatus/isBlocked —
   // it must win no matter what slugDetail/cached say.
-  return {
+  const merged = {
     ...cached,
     ...summary,
     ...slugDetail,
     verificationStatus: summary.verificationStatus,
     isBlocked: summary.isBlocked,
   };
+  // Neither /companies nor /companies/:slug reliably carries companyCreatedDate
+  // (updateCompany 400s with "companyCreatedDate required" if it's missing/null
+  // here), but the paginated public list always includes it.
+  if (!merged.companyCreatedDate) {
+    const publicList = await getPublicCompanies({ page: 1, per_page: 100 }).catch(() => null);
+    const match = publicList?.content?.find((c) => c.id === summary.id);
+    if (match?.companyCreatedDate) merged.companyCreatedDate = match.companyCreatedDate;
+  }
+  return cacheCompanyDetail(merged);
 }
 
 export async function getPublicCompanies({ page = 1, per_page = 20 } = {}) {
@@ -223,11 +232,15 @@ export async function updateCompany(id, data) {
   return cacheCompanyDetail({ ...company, lat: data.lat, lng: data.lng });
 }
 
-export async function updateCompanyLocation(companyId, { lat, lng }) {
+export async function updateCompanyLocation(companyId, { lat, lng, address }) {
   const company = await unwrap(
-    http.put("/companies/update/location", { lat: String(lat), lng: String(lng) }, { params: { companyId } })
+    http.put(
+      "/companies/update/location",
+      { lat: String(lat), lng: String(lng), address },
+      { params: { companyId } }
+    )
   );
-  return cacheCompanyDetail({ ...company, id: company?.id ?? companyId, lat: String(lat), lng: String(lng) });
+  return cacheCompanyDetail({ ...company, id: company?.id ?? companyId, lat: String(lat), lng: String(lng), address });
 }
 
 export async function submitCompanyVerification(id) {

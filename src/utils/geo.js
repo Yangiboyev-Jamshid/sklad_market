@@ -12,3 +12,16 @@ export async function geocodeAddress(query) {
     return { coords: null, reason: "unavailable" };
   }
 }
+
+export async function reverseGeocode(lat, lng) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!res.ok) return { address: null, reason: "unavailable" };
+    const result = await res.json();
+    if (!result?.display_name) return { address: null, reason: "not_found" };
+    return { address: result.display_name, reason: null };
+  } catch {
+    return { address: null, reason: "unavailable" };
+  }
+}

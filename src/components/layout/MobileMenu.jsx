@@ -71,8 +71,8 @@ export default function MobileMenu({ open, onClose }) {
             <div className="flex items-center justify-between px-5 h-16 shrink-0 border-b border-ink-100 dark:border-[#1C1C1C]">
               <Link to="/" onClick={onClose} className="flex items-center gap-2 min-w-0">
               <img src={logo} alt="" width={25} height={26} className="object-contain shrink-0" />
-              <span className="text-base font-extrabold tracking-tight text-ink-900 dark:text-white truncate">
-                SKLAD-MARKET
+              <span className="text-base font-display font-extrabold tracking-tight truncate">
+                <span className="text-[#0B1F33] dark:text-white">Sklad</span> <span className="text-[#039484]">Market</span>
               </span>
               </Link>
               <button

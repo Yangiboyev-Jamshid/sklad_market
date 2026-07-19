@@ -43,7 +43,7 @@ export default function SidebarRail() {
             <img src={logo} alt="" width={25} height={26} className="object-contain" />
           </span>
           <span className="whitespace-nowrap text-[18px] font-display font-bold pr-4 max-w-0 group-hover:max-w-[160px] opacity-0 group-hover:opacity-100 overflow-hidden transition-all duration-200">
-            Sklad Market
+            <span className="text-[#0B1F33] dark:text-white">Sklad</span> <span className="text-[#039484]">Market</span>
           </span>
         </NavLink>
         <div className=" h-px bg-ink-200 dark:bg-[#1C1C1C] mb-2 ml-5 shrink-0" />

@@ -11,7 +11,7 @@ import {
 import CreateCompanyForm from "../company/CreateCompanyForm";
 import MapView from "../ui/MapView";
 import { useAuth } from "../../context/AuthContext";
-import { geocodeAddress } from "../../utils/geo";
+import { geocodeAddress, reverseGeocode } from "../../utils/geo";
 import { tariffPlans } from "../../data/mockData";
 
 const VERIFICATION_BADGE_KEYS = {
@@ -170,6 +170,7 @@ export default function SettingsTab() {
         address: merged.address,
         lat: merged.lat,
         lng: merged.lng,
+        companyCreatedDate: merged.companyCreatedDate,
         [key]: editing[key],
       });
       setCompany(updated);
@@ -196,8 +197,18 @@ export default function SettingsTab() {
     setSavingLocation(true);
     setError("");
     try {
-      const updated = await updateCompanyLocation(company.id, pickedCoords);
-      setCompany((prev) => ({ ...prev, ...updated, lat: String(pickedCoords.lat), lng: String(pickedCoords.lng) }));
+      const { address: resolvedAddress } = await reverseGeocode(pickedCoords.lat, pickedCoords.lng);
+      const address = resolvedAddress || company.address;
+      const updated = await updateCompanyLocation(company.id, { ...pickedCoords, address });
+      const next = {
+        ...company,
+        ...updated,
+        lat: String(pickedCoords.lat),
+        lng: String(pickedCoords.lng),
+        address,
+      };
+
+      setCompany(next);
       setShowMapPicker(false);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2500);
@@ -242,6 +253,7 @@ export default function SettingsTab() {
         address: merged.address,
         lat: merged.lat,
         lng: merged.lng,
+        companyCreatedDate: merged.companyCreatedDate,
         ...profileDraft,
       });
       setCompany(updated);
@@ -332,6 +344,11 @@ export default function SettingsTab() {
                   <TickCircle size={18} variant="Outline" className="text-brand-500" />
                 )}
               </p>
+              {company?.stir && (
+                <p className="text-xs text-ink-400 dark:text-ink-500 mt-0.5">
+                  {t("profile.stir")}: {company.stir}
+                </p>
+              )}
               <p className="text-xs text-ink-400 dark:text-ink-500 mt-0.5">
                 {company?.address}
               </p>
