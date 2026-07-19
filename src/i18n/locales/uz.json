@@ -477,5 +477,11 @@
     "positionPlaceholder": "masalan, sotuv menejeri",
     "telegram": "Telegram",
     "extraPhone": "Qo'shimcha telefon"
+  },
+  "requests": {
+    "title": "Mening so'rovlarim",
+    "empty": "Siz hali so'rov yubormagansiz",
+    "requestNumber": "So'rov №{{id}}",
+    "cancel": "So'rovni bekor qilish"
   }
 }

@@ -52,6 +52,18 @@ export async function verifyAccount({ username, code }) {
 
 // ─── User profile ─────────────────────────────────────────────────────────────
 
+// file-service stores attachments by bare id/url, but images are served back
+// as .jpg — strip the extension before sending an id to the backend, and add
+// it back when a url comes back without one so <img> can load it.
+function stripPhotoExtension(id) {
+  return String(id).replace(/\.[a-zA-Z0-9]+$/, "");
+}
+
+function withPhotoExtension(url) {
+  if (!url) return url;
+  return /\.[a-zA-Z0-9]+$/.test(url) ? url : `${url}.jpg`;
+}
+
 export async function getMyUserProfile() {
   return unwrap(http.get("/users"));
 }
@@ -61,20 +73,17 @@ export async function updateMyUserProfile(data) {
 }
 
 export async function uploadUserPhoto(file) {
-  return unwrap(http.post("/users/upload/photo", toSingleFileForm(file)));
+  const data = await unwrap(http.post("/users/upload/photo", toSingleFileForm(file)));
+  return data ? { ...data, url: withPhotoExtension(data.url) } : data;
 }
 
 export async function setUserPhoto(photoId) {
-  // Swagger says JSON body { photoId }, but the backend's ":photo" bind param
-  // never resolved from the body in testing — try it as a query param instead,
-  // sending photoId both ways so whichever the backend actually reads works.
-  return unwrap(
-    http.put("/users/update/photo", { photoId, photo: photoId }, { params: { photo: photoId, photoId } })
-  );
+  return unwrap(http.put("/users/update/photo", { photoId: stripPhotoExtension(photoId) }));
 }
 
 export async function getMyUserContext() {
-  return unwrap(http.get("/users/me/context"));
+  const data = await unwrap(http.get("/users/me/context"));
+  return data ? { ...data, photoUrl: withPhotoExtension(data.photoUrl) } : data;
 }
 
 // ─── Favorites (products) ──────────────────────────────────────────────────────

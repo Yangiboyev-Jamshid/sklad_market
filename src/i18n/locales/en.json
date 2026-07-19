@@ -477,5 +477,11 @@
     "positionPlaceholder": "e.g. Sales manager",
     "telegram": "Telegram",
     "extraPhone": "Additional phone"
+  },
+  "requests": {
+    "title": "My requests",
+    "empty": "You haven't sent any requests yet",
+    "requestNumber": "Request #{{id}}",
+    "cancel": "Cancel request"
   }
 }

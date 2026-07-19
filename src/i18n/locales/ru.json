@@ -477,5 +477,11 @@
     "positionPlaceholder": "например, менеджер по продажам",
     "telegram": "Telegram",
     "extraPhone": "Дополнительный телефон"
+  },
+  "requests": {
+    "title": "Мои запросы",
+    "empty": "Вы пока не отправляли запросы",
+    "requestNumber": "Запрос №{{id}}",
+    "cancel": "Отменить запрос"
   }
 }
