@@ -290,6 +290,8 @@
     "changeOnMap": "Change on map",
     "hideMap": "Hide map",
     "tapMapToSetLocation": "Tap the map to set the company's location",
+    "resolvingCity": "Detecting city...",
+    "detectedCity": "Detected city",
     "saveLocation": "Save location",
     "logoUploadFailed": "The server didn't return a link to the uploaded logo",
     "backgroundUploadFailed": "The server didn't return a link to the uploaded background image",

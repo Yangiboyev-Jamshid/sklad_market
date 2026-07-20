@@ -12,7 +12,7 @@ import {
 import CreateCompanyForm from "../company/CreateCompanyForm";
 import MapView from "../ui/MapView";
 import { useAuth } from "../../context/AuthContext";
-import { geocodeAddress } from "../../utils/geo";
+import { geocodeAddress, reverseGeocode } from "../../utils/geo";
 import { tariffPlans } from "../../data/mockData";
 
 const VERIFICATION_BADGE_KEYS = {
@@ -48,7 +48,7 @@ async function resolveRequiredCompanyFields(company, overrides) {
 }
 
 export default function SettingsTab() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const isSeller = user?.accountType === "seller";
 
@@ -69,6 +69,8 @@ export default function SettingsTab() {
 
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [pickedCoords, setPickedCoords] = useState(null);
+  const [pickedCity, setPickedCity] = useState("");
+  const [resolvingCity, setResolvingCity] = useState(false);
   const [savingLocation, setSavingLocation] = useState(false);
 
   useEffect(() => {
@@ -209,8 +211,18 @@ export default function SettingsTab() {
     if (!showMapPicker) {
       const hasCoords = company?.lat && company?.lng;
       setPickedCoords(hasCoords ? { lat: Number(company.lat), lng: Number(company.lng) } : null);
+      setPickedCity("");
     }
     setShowMapPicker((v) => !v);
+  };
+
+  const handleMapPick = (coords) => {
+    setPickedCoords(coords);
+    setPickedCity("");
+    setResolvingCity(true);
+    reverseGeocode(coords.lat, coords.lng, { lang: i18n.language })
+      .then(({ city }) => setPickedCity(city || ""))
+      .finally(() => setResolvingCity(false));
   };
 
   const saveLocation = async () => {
@@ -218,16 +230,19 @@ export default function SettingsTab() {
     setSavingLocation(true);
     setError("");
     try {
-      const updated = await updateCompanyLocation(company.id, { ...pickedCoords, address: company.address });
+      const address = pickedCity || company.address;
+      const updated = await updateCompanyLocation(company.id, { ...pickedCoords, address });
       const next = {
         ...company,
         ...updated,
+        address,
         lat: String(pickedCoords.lat),
         lng: String(pickedCoords.lng),
       };
 
       setCompany(next);
       setShowMapPicker(false);
+      setPickedCity("");
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2500);
     } catch (err) {
@@ -506,8 +521,16 @@ export default function SettingsTab() {
 
           {showMapPicker && (
             <div className="mt-3 flex flex-col gap-3">
-              <MapView height="h-[280px] sm:h-[380px]" center={pickedCoords} onPick={setPickedCoords} />
-              <p className="text-xs text-ink-400 dark:text-ink-500">{t("seller.tapMapToSetLocation")}</p>
+              <MapView height="h-[280px] sm:h-[380px]" center={pickedCoords} onPick={handleMapPick} />
+              {resolvingCity ? (
+                <p className="text-xs text-ink-400 dark:text-ink-500">{t("seller.resolvingCity")}</p>
+              ) : pickedCity ? (
+                <p className="text-xs text-ink-500 dark:text-ink-400">
+                  {t("seller.detectedCity")}: <span className="font-medium text-ink-900 dark:text-white">{pickedCity}</span>
+                </p>
+              ) : (
+                <p className="text-xs text-ink-400 dark:text-ink-500">{t("seller.tapMapToSetLocation")}</p>
+              )}
               <div className="flex items-center gap-2">
                 <button
                   onClick={saveLocation}

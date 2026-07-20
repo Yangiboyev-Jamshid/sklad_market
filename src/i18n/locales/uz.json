@@ -290,6 +290,8 @@
     "changeOnMap": "Xaritada o'zgartirish",
     "hideMap": "Xaritani yashirish",
     "tapMapToSetLocation": "Kompaniya joylashuvini belgilash uchun xaritani bosing",
+    "resolvingCity": "Shahar aniqlanmoqda...",
+    "detectedCity": "Aniqlangan shahar",
     "saveLocation": "Joylashuvni saqlash",
     "logoUploadFailed": "Server yuklangan logotip havolasini qaytarmadi",
     "backgroundUploadFailed": "Server yuklangan fon rasmi havolasini qaytarmadi",
