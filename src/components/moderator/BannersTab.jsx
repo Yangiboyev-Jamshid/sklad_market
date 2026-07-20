@@ -88,7 +88,7 @@ export default function BannersTab() {
     setLoading(true);
     try {
       const data = await getAdminBanners(placementCode);
-      setBanners(data ?? []);
+      setBanners(Array.isArray(data) ? data : (data?.content ?? []));
     } catch {
       setBanners([]);
     } finally {
