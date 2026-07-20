@@ -22,7 +22,7 @@ function hasCoords(p) {
   return !!p && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
 }
 
-export default function MapView({ pins = [], height = "h-[460px]", center, onPick }) {
+export default function MapView({ pins = [], height = "h-[460px]", center, onPick, showMyLocation = false }) {
   const { theme } = useTheme();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -51,13 +51,13 @@ export default function MapView({ pins = [], height = "h-[460px]", center, onPic
   }, [onPick]);
 
   useEffect(() => {
-    if (!navigator.geolocation) return;
+    if (!showMyLocation || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => { },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
     );
-  }, []);
+  }, [showMyLocation]);
 
   const recomputePositions = useCallback(() => {
     const map = mapRef.current;
@@ -270,15 +270,20 @@ export default function MapView({ pins = [], height = "h-[460px]", center, onPic
                       onClick={item.onClick}
                       className={`flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-ink-50 dark:hover:bg-[#171717] rounded-lg ${item.onClick ? "cursor-pointer" : ""}`}
                     >
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs font-semibold text-ink-900 dark:text-white flex items-center gap-1">
                           {item.name}
-                          {item.verified !== false && <span className="text-brand-500">✓</span>}
+                          {item.verified && <span className="text-brand-500">✓</span>}
                         </p>
-                        <p className="text-[11px] text-ink-400"><span translate="no" className="notranslate">{item.company}</span></p>
+                        <p className="text-[11px] text-ink-400 truncate"><span translate="no" className="notranslate">{item.company}</span></p>
+                        {item.price != null && (
+                          <p className="text-xs font-semibold text-brand-600 dark:text-brand-400 mt-0.5">
+                            {Number(item.price).toLocaleString()} {item.currency ?? ""}
+                          </p>
+                        )}
                       </div>
                       {item.rating != null && (
-                        <div className="flex items-center gap-0.5">
+                        <div className="flex items-center gap-0.5 shrink-0">
                           {[1, 2, 3, 4, 5].map((s) => (
                             <Star1 key={s} size={11} variant="Bold" className={s <= item.rating ? "text-amber-400" : "text-ink-200 dark:text-ink-700"} />
                           ))}

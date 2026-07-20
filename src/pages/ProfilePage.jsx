@@ -22,8 +22,7 @@ import MapView from "../components/ui/MapView";
 import PillToggle from "../components/ui/PillToggle";
 import RatingStars from "../components/ui/RatingStars";
 import { useAuth } from "../context/AuthContext";
-import { getCompanyBySlug, getMyCompany, getCompaniesMap, getCompanyProducts, getCompanyReviews, createChat } from "../api/api";
-import { buildCompanyMapPins } from "../utils/mapPins";
+import { getCompanyBySlug, getMyCompany, getCompanyProducts, getCompanyReviews, createChat } from "../api/api";
 import ProductCard from "../components/ui/ProductCard";
 import { getPublicCompanyExtras } from "../utils/companyExtras";
 
@@ -67,9 +66,6 @@ export default function ProfilePage() {
   const [showReport, setShowReport] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
   const chatSubmittingRef = useRef(false);
-  const [companyMapPins, setCompanyMapPins] = useState([]);
-  const [companyMapLoading, setCompanyMapLoading] = useState(false);
-  const [companyMapLoaded, setCompanyMapLoaded] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [logoFallback, setLogoFallback] = useState(null);
@@ -82,21 +78,6 @@ export default function ProfilePage() {
     });
     return () => { cancelled = true; };
   }, [company?.logoUrl, company?.id]);
-
-  useEffect(() => {
-    if (!showMap || companyMapLoaded) return;
-    setCompanyMapLoading(true);
-    getCompaniesMap({ page: 1, per_page: 100 })
-      .then((data) => {
-        const items = (data?.content ?? []).filter((c) => c.lat && c.lng);
-        setCompanyMapPins(buildCompanyMapPins(items, navigate));
-      })
-      .catch(() => setCompanyMapPins([]))
-      .finally(() => {
-        setCompanyMapLoading(false);
-        setCompanyMapLoaded(true);
-      });
-  }, [showMap, companyMapLoaded, navigate]);
 
   useEffect(() => {
     setLoading(true);
@@ -204,8 +185,28 @@ export default function ProfilePage() {
   const cityShort = company.city ?? company.address?.split(",")[0]?.trim();
   const email = company.email ?? (company.website ? `info@${company.website.replace(/^www\./, "")}` : null);
   const logoUrl = company.logoUrl ?? (logoFallback?.id === company.id ? logoFallback.logoUrl : null);
+  // Background falls back to the logo for companies that haven't uploaded a
+  // dedicated cover image yet, so existing profiles don't suddenly go blank.
+  const backgroundUrl = company.backgroundUrl ?? logoUrl;
 
   const hasMapCoords = company.lat && company.lng;
+  // The backend models each company with a single lat/lng — there is no
+  // branches/filials entity, so the map shows the company's own true location
+  // rather than an unrelated marketplace-wide list.
+  const companyMapPins = hasMapCoords
+    ? [{
+      id: "company",
+      lat: Number(company.lat),
+      lng: Number(company.lng),
+      color: "blue",
+      label: 1,
+      popover: [{
+        name: company.name,
+        company: company.address ?? cityShort ?? "",
+        verified: isVerified,
+      }],
+    }]
+    : [];
 
   return (
     <AppShell>
@@ -227,8 +228,8 @@ export default function ProfilePage() {
 
         <div className="relative bg-white sm:pb-8 pt-20 dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] overflow-hidden mb-5 sm:mb-6 transition-colors">
           <div className="absolute top-0 left-0 right-0 bottom-[80%] sm:bottom-[50%] rounded-2xl -z-1 overflow-hidden bg-[#DEECFF] dark:bg-[#00183A]">
-            {logoUrl && (
-              <img src={logoUrl} alt="" className="w-full h-full object-cover" />
+            {backgroundUrl && (
+              <img src={backgroundUrl} alt="" className="w-full h-full object-cover" />
             )}
           </div>
           <div className="px-4 sm:px-6 pb-5 sm:pb-6 relative z-1">
@@ -325,11 +326,7 @@ export default function ProfilePage() {
                   </button>
                 </div>
               </div>
-              {companyMapLoading ? (
-                <div className="h-[400px] sm:h-[550px] rounded-2xl bg-ink-100 dark:bg-[#171717] animate-pulse" />
-              ) : (
-                <MapView pins={companyMapPins} height="h-[400px] sm:h-[550px]" center={{ lat: company.lat, lng: company.lng }} />
-              )}
+              <MapView pins={companyMapPins} height="h-[400px] sm:h-[550px]" center={{ lat: company.lat, lng: company.lng }} />
             </motion.div>
           ) : <>
             <div className="sm:hidden mb-4">

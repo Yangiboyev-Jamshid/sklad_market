@@ -12,21 +12,23 @@ function groupPinsByLocation(items, getLat, getLng) {
   return Array.from(groups.values());
 }
 
-export function buildProductMapPins(items, navigate) {
+export function buildProductMapPins(items, navigate, { color, idPrefix = "" } = {}) {
   const groups = groupPinsByLocation(items, (i) => i.lat, (i) => i.lng);
   return groups.map((group, i) => ({
-    id: i,
+    id: `${idPrefix}${i}`,
     lat: group.lat,
     lng: group.lng,
-    color: i % 2 === 0 ? "red" : "purple",
+    color: color ?? (i % 2 === 0 ? "red" : "purple"),
     label: group.items.length,
     popover: group.items.slice(0, 6).map((item) => ({
       name: item.productName ?? item.name ?? "Товар",
       company: item.companyName ?? "",
       rating: item.rating,
-      verified: item.verified,
-      onClick: item.slug
-        ? () => navigate(`/product/${item.slug}`)
+      verified: item.verifiedCompany === "VERIFIED",
+      price: item.price,
+      currency: item.currency,
+      onClick: item.productSlug
+        ? () => navigate(`/product/${item.productSlug}`)
         : item.productId
           ? () => navigate(`/product/${item.productId}`)
           : undefined,

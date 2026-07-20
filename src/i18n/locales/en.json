@@ -90,7 +90,9 @@
     "verifiedOnly": "Verified sellers only",
     "resetFilters": "Reset filters",
     "productsNotFound": "No products found",
-    "mapWithProducts": "Product map"
+    "mapWithProducts": "Product map",
+    "mapLegendFound": "Found",
+    "mapLegendSimilar": "Similar"
   },
   "product": {
     "tabDescription": "Description",
@@ -272,6 +274,7 @@
     "statusCanceled": "Canceled",
     "companyProfile": "Company profile",
     "logo": "Logo",
+    "background": "Background",
     "toVerification": "Submit for verification",
     "save": "Save",
     "cancel": "Cancel",
@@ -289,6 +292,7 @@
     "tapMapToSetLocation": "Tap the map to set the company's location",
     "saveLocation": "Save location",
     "logoUploadFailed": "The server didn't return a link to the uploaded logo",
+    "backgroundUploadFailed": "The server didn't return a link to the uploaded background image",
     "alreadySentOrVerified": "The company has already been submitted for verification or is already verified.",
     "fillBeforeVerification": "Before submitting for verification, fill in: {{fields}}",
     "confirmSendVerification": "Submit the company for verification?",

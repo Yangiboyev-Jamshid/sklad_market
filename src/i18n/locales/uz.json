@@ -90,7 +90,9 @@
     "verifiedOnly": "Tasdiqlangan sotuvchilar",
     "resetFilters": "Filtrlarni tozalash",
     "productsNotFound": "Mahsulotlar topilmadi",
-    "mapWithProducts": "Mahsulotlar xaritasi"
+    "mapWithProducts": "Mahsulotlar xaritasi",
+    "mapLegendFound": "Topilgan",
+    "mapLegendSimilar": "O'xshash"
   },
   "product": {
     "tabDescription": "Tavsif",
@@ -272,6 +274,7 @@
     "statusCanceled": "Bekor qilingan",
     "companyProfile": "Kompaniya profili",
     "logo": "Logotip",
+    "background": "Fon",
     "toVerification": "Tasdiqlashga yuborish",
     "save": "Saqlash",
     "cancel": "Bekor qilish",
@@ -289,6 +292,7 @@
     "tapMapToSetLocation": "Kompaniya joylashuvini belgilash uchun xaritani bosing",
     "saveLocation": "Joylashuvni saqlash",
     "logoUploadFailed": "Server yuklangan logotip havolasini qaytarmadi",
+    "backgroundUploadFailed": "Server yuklangan fon rasmi havolasini qaytarmadi",
     "alreadySentOrVerified": "Kompaniya allaqachon tasdiqlashga yuborilgan yoki tasdiqlangan.",
     "fillBeforeVerification": "Tasdiqlashga yuborishdan oldin to'ldiring: {{fields}}",
     "confirmSendVerification": "Kompaniyani tasdiqlashga yuborasizmi?",

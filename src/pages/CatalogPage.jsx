@@ -9,6 +9,13 @@ import MapView from "../components/ui/MapView";
 import { getAllProducts, searchProducts, getCategoryTree, getCatalogMap, getSearchSuggestions, getCatalogFilters, getCategoryCounts } from "../api/api";
 import { buildProductMapPins } from "../utils/mapPins";
 
+function mostCommonCategoryId(ids) {
+  if (!ids.length) return null;
+  const counts = new Map();
+  ids.forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1));
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+}
+
 function normalizeProduct(p, t) {
   return {
     id: p.id,
@@ -49,26 +56,57 @@ export default function CatalogPage() {
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [mapPins, setMapPins] = useState([]);
   const [mapLoading, setMapLoading] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
+  const [foundCategoryIds, setFoundCategoryIds] = useState([]);
   const debounceRef = useRef(null);
   const suggestDebounceRef = useRef(null);
+  const mapDebounceRef = useRef(null);
 
+  // /catalog/map has no lat/lng-agnostic "similar" concept of its own, so
+  // "similar products" is approximated as other listings in the same
+  // category as what was found — using the active category filter when set,
+  // otherwise the most common category among the current search results.
   useEffect(() => {
-    if (view !== "map" || mapLoaded) return;
-    const id = setTimeout(() => {
+    if (view !== "map") return;
+    clearTimeout(mapDebounceRef.current);
+    const q = query.trim() || undefined;
+    const category = activeCategory !== "all" ? activeCategory : undefined;
+    const minP = minPrice.trim() ? Number(minPrice) : undefined;
+    const maxP = maxPrice.trim() ? Number(maxPrice) : undefined;
+
+    mapDebounceRef.current = setTimeout(async () => {
       setMapLoading(true);
-    }, 0);
-    getCatalogMap({ page: 1, perPage: 200 })
-      .then((data) => {
-        setMapPins(buildProductMapPins(data?.items ?? [], navigate));
-      })
-      .catch(() => setMapPins([]))
-      .finally(() => {
+      try {
+        const foundData = await getCatalogMap({ page: 1, perPage: 200, query: q, category });
+        let foundItems = foundData?.items ?? [];
+        // price/verified filters aren't supported server-side on /catalog/map,
+        // but both fields are present on each item, so apply them client-side.
+        if (minP != null) foundItems = foundItems.filter((it) => Number(it.price) >= minP);
+        if (maxP != null) foundItems = foundItems.filter((it) => Number(it.price) <= maxP);
+        if (verifiedOnly) foundItems = foundItems.filter((it) => it.verifiedCompany === "VERIFIED");
+        const foundIds = new Set(foundItems.map((it) => it.productId));
+        const foundPins = buildProductMapPins(foundItems, navigate, { color: "red", idPrefix: "f" });
+
+        // Only look for "similar" items when the user is actually
+        // searching/filtering — with no query and no category, "found" is
+        // already everything, so there's nothing distinct to compare against.
+        const hasActiveSearch = !!q || !!category;
+        const similarCategory = hasActiveSearch ? (category ?? mostCommonCategoryId(foundCategoryIds)) : null;
+        let similarPins = [];
+        if (similarCategory != null) {
+          const similarData = await getCatalogMap({ page: 1, perPage: 200, category: similarCategory }).catch(() => null);
+          const similarItems = (similarData?.items ?? []).filter((it) => !foundIds.has(it.productId));
+          similarPins = buildProductMapPins(similarItems, navigate, { color: "purple", idPrefix: "s" });
+        }
+
+        setMapPins([...foundPins, ...similarPins]);
+      } catch {
+        setMapPins([]);
+      } finally {
         setMapLoading(false);
-        setMapLoaded(true);
-      });
-    return () => clearTimeout(id);
-  }, [view, mapLoaded, navigate]);
+      }
+    }, query ? 400 : 0);
+    return () => clearTimeout(mapDebounceRef.current);
+  }, [view, query, activeCategory, minPrice, maxPrice, verifiedOnly, foundCategoryIds, navigate]);
 
   useEffect(() => {
     getCategoryTree()
@@ -123,12 +161,16 @@ export default function CatalogPage() {
       try {
         if (query.trim()) {
           const data = await searchProducts({ query: query.trim(), page: 1, perPage: 40, category, ...filterParams });
-          setProducts((data?.content ?? []).map((p) => normalizeProduct(p, t)));
+          const raw = data?.content ?? [];
+          setProducts(raw.map((p) => normalizeProduct(p, t)));
           setTotal(data?.totalElements ?? 0);
+          setFoundCategoryIds(raw.map((p) => p.categoryId).filter((id) => id != null));
         } else {
           const data = await getAllProducts({ page: 1, perPage: 40, category, ...filterParams });
-          setProducts((data?.items ?? []).map((p) => normalizeProduct(p, t)));
+          const raw = data?.items ?? [];
+          setProducts(raw.map((p) => normalizeProduct(p, t)));
           setTotal(data?.meta?.total ?? 0);
+          setFoundCategoryIds(raw.map((p) => p.categoryId).filter((id) => id != null));
         }
       } catch {
         setProducts([]);
@@ -269,11 +311,17 @@ export default function CatalogPage() {
               animate={{ opacity: 1 }}
               className="sm:bg-white sm:dark:bg-[#0D0D0D] rounded-2xl sm:border border-ink-100 dark:border-ink-800 p-4 sm:p-5 transition-colors"
             >
-              <p className="font-semibold text-ink-900 dark:text-white mb-4">{t("catalogPage.mapWithProducts")}</p>
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <p className="font-semibold text-ink-900 dark:text-white">{t("catalogPage.mapWithProducts")}</p>
+                <div className="flex items-center gap-3 text-xs text-ink-500 dark:text-ink-400">
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-danger-500" />{t("catalogPage.mapLegendFound")}</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-brand-500" />{t("catalogPage.mapLegendSimilar")}</span>
+                </div>
+              </div>
               {mapLoading ? (
                 <div className="h-[400px] sm:h-[600px] rounded-2xl bg-ink-100 dark:bg-[#171717] animate-pulse" />
               ) : (
-                <MapView pins={mapPins} height="h-[60vh] sm:h-[600px]" />
+                <MapView pins={mapPins} height="h-[60vh] sm:h-[600px]" showMyLocation />
               )}
             </motion.div>
           )}

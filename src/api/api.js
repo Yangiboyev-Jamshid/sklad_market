@@ -126,8 +126,8 @@ export async function getHomepageData() {
   return unwrap(http.get("/catalog/homepage"));
 }
 
-export async function getCatalogMap({ page = 1, perPage = 20 } = {}) {
-  return unwrap(http.get("/catalog/map", { params: { page, per_page: perPage } }));
+export async function getCatalogMap({ page = 1, perPage = 20, query, category } = {}) {
+  return unwrap(http.get("/catalog/map", { params: { page, per_page: perPage, query, category } }));
 }
 
 export async function getCatalogFilters() {
@@ -220,8 +220,8 @@ export async function getCompanyReviews(companyId, { page = 1, per_page = 20 } =
   return unwrap(http.get(`/companies/${companyId}/reviews`, { params: { page, per_page } }));
 }
 
-export async function getCompaniesMap({ page = 1, per_page = 20 } = {}) {
-  return unwrap(http.get("/companies/map", { params: { page, per_page } }));
+export async function getCompaniesMap({ page = 1, per_page = 20, q } = {}) {
+  return unwrap(http.get("/companies/map", { params: { page, per_page, q } }));
 }
 
 export async function createCompany(data) {
@@ -258,6 +258,14 @@ export async function submitCompanyVerification(id) {
 export async function uploadCompanyLogo(id, file) {
   const result = await unwrap(http.post(`/companies/${id}/logo`, toSingleFileForm(file)));
   if (result?.url) cacheCompanyDetail({ id, logoUrl: result.url });
+  return result;
+}
+
+// Separate cover/background image shown behind the logo on the company
+// profile page. Same upload shape as uploadCompanyLogo.
+export async function uploadCompanyBackground(id, file) {
+  const result = await unwrap(http.post(`/companies/${id}/coverUrl`, toSingleFileForm(file)));
+  if (result?.url) cacheCompanyDetail({ id, backgroundUrl: result.url });
   return result;
 }
 

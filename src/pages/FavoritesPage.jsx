@@ -12,6 +12,34 @@ import { useCart } from "../context/CartContext";
 import { getFavorites, getCompanyFavorites, getCatalogMap, getCompaniesMap } from "../api/api";
 import { buildProductMapPins, buildCompanyMapPins } from "../utils/mapPins";
 
+const MAP_PAGE_CAP = 10;
+
+// Neither /catalog/map nor /companies/map can be filtered by a list of ids,
+// so matching favorites against them means paging through the full dataset.
+async function fetchAllCatalogMapItems() {
+  const perPage = 200;
+  const first = await getCatalogMap({ page: 1, perPage });
+  const items = [...(first?.items ?? [])];
+  const totalPages = Math.min(first?.meta?.totalPages ?? 1, MAP_PAGE_CAP);
+  for (let page = 2; page <= totalPages; page++) {
+    const data = await getCatalogMap({ page, perPage });
+    items.push(...(data?.items ?? []));
+  }
+  return items;
+}
+
+async function fetchAllCompanyMapItems() {
+  const per_page = 100;
+  const first = await getCompaniesMap({ page: 1, per_page });
+  const items = [...(first?.content ?? [])];
+  const totalPages = Math.min(first?.totalPages ?? 1, MAP_PAGE_CAP);
+  for (let page = 2; page <= totalPages; page++) {
+    const data = await getCompaniesMap({ page, per_page });
+    items.push(...(data?.content ?? []));
+  }
+  return items;
+}
+
 export default function FavoritesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -75,10 +103,14 @@ export default function FavoritesPage() {
     if (view !== "map" || tab !== "products" || productMapLoaded || loadingP) return;
     const id = setTimeout(() => setProductMapLoading(true), 0);
     const favoriteIds = new Set(products.map((p) => p.id));
-    getCatalogMap({ page: 1, perPage: 200 })
-      .then((data) => {
-        const items = (data?.items ?? []).filter((it) => favoriteIds.has(it.productId));
-        setProductMapPins(buildProductMapPins(items, navigate));
+    // There is no "get map pins by product ids" endpoint, so page through the
+    // whole marketplace map dataset and keep only the user's favorites —
+    // capped at PAGE_CAP pages so a favorite can't be silently dropped just
+    // because it's on page 2+.
+    fetchAllCatalogMapItems()
+      .then((items) => {
+        const matched = items.filter((it) => favoriteIds.has(it.productId));
+        setProductMapPins(buildProductMapPins(matched, navigate));
       })
       .catch(() => setProductMapPins([]))
       .finally(() => {
@@ -92,10 +124,10 @@ export default function FavoritesPage() {
     if (view !== "map" || tab !== "companies" || companyMapLoaded || loadingC) return;
     const id = setTimeout(() => setCompanyMapLoading(true), 0);
     const favoriteIds = new Set(companies.map((c) => c.id));
-    getCompaniesMap({ page: 1, per_page: 100 })
-      .then((data) => {
-        const items = (data?.content ?? []).filter((c) => favoriteIds.has(c.companyId));
-        setCompanyMapPins(buildCompanyMapPins(items, navigate));
+    fetchAllCompanyMapItems()
+      .then((items) => {
+        const matched = items.filter((c) => favoriteIds.has(c.companyId));
+        setCompanyMapPins(buildCompanyMapPins(matched, navigate));
       })
       .catch(() => setCompanyMapPins([]))
       .finally(() => {

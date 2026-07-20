@@ -90,7 +90,9 @@
     "verifiedOnly": "Верифицированные продавцы",
     "resetFilters": "Сбросить фильтры",
     "productsNotFound": "Товары не найдены",
-    "mapWithProducts": "Карта с товарами"
+    "mapWithProducts": "Карта с товарами",
+    "mapLegendFound": "Найдено",
+    "mapLegendSimilar": "Похожие"
   },
   "product": {
     "tabDescription": "Описание",
@@ -272,6 +274,7 @@
     "statusCanceled": "Отменён",
     "companyProfile": "Профиль компании",
     "logo": "Логотип",
+    "background": "Фон",
     "toVerification": "На верификацию",
     "save": "Сохранить",
     "cancel": "Отмена",
@@ -289,6 +292,7 @@
     "tapMapToSetLocation": "Нажмите на карту, чтобы указать местоположение компании",
     "saveLocation": "Сохранить местоположение",
     "logoUploadFailed": "Сервер не вернул ссылку на загруженный логотип",
+    "backgroundUploadFailed": "Сервер не вернул ссылку на загруженное фоновое изображение",
     "alreadySentOrVerified": "Компания уже отправлена на верификацию или уже верифицирована.",
     "fillBeforeVerification": "Перед отправкой на верификацию заполните: {{fields}}",
     "confirmSendVerification": "Отправить компанию на верификацию?",

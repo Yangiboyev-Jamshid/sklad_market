@@ -6,6 +6,7 @@ import {
   updateCompany,
   updateCompanyLocation,
   uploadCompanyLogo,
+  uploadCompanyBackground,
   submitCompanyVerification,
 } from "../../api/api";
 import CreateCompanyForm from "../company/CreateCompanyForm";
@@ -61,8 +62,10 @@ export default function SettingsTab() {
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileDraft, setProfileDraft] = useState({});
   const [logoUploading, setLogoUploading] = useState(false);
+  const [backgroundUploading, setBackgroundUploading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const logoInputRef = useRef(null);
+  const backgroundInputRef = useRef(null);
 
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [pickedCoords, setPickedCoords] = useState(null);
@@ -94,6 +97,24 @@ export default function SettingsTab() {
       setError(err.message);
     } finally {
       setLogoUploading(false);
+    }
+  };
+
+  const handleBackgroundUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !company) return;
+    setBackgroundUploading(true);
+    setError("");
+    try {
+      const result = await uploadCompanyBackground(company.id, file);
+      if (!result?.url) throw new Error(t("seller.backgroundUploadFailed"));
+      setCompany((prev) => ({ ...prev, backgroundUrl: result.url }));
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2500);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBackgroundUploading(false);
     }
   };
 
@@ -363,6 +384,15 @@ export default function SettingsTab() {
             >
               {logoUploading ? <span className="animate-spin">⏳</span> : <Export size={20} />}
               {t("seller.logo")}
+            </button>
+            <input ref={backgroundInputRef} type="file" accept="image/*" className="hidden" onChange={handleBackgroundUpload} />
+            <button
+              onClick={() => backgroundInputRef.current?.click()}
+              disabled={backgroundUploading}
+              className="flex items-center gap-2 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 text-sm font-medium px-4 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors shrink-0 disabled:opacity-50"
+            >
+              {backgroundUploading ? <span className="animate-spin">⏳</span> : <Export size={20} />}
+              {t("seller.background")}
             </button>
             {(company?.verificationStatus === "DRAFT" || company?.verificationStatus === "REJECTED") && (
               <button
