@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import {
   Call,
   Sms,
@@ -18,8 +19,10 @@ import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { login as apiLogin, registerUser } from "../api/api";
 import logo from "../assets/logo.png";
+import LanguageSwitcher from "../components/layout/LanguageSwitcher";
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const location = useLocation();
   const [mode, setMode] = useState(location.state?.mode === "register" ? "register" : "login");
   const [method, setMethod] = useState("phone");
@@ -59,7 +62,7 @@ export default function LoginPage() {
       login(data);
       navigate("/");
     } catch (err) {
-      setLoginError(err.message || "Неверный логин или пароль");
+      setLoginError(err.message || t("auth.defaultLoginError"));
     } finally {
       loginSubmittingRef.current = false;
       setLoginLoading(false);
@@ -101,13 +104,16 @@ export default function LoginPage() {
 
   return (
     <div className="w-full sm:h-auto h-auto bg-white dark:bg-[#0D0D0D] sm:bg-[#F4F6F8] sm:dark:bg-[#121212] flex flex-col items-center justify-center px-0 py-6 sm:px-4 sm:py-10 transition-colors relative">
-      <button
-        onClick={toggleTheme}
-        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] flex items-center justify-center text-ink-600 dark:text-amber-300 shadow-card hover:scale-105 transition-transform"
-        aria-label="Переключить тему"
-      >
-        {theme === "dark" ? <Sun1 size={18} variant="Bold" /> : <Moon size={18} variant="Bold" />}
-      </button>
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-2">
+        <LanguageSwitcher alwaysVisible />
+        <button
+          onClick={toggleTheme}
+          className="w-10 h-10 rounded-full bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] flex items-center justify-center text-ink-600 dark:text-amber-300 shadow-card hover:scale-105 transition-transform"
+          aria-label={t("auth.toggleTheme")}
+        >
+          {theme === "dark" ? <Sun1 size={18} variant="Bold" /> : <Moon size={18} variant="Bold" />}
+        </button>
+      </div>
 
 
       <motion.div
@@ -137,10 +143,10 @@ export default function LoginPage() {
       >
         <div className="flex flex-col items-center text-center mb-4 sm:hidden">
           <h1 className={`text-[24px] leading-tight font-extrabold text-black dark:text-white ${mode === "login" ? "mb-6" : ""}`}>
-            {mode === "login" ? "Авторизация" : "Регистрация"}
+            {mode === "login" ? t("auth.loginTitle") : t("auth.registerTitle")}
           </h1>
           {mode === "register" && (
-            <p className="mt-2 mb-6 text-[14px] leading-tight text-ink-400">Зарегистрируйте свой новый аккаунт</p>
+            <p className="mt-2 mb-6 text-[14px] leading-tight text-ink-400">{t("auth.registerSubtitle")}</p>
           )}
         </div>
 
@@ -153,7 +159,7 @@ export default function LoginPage() {
               : "text-ink-400 hover:text-ink-600"
               }`}
           >
-            Войти
+            {t("auth.tabLogin")}
           </button>
           <button
             type="button"
@@ -163,7 +169,7 @@ export default function LoginPage() {
               : "text-ink-400 hover:text-ink-600"
               }`}
           >
-            Регистрация
+            {t("auth.tabRegister")}
           </button>
         </div>
 
@@ -181,13 +187,13 @@ export default function LoginPage() {
               <div className="grid grid-cols-2 gap-2.5 mb-6 sm:mb-10">
                 <MethodButton
                   icon={Call}
-                  label="Телефон"
+                  label={t("auth.methodPhone")}
                   active={method === "phone"}
                   onClick={() => { setMethod("phone"); setLoginEmail(""); setLoginError(""); }}
                 />
                 <MethodButton
                   icon={Message}
-                  label="Email"
+                  label={t("auth.methodEmail")}
                   active={method === "email"}
                   onClick={() => { setMethod("email"); setLoginPhone(""); setLoginError(""); }}
                 />
@@ -195,7 +201,7 @@ export default function LoginPage() {
 
               <InputField
                 icon={method === "phone" ? Call : Sms}
-                placeholder={method === "phone" ? "Номер телефон" : "Email адрес"}
+                placeholder={method === "phone" ? t("auth.phonePlaceholder") : t("auth.emailPlaceholder")}
                 type={method === "phone" ? "tel" : "email"}
                 inputMode={method === "phone" ? "numeric" : undefined}
                 value={method === "phone" ? loginPhone : loginEmail}
@@ -210,7 +216,7 @@ export default function LoginPage() {
               />
               <InputField
                 icon={Lock1}
-                placeholder="Введите пароль"
+                placeholder={t("auth.passwordPlaceholder")}
                 type={showPassword ? "text" : "password"}
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
@@ -239,7 +245,7 @@ export default function LoginPage() {
                   onClick={() => navigate("/forgot-password")}
                   className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline"
                 >
-                  Забыли пароль?
+                  {t("auth.forgotPassword")}
                 </button>
               </div>
 
@@ -254,28 +260,28 @@ export default function LoginPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                     </svg>
-                    Входим...
+                    {t("auth.loggingIn")}
                   </>
                 ) : (
-                  "Войти"
+                  t("auth.loginButton")
                 )}
               </button>
 
               <div className="relative flex items-center justify-center my-1">
                 <div className="absolute inset-x-0 h-px bg-ink-200 dark:bg-ink-700" />
-                <span className="relative bg-white dark:bg-[#0D0D0D] px-3 text-xs text-ink-400">или</span>
+                <span className="relative bg-white dark:bg-[#0D0D0D] px-3 text-xs text-ink-400">{t("auth.or")}</span>
               </div>
 
               <button
                 type="button"
                 className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 font-semibold py-3.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors"
               >
-                Войти через SKLAD ERP
+                {t("auth.loginViaErp")}
               </button>
               <p className="text-center text-[11px] text-ink-400 mt-1 sm:hidden">
-                Нет учетной записи?{" "}
+                {t("auth.noAccount")}{" "}
                 <button type="button" onClick={() => setMode("register")} className="font-medium text-black dark:text-white">
-                  Регистрация
+                  {t("auth.goToRegister")}
                 </button>
               </p>
             </motion.form>
@@ -290,26 +296,26 @@ export default function LoginPage() {
               className="flex flex-col gap-4"
             >
               <div className="grid grid-cols-2 gap-3 sm:gap-2.5 mb-6 sm:mb-10">
-                <RoleButton label="Покупатель" sub="Ищу товары" active={role === "buyer"} onClick={() => setRole("buyer")} />
-                <RoleButton label="Продавец" sub="Продаю товары" active={role === "seller"} onClick={() => setRole("seller")} />
+                <RoleButton label={t("auth.roleBuyer")} sub={t("auth.roleBuyerSub")} active={role === "buyer"} onClick={() => setRole("buyer")} />
+                <RoleButton label={t("auth.roleSeller")} sub={t("auth.roleSellerSub")} active={role === "seller"} onClick={() => setRole("seller")} />
               </div>
               <InputField
                 icon={Profile}
-                placeholder="Имя"
+                placeholder={t("auth.firstNamePlaceholder")}
                 value={regName}
                 onChange={(e) => setRegName(e.target.value)}
                 required
               />
               <InputField
                 icon={User}
-                placeholder="Фамилия"
+                placeholder={t("auth.lastNamePlaceholder")}
                 value={regCompany}
                 onChange={(e) => setRegCompany(e.target.value)}
                 required
               />
               <InputField
                 icon={Sms}
-                placeholder="Номер телефона или Email адрес"
+                placeholder={t("auth.phoneOrEmailPlaceholder")}
                 type="text"
                 inputMode="email"
                 value={regEmail}
@@ -318,7 +324,7 @@ export default function LoginPage() {
               />
               <InputField
                 icon={Lock1}
-                placeholder="Введите пароль"
+                placeholder={t("auth.passwordPlaceholder")}
                 type={showPassword ? "text" : "password"}
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
@@ -342,9 +348,9 @@ export default function LoginPage() {
               )}
 
               <p className="text-[12px] text-center sm:text-start sm:text-[16px] my-6 text-ink-400 leading-snug">
-                Регистрируясь, вы соглашаетесь с{" "}
-                <span className="text-brand-600 dark:text-brand-400 font-medium">условиями использования</span> и{" "}
-                <span className="text-brand-600 dark:text-brand-400 font-medium">политикой конфиденциальности</span>
+                {t("auth.agreementText")}{" "}
+                <span className="text-brand-600 dark:text-brand-400 font-medium">{t("auth.termsOfUse")}</span> {t("auth.and")}{" "}
+                <span className="text-brand-600 dark:text-brand-400 font-medium">{t("auth.privacyPolicy")}</span>
               </p>
 
               <button
@@ -358,16 +364,16 @@ export default function LoginPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                     </svg>
-                    Регистрируем...
+                    {t("auth.registering")}
                   </>
                 ) : (
-                  "Регистрация"
+                  t("auth.registerButton")
                 )}
               </button>
               <p className="text-center text-[11px] text-ink-400 mt-1 sm:hidden">
-                Уже есть учетная запись?{" "}
+                {t("auth.haveAccount")}{" "}
                 <button type="button" onClick={() => setMode("login")} className="font-medium text-black dark:text-white">
-                  Login
+                  {t("auth.goToLogin")}
                 </button>
               </p>
             </motion.form>

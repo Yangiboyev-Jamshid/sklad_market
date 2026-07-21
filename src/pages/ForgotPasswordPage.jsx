@@ -1,12 +1,15 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Lock1, Eye, EyeSlash, User, Message, Sun1, Moon } from "iconsax-reactjs";
 import { useTheme } from "../context/ThemeContext";
 import { resetPassword, confirmResetPassword } from "../api/api";
 import logo from "../assets/logo.png";
+import LanguageSwitcher from "../components/layout/LanguageSwitcher";
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [step, setStep] = useState("request"); 
   const [username, setUsername] = useState("");
   const [code, setCode] = useState("");
@@ -45,7 +48,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     try {
       const res = await confirmResetPassword({ username, confirmCode: code, newPassword });
-      setSuccessMsg(res?.message || "Пароль успешно изменен!");
+      setSuccessMsg(res?.message || t("auth.defaultResetSuccess"));
       setStep("done");
     } catch (err) {
       setError(err.message);
@@ -57,13 +60,16 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen w-full bg-surface dark:bg-[#121212] flex flex-col items-center justify-center px-4 py-8 sm:py-10 transition-colors relative">
-      <button
-        onClick={toggleTheme}
-        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#0D0D0D] flex items-center justify-center text-ink-600 dark:text-amber-300 shadow-card hover:scale-105 transition-transform"
-        aria-label="Переключить тему"
-      >
-        {theme === "dark" ? <Sun1 size={18} variant="Bold" /> : <Moon size={18} variant="Bold" />}
-      </button>
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-2">
+        <LanguageSwitcher alwaysVisible />
+        <button
+          onClick={toggleTheme}
+          className="w-10 h-10 rounded-full bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#0D0D0D] flex items-center justify-center text-ink-600 dark:text-amber-300 shadow-card hover:scale-105 transition-transform"
+          aria-label={t("auth.toggleTheme")}
+        >
+          {theme === "dark" ? <Sun1 size={18} variant="Bold" /> : <Moon size={18} variant="Bold" />}
+        </button>
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -90,17 +96,17 @@ export default function ForgotPasswordPage() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M5 12l7-7M5 12l7 7" />
           </svg>
-          Вернуться на страницу входа
+          {t("auth.backToLogin")}
         </button>
 
         <h2 className="text-lg font-semibold text-ink-900 dark:text-white mb-1">
-          Восстановление пароля
+          {t("auth.restorePasswordTitle")}
         </h2>
         <p className="text-sm text-ink-400 mb-6">
           {step === "request"
-            ? "Введите имя пользователя — вам будет отправлен код подтверждения."
+            ? t("auth.restoreRequestDesc")
             : step === "confirm"
-            ? "Введите код и новый пароль."
+            ? t("auth.restoreConfirmDesc")
             : ""}
         </p>
 
@@ -118,33 +124,33 @@ export default function ForgotPasswordPage() {
               onClick={() => navigate("/login")}
               className="w-full bg-brand-600 dark:bg-[#C4C4C4] dark:text-[#0D0D0D] hover:bg-brand-700 text-white font-semibold py-3.5 rounded-xl transition-colors"
             >
-              Войти
+              {t("auth.loginButton")}
             </button>
           </motion.div>
         ) : step === "request" ? (
           <form onSubmit={handleRequest} className="flex flex-col gap-4">
             <InputField
               icon={User}
-              placeholder="Имя пользователя"
+              placeholder={t("auth.usernamePlaceholder")}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
             />
             {error && <ErrorMsg>{error}</ErrorMsg>}
-            <SubmitButton loading={loading} label="Отправить код" loadingLabel="Отправка..." />
+            <SubmitButton loading={loading} label={t("auth.sendCode")} loadingLabel={t("auth.sending")} />
           </form>
         ) : (
           <form onSubmit={handleConfirm} className="flex flex-col gap-4">
             <InputField
               icon={Message}
-              placeholder="Код подтверждения"
+              placeholder={t("auth.confirmationCodePlaceholder")}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               required
             />
             <InputField
               icon={Lock1}
-              placeholder="Новый пароль"
+              placeholder={t("auth.newPasswordPlaceholder")}
               type={showPassword ? "text" : "password"}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
@@ -156,13 +162,13 @@ export default function ForgotPasswordPage() {
               }
             />
             {error && <ErrorMsg>{error}</ErrorMsg>}
-            <SubmitButton loading={loading} label="Сохранить пароль" loadingLabel="Сохранение..." />
+            <SubmitButton loading={loading} label={t("auth.savePassword")} loadingLabel={t("auth.saving")} />
             <button
               type="button"
               onClick={() => { setStep("request"); setError(""); }}
               className="text-xs text-center text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 transition-colors"
             >
-              Отправить код повторно
+              {t("auth.resendCode")}
             </button>
           </form>
         )}

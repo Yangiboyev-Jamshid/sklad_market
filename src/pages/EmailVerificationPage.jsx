@@ -1,16 +1,19 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Sun1, Moon, TickCircle } from "iconsax-reactjs";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { verifyAccount, registerUser, login as apiLogin } from "../api/api";
 import logo from "../assets/logo.png";
+import LanguageSwitcher from "../components/layout/LanguageSwitcher";
 
 const CODE_LENGTH = 4;
 const RESEND_SECONDS = 60;
 
 export default function EmailVerificationPage() {
+  const { t } = useTranslation();
   const location = useLocation();
   const email = location.state?.username || "";
   const password = location.state?.password || "";
@@ -49,7 +52,7 @@ export default function EmailVerificationPage() {
   const handleResend = async () => {
     if (resending || secondsLeft > 0) return;
     if (!email || !password || !firstName || !lastName) {
-      setError("Не удалось определить данные регистрации. Пройдите регистрацию заново.");
+      setError(t("auth.missingRegistrationData"));
       return;
     }
     setError("");
@@ -75,7 +78,7 @@ export default function EmailVerificationPage() {
   const handleVerify = async (fullCode) => {
     if (submittingRef.current || fullCode.length !== CODE_LENGTH) return;
     if (!email) {
-      setError("Не удалось определить email. Пройдите регистрацию заново.");
+      setError(t("auth.missingEmail"));
       return;
     }
     setError("");
@@ -95,7 +98,7 @@ export default function EmailVerificationPage() {
         }
       }
 
-      setMessage(res?.message || "Аккаунт успешно подтверждён!");
+      setMessage(res?.message || t("auth.defaultVerifySuccess"));
       setDone(true);
     } catch (err) {
       setError(err.message);
@@ -152,13 +155,16 @@ export default function EmailVerificationPage() {
 
   return (
     <div className="min-h-screen w-full bg-surface dark:bg-[#121212] flex flex-col items-center justify-center px-4 py-8 sm:py-10 transition-colors relative">
-      <button
-        onClick={toggleTheme}
-        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#0D0D0D] flex items-center justify-center text-ink-600 dark:text-amber-300 shadow-card hover:scale-105 transition-transform"
-        aria-label="Переключить тему"
-      >
-        {theme === "dark" ? <Sun1 size={18} variant="Bold" /> : <Moon size={18} variant="Bold" />}
-      </button>
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-2">
+        <LanguageSwitcher alwaysVisible />
+        <button
+          onClick={toggleTheme}
+          className="w-10 h-10 rounded-full bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#0D0D0D] flex items-center justify-center text-ink-600 dark:text-amber-300 shadow-card hover:scale-105 transition-transform"
+          aria-label={t("auth.toggleTheme")}
+        >
+          {theme === "dark" ? <Sun1 size={18} variant="Bold" /> : <Moon size={18} variant="Bold" />}
+        </button>
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -188,12 +194,12 @@ export default function EmailVerificationPage() {
         {!done ? (
           <>
             <h2 className="text-lg text-center font-semibold text-ink-900 dark:text-white mb-1 text-center">
-              Подтверждение Email
+              {t("auth.emailVerificationTitle")}
             </h2>
             <p className="text-sm text-center text-ink-400 mb-8 text-center leading-relaxed">
               {email
-                ? <>Мы отправили 4-значный код на <span className="font-medium text-ink-600 dark:text-ink-300">{email}</span></>
-                : "Введите 4-значный код подтверждения, отправленный на ваш email"}
+                ? <>{t("auth.emailVerificationSentTo")} <span className="font-medium text-ink-600 dark:text-ink-300">{email}</span></>
+                : t("auth.emailVerificationSentGeneric")}
             </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -233,7 +239,7 @@ export default function EmailVerificationPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                   </svg>
-                  Проверяем код...
+                  {t("auth.checkingCode")}
                 </div>
               )}
             </form>
@@ -241,7 +247,7 @@ export default function EmailVerificationPage() {
             <div className="mt-6 flex flex-col items-center gap-3">
               {secondsLeft > 0 ? (
                 <p className="text-xs text-ink-400">
-                  Отправить код повторно через{" "}
+                  {t("auth.resendCodeIn")}{" "}
                   <span className="font-semibold text-ink-600 dark:text-ink-300">
                     {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
                   </span>
@@ -253,7 +259,7 @@ export default function EmailVerificationPage() {
                   disabled={resending}
                   className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors disabled:opacity-50"
                 >
-                  {resending ? "Отправляем..." : "Отправить код повторно"}
+                  {resending ? t("auth.resending") : t("auth.resendCode")}
                 </button>
               )}
 
@@ -262,7 +268,7 @@ export default function EmailVerificationPage() {
                 onClick={() => navigate("/login")}
                 className="w-full text-center text-xs text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 transition-colors"
               >
-                Вернуться на страницу входа
+                {t("auth.backToLogin")}
               </button>
             </div>
           </>
@@ -276,7 +282,7 @@ export default function EmailVerificationPage() {
               <TickCircle size={30} variant="Bold" className="text-success-600 dark:text-success-400" />
             </div>
             <div>
-              <p className="font-semibold text-lg text-ink-900 dark:text-white mb-1">Готово!</p>
+              <p className="font-semibold text-lg text-ink-900 dark:text-white mb-1">{t("auth.done")}</p>
               <p className="text-sm text-ink-400 dark:text-ink-500">{message}</p>
             </div>
             <button
@@ -284,7 +290,7 @@ export default function EmailVerificationPage() {
               onClick={() => navigate("/login")}
               className="w-full bg-brand-600 dark:bg-[#C4C4C4] dark:text-[#0D0D0D] hover:bg-brand-700 text-white font-semibold py-3.5 rounded-xl transition-colors"
             >
-              Войти
+              {t("auth.loginButton")}
             </button>
           </motion.div>
         )}

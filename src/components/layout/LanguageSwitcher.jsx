@@ -9,7 +9,7 @@ const LANGUAGES = [
   { code: "en", label: "EN", name: "English" },
 ];
 
-export default function LanguageSwitcher({ variant = "header" }) {
+export default function LanguageSwitcher({ variant = "header", alwaysVisible = false }) {
   const { i18n, t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -70,7 +70,7 @@ export default function LanguageSwitcher({ variant = "header" }) {
   }
 
   return (
-    <div className="relative hidden sm:block" ref={ref}>
+    <div className={`relative ${alwaysVisible ? "block" : "hidden sm:block"}`} ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 h-9 sm:h-10 px-2.5 sm:px-3 rounded-full bg-ink-100 dark:bg-[#1C1C1C] text-ink-600 dark:text-ink-300 hover:bg-ink-200 dark:hover:bg-[#1E1E1E] transition-colors text-xs sm:text-sm font-semibold shrink-0"
