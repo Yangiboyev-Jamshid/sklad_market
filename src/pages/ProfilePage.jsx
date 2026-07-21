@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,8 @@ import {
   GlobalSearch,
   SecurityUser,
   ArrowDown2,
+  SearchNormal1,
+  Filter,
 } from "iconsax-reactjs";
 import ReportModal from "../components/modal/ReportModal";
 import CreateCompanyForm from "../components/company/CreateCompanyForm";
@@ -22,7 +24,7 @@ import MapView from "../components/ui/MapView";
 import PillToggle from "../components/ui/PillToggle";
 import RatingStars from "../components/ui/RatingStars";
 import { useAuth } from "../context/AuthContext";
-import { getCompanyBySlug, getMyCompany, getCompanyProducts, getCompanyReviews, createChat } from "../api/api";
+import { getCompanyBySlug, getMyCompany, getCompanyProducts, getCompanyReviews, createChat, getCategoryTree } from "../api/api";
 import ProductCard from "../components/ui/ProductCard";
 import { getPublicCompanyExtras } from "../utils/companyExtras";
 
@@ -36,6 +38,7 @@ function normalizeProduct(p, t) {
     company: p.companyId ? t("common.companyFallback", { id: p.companyId }) : "",
     image: p.images?.find((img) => img.is_primary)?.url ?? p.images?.[0]?.url ?? null,
     verified: p.status === "ACTIVE" || p.isPromoted,
+    categoryId: p.category?.id ?? p.categoryId ?? null,
   };
 }
 
@@ -69,6 +72,18 @@ export default function ProfilePage() {
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [logoFallback, setLogoFallback] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [productCategory, setProductCategory] = useState("all");
+
+  useEffect(() => {
+    getCategoryTree()
+      .then((data) => {
+        const all = [...(data ?? [])];
+        all.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+        setCategories(all.map((c) => ({ id: String(c.id), name: c.name })));
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (company?.logoUrl || !company?.id) return;
@@ -92,7 +107,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!company?.slug) return;
     setProductsLoading(true);
-    getCompanyProducts(company.slug, { page: 1, per_page: 30 })
+    getCompanyProducts(company.slug, { page: 1, per_page: 100 })
       .then((data) => {
         setProducts((data?.content ?? []).map((p) => normalizeProduct(p, t)));
         setProductsTotal(data?.totalElements ?? 0);
@@ -100,6 +115,11 @@ export default function ProfilePage() {
       .catch(() => setProducts([]))
       .finally(() => setProductsLoading(false));
   }, [company?.slug, t]);
+
+  const filteredProducts = useMemo(() => {
+    if (productCategory === "all") return products;
+    return products.filter((p) => String(p.categoryId) === productCategory);
+  }, [products, productCategory]);
 
   useEffect(() => {
     if (!company?.id) return;
@@ -361,6 +381,39 @@ export default function ProfilePage() {
                 <div className="p-4 sm:p-5">
                   {tab === "products" && (
                     <>
+                      {!productsLoading && products.length > 0 && categories.length > 0 && (
+                        <div className="flex items-center justify-end mb-4">
+                          <div
+                            className={`relative flex items-center gap-2 rounded-xl border pl-3.5 pr-9 py-2.5 transition-colors ${productCategory !== "all"
+                              ? "border-brand-200 dark:border-brand-500/30 bg-brand-50 dark:bg-brand-500/10"
+                              : "border-ink-300 dark:border-[#1C1C1C] bg-white dark:bg-[#0D0D0D] hover:border-ink-400 dark:hover:border-ink-600"
+                              }`}
+                          >
+                            <Filter
+                              size={16}
+                              variant="Linear"
+                              className={`shrink-0 ${productCategory !== "all" ? "text-brand-600 dark:text-brand-400" : "text-ink-400"}`}
+                            />
+                            <select
+                              value={productCategory}
+                              onChange={(e) => setProductCategory(e.target.value)}
+                              className={`appearance-none bg-transparent outline-none text-sm font-medium cursor-pointer max-w-[45vw] sm:max-w-none truncate ${productCategory !== "all" ? "text-brand-600 dark:text-brand-400" : "text-ink-700 dark:text-ink-200"
+                                }`}
+                            >
+                              <option value="all">{t("catalogPage.allCategories")}</option>
+                              {categories.map((c) => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                            </select>
+                            <ArrowDown2
+                              size={14}
+                              variant="Linear"
+                              className={`pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 ${productCategory !== "all" ? "text-brand-500" : "text-ink-400"}`}
+                            />
+                          </div>
+                        </div>
+                      )}
+
                       {productsLoading ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                           {Array.from({ length: 6 }).map((_, i) => (
@@ -372,9 +425,14 @@ export default function ProfilePage() {
                           <Buildings2 size={36} variant="Linear" />
                           <p className="text-sm">{t("profile.noProducts")}</p>
                         </div>
+                      ) : filteredProducts.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 gap-2 text-ink-400 dark:text-ink-500">
+                          <SearchNormal1 size={36} variant="Linear" />
+                          <p className="text-sm">{t("profile.noProductsFiltered")}</p>
+                        </div>
                       ) : (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-                          {products.map((p, i) => (
+                          {filteredProducts.map((p, i) => (
                             <ProductCard key={p.id} product={p} index={i} />
                           ))}
                         </div>
