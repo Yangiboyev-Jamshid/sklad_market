@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Export, TickCircle, Edit2, CloseCircle, ShieldTick, Location } from "iconsax-reactjs";
+import { Export, TickCircle, Edit2, ShieldTick, Location } from "iconsax-reactjs";
 import {
   getMyCompany,
   updateCompany,
@@ -58,7 +58,6 @@ export default function SettingsTab() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const [editing, setEditing] = useState({});
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileDraft, setProfileDraft] = useState({});
   const [logoUploading, setLogoUploading] = useState(false);
@@ -79,10 +78,6 @@ export default function SettingsTab() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
-
-  const startEdit = (key, value) => {
-    setEditing((prev) => ({ ...prev, [key]: value ?? "" }));
-  };
 
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -157,53 +152,6 @@ export default function SettingsTab() {
       setError(err.message);
     } finally {
       setVerifying(false);
-    }
-  };
-
-  const cancelEdit = (key) => {
-    setEditing((prev) => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
-  };
-
-  const saveField = async (key) => {
-    if (!company) return;
-    setSaving(true);
-    setError("");
-    try {
-      const { merged, missing } = await resolveRequiredCompanyFields(company, { [key]: editing[key] });
-      if (missing.length > 0) {
-        setError(
-          t("seller.cannotSaveMissingFields", { fields: missing.map((k) => t(REQUIRED_COMPANY_FIELD_KEYS[k])).join(", ") })
-        );
-        return;
-      }
-      const updated = await updateCompany(company.id, {
-        name: merged.name,
-        shortDescription: merged.shortDescription,
-        description: merged.description,
-        stir: merged.stir,
-        phonePrimary: merged.phonePrimary,
-        phoneSecondary: merged.phoneSecondary,
-        website: merged.website,
-        regionId: merged.regionId,
-        districtId: merged.districtId,
-        address: merged.address,
-        lat: merged.lat,
-        lng: merged.lng,
-        companyCreatedDate: merged.companyCreatedDate,
-        [key]: editing[key],
-      });
-      setCompany(updated);
-      cancelEdit(key);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 2500);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -420,30 +368,30 @@ export default function SettingsTab() {
             )}
           </div>
         </div>
-        <div className="sm:hidden flex flex-col divide-y divide-[#F0F0F0] dark:divide-[#1C1C1C]">
+        <div className="flex flex-col divide-y divide-[#F0F0F0] dark:divide-[#1C1C1C]">
           {fields.map((f) => (
             <div key={f.key} className="grid grid-cols-2 sm:flex items-center justify-between gap-3 py-3.5">
-              <p className="text-sm text-ink-400 dark:text-ink-500 shrink-0">{f.label}</p>
+              <p className="text-sm sm:text-xs text-ink-400 dark:text-ink-500 shrink-0 sm:w-40">{f.label}</p>
               {editingProfile ? (
                 <input
                   value={profileDraft[f.key] ?? ""}
                   onChange={(e) => setProfileDraft((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                  className="bg-ink-50 dark:bg-[#171717] border border-brand-400 dark:border-brand-500 rounded-xl px-3 py-1.5 text-sm outline-none dark:text-white"
+                  className="sm:flex-1 bg-ink-50 dark:bg-[#171717] border border-brand-400 dark:border-brand-500 rounded-xl px-3 py-1.5 text-sm outline-none dark:text-white"
                 />
               ) : (
-                <p className="text-sm font-medium text-ink-900 dark:text-white truncate text-left">{company?.[f.key] || "—"}</p>
+                <p className="sm:flex-1 text-sm font-medium text-ink-900 dark:text-white truncate text-left">{company?.[f.key] || "—"}</p>
               )}
             </div>
           ))}
         </div>
 
-        <div className="sm:hidden mt-4">
+        <div className="mt-4">
           {editingProfile ? (
             <div className="flex items-center gap-2">
               <button
                 onClick={saveProfile}
                 disabled={saving}
-                className="flex-1 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
+                className="flex-1 sm:flex-none sm:px-6 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
               >
                 {saving ? t("seller.saving") : t("seller.save")}
               </button>
@@ -457,58 +405,11 @@ export default function SettingsTab() {
           ) : (
             <button
               onClick={startEditProfile}
-              className="w-full flex items-center justify-center gap-2 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 text-sm font-medium py-3 rounded-xl text-ink-700 dark:text-ink-200 transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 text-sm font-medium py-3 px-6 rounded-xl text-ink-700 dark:text-ink-200 transition-colors"
             >
               <Edit2 size={16} /> {t("seller.edit")}
             </button>
           )}
-        </div>
-
-        <div className="hidden sm:flex sm:flex-col">
-          {fields.map((f) => {
-            const isEditing = f.key in editing;
-            return (
-              <div key={f.key} className="flex items-center justify-between gap-3 py-3.5">
-                <p className="text-xs text-ink-400 dark:text-ink-500 shrink-0 w-40">{f.label}</p>
-
-                {isEditing ? (
-                  <input
-                    autoFocus
-                    value={editing[f.key]}
-                    onChange={(e) => setEditing((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                    onKeyDown={(e) => { if (e.key === "Enter") saveField(f.key); if (e.key === "Escape") cancelEdit(f.key); }}
-                    className="flex-1 bg-ink-50 dark:bg-[#171717] border border-brand-400 dark:border-brand-500 rounded-xl px-3 py-1.5 text-sm outline-none dark:text-white text-start"
-                  />
-                ) : (
-                  <p className="flex-1 text-sm font-medium text-ink-900 dark:text-white truncate text-start">{company?.[f.key] || "—"}</p>
-                )}
-
-                <div className="flex items-center gap-1 shrink-0 justify-end w-28">
-                  {isEditing ? (
-                    <>
-                      <button
-                        onClick={() => saveField(f.key)}
-                        disabled={saving}
-                        className="text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 px-3 py-1.5 rounded-lg transition-colors"
-                      >
-                        {saving ? "..." : t("seller.save")}
-                      </button>
-                      <button onClick={() => cancelEdit(f.key)} className="text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 p-1">
-                        <CloseCircle size={18} />
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => startEdit(f.key, company?.[f.key] ?? "")}
-                      className="flex items-center gap-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline"
-                    >
-                      {t("seller.changeField")}
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
         </div>
 
         <div className="pt-4 mt-2 border-t border-[#F0F0F0] dark:border-[#1C1C1C]">
