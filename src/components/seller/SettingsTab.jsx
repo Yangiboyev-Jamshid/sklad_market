@@ -204,6 +204,7 @@ export default function SettingsTab() {
     setProfileDraft({
       name: company?.name ?? "",
       shortDescription: company?.shortDescription ?? "",
+      stir: company?.stir ?? "",
       phonePrimary: company?.phonePrimary ?? "",
       phoneSecondary: company?.phoneSecondary ?? "",
       website: company?.website ?? "",
@@ -287,6 +288,7 @@ export default function SettingsTab() {
   const fields = [
     { key: "name", label: t("seller.fieldCompanyName") },
     { key: "shortDescription", label: t("seller.fieldIndustry") },
+    { key: "stir", label: t("profile.stir") },
     { key: "phonePrimary", label: t("seller.fieldPhone") },
     { key: "phoneSecondary", label: t("seller.fieldEmail") },
     { key: "website", label: t("seller.fieldWebsite") },

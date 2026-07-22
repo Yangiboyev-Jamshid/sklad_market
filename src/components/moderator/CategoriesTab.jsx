@@ -1,14 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Add, CloudAdd, Edit2, Trash } from "iconsax-reactjs";
+import { Add, CloudAdd, Edit2, Trash, Tag } from "iconsax-reactjs";
 import {
   getAdminCategories,
   getCategoryTree,
   createCategory,
   updateCategory,
   deleteCategory,
+  addCategoryAttribute,
 } from "../../api/api";
+
+const ATTRIBUTE_DATA_TYPES = ["TEXT", "NUMBER", "BOOLEAN", "SELECT"];
 
 const HEADER_KEYS = ["moderator.colIcon", "moderator.colName", "moderator.colStatus", "moderator.colActions"];
 
@@ -83,7 +86,7 @@ function IconButton({ onClick, label, danger, children }) {
         }`}
     >
       {children}
-      <span className="sm:hidden flex">{danger ? "Удалить" : "Редоктировать"}</span>
+      <span className="sm:hidden flex">{label}</span>
     </button>
   );
 }
@@ -95,6 +98,7 @@ export default function CategoriesTab() {
   const [actionId, setActionId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [attrCategory, setAttrCategory] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -117,6 +121,7 @@ export default function CategoriesTab() {
 
   const openCreate = () => { setEditing(null); setModalOpen(true); };
   const openEdit = (c) => { setEditing(c); setModalOpen(true); };
+  const openAddAttribute = (c) => setAttrCategory(c);
 
   const handleDelete = async (c) => {
     if (!window.confirm(t("moderator.deleteCategoryConfirm"))) return;
@@ -176,6 +181,9 @@ export default function CategoriesTab() {
                   <StatusBadge isActive={c.isActive} />
                 </div>
                 <div className="flex flex-col sm:flex-row items-center justify-end gap-2 border-t border-[#F0F0F0] dark:border-[#1C1C1C] pt-2">
+                  <IconButton onClick={() => openAddAttribute(c)} label={t("moderator.addAttribute")}>
+                    <Tag size={20} />
+                  </IconButton>
                   <IconButton onClick={() => openEdit(c)} label={t("moderator.editCategory")}>
                     <Edit2 size={20} />
                   </IconButton>
@@ -209,6 +217,9 @@ export default function CategoriesTab() {
                     <StatusBadge isActive={c.isActive} />
                   </div>
                   <div className="px-5 flex items-center gap-1">
+                    <IconButton onClick={() => openAddAttribute(c)} label={t("moderator.addAttribute")}>
+                      <Tag size={20} />
+                    </IconButton>
                     <IconButton onClick={() => openEdit(c)} label={t("moderator.editCategory")}>
                       <Edit2 size={20} />
                     </IconButton>
@@ -229,6 +240,12 @@ export default function CategoriesTab() {
         category={editing}
         parentOptions={topLevelOptions}
         onSaved={handleSaved}
+      />
+
+      <AttributeFormModal
+        open={!!attrCategory}
+        onClose={() => setAttrCategory(null)}
+        category={attrCategory}
       />
     </div>
   );
@@ -411,6 +428,170 @@ function CategoryFormModal({ open, onClose, category, parentOptions, onSaved }) 
                 className="bg-brand-600 text-white font-semibold py-3.5 rounded-xl hover:bg-brand-700 disabled:opacity-50 transition-colors"
               >
                 {loading ? "..." : isEdit ? t("moderator.save") : t("moderator.create")}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+const EMPTY_ATTRIBUTE_FORM = {
+  code: "",
+  label: "",
+  dataType: "TEXT",
+  isRequired: false,
+  isFilterable: false,
+  optionsJson: "",
+  sortOrder: "0",
+};
+
+// Only "add" — the backend has add/update/delete for category attributes but
+// no GET to list a category's existing ones, so there's nothing to show or
+// pick from to edit/delete yet.
+function AttributeFormModal({ open, onClose, category }) {
+  const { t } = useTranslation();
+  const [form, setForm] = useState(EMPTY_ATTRIBUTE_FORM);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [lastAdded, setLastAdded] = useState(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(EMPTY_ATTRIBUTE_FORM);
+    setError("");
+    setLastAdded(null);
+  }, [open, category?.id]);
+
+  const setField = (key) => (e) => {
+    const value = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const submit = async () => {
+    setError("");
+    if (!form.code.trim() || !form.label.trim()) {
+      setError(t("moderator.enterAttributeRequiredFields"));
+      return;
+    }
+    setLoading(true);
+    try {
+      const saved = await addCategoryAttribute(category.id, {
+        code: form.code.trim(),
+        label: form.label.trim(),
+        dataType: form.dataType,
+        isRequired: form.isRequired,
+        isFilterable: form.isFilterable,
+        optionsJson: form.dataType === "SELECT" ? form.optionsJson.trim() || undefined : undefined,
+        sortOrder: Number(form.sortOrder) || 0,
+      });
+      setLastAdded(saved ?? { label: form.label.trim() });
+      setForm(EMPTY_ATTRIBUTE_FORM);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-ink-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 40, scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 350, damping: 30 }}
+            onClick={(e) => e.stopPropagation()}
+            style={{ scrollbarWidth: "none" }}
+            className="bg-white dark:bg-[#0D0D0D] rounded-t-xl sm:rounded-3xl w-full max-w-[35rem] max-h-[92vh] sm:max-h-[90vh] overflow-y-auto p-5 sm:p-7 relative transition-colors"
+          >
+            <h2 className="text-lg sm:text-xl text-center font-display font-bold text-ink-900 dark:text-white mb-1">
+              {t("moderator.addAttribute")}
+            </h2>
+            <p className="text-sm text-center text-ink-400 dark:text-ink-500 mb-5 truncate">
+              {category?.nameUz}
+            </p>
+
+            {lastAdded && (
+              <p className="text-sm text-success-600 dark:text-success-400 bg-success-50 dark:bg-success-500/10 rounded-xl px-4 py-2.5 mb-4">
+                {t("moderator.attributeAddedSuccess", { label: lastAdded.label })}
+              </p>
+            )}
+
+            <Field label={t("moderator.attributeCode")} value={form.code} onChange={setField("code")} placeholder="color" />
+            <Field label={t("moderator.attributeLabel")} value={form.label} onChange={setField("label")} placeholder={t("moderator.attributeLabelPlaceholder")} />
+
+            <div className="mb-4">
+              <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">{t("moderator.attributeDataType")}</label>
+              <select
+                value={form.dataType}
+                onChange={setField("dataType")}
+                className="w-full bg-ink-50 dark:bg-[#171717] rounded-xl px-4 py-3 text-sm outline-none dark:text-white"
+              >
+                {ATTRIBUTE_DATA_TYPES.map((type) => (
+                  <option key={type} value={type}>{t(`moderator.attributeDataType${type}`)}</option>
+                ))}
+              </select>
+            </div>
+
+            {form.dataType === "SELECT" && (
+              <Field
+                label={t("moderator.attributeOptionsJson")}
+                value={form.optionsJson}
+                onChange={setField("optionsJson")}
+                placeholder={'["Qizil", "Ko\'k", "Yashil"]'}
+              />
+            )}
+
+            <Field
+              label={t("moderator.attributeSortOrder")}
+              type="number"
+              value={form.sortOrder}
+              onChange={setField("sortOrder")}
+            />
+
+            <div className="flex flex-col gap-2 mb-4">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" checked={form.isRequired} onChange={setField("isRequired")} className="w-4 h-4 accent-brand-600" />
+                <span className="text-sm text-ink-700 dark:text-ink-200">{t("moderator.attributeRequired")}</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" checked={form.isFilterable} onChange={setField("isFilterable")} className="w-4 h-4 accent-brand-600" />
+                <span className="text-sm text-ink-700 dark:text-ink-200">{t("moderator.attributeFilterable")}</span>
+              </label>
+            </div>
+
+            {error && (
+              <p className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-2.5 mb-4">
+                {error}
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={onClose}
+                className="bg-ink-100 dark:bg-[#171717] text-ink-600 dark:text-ink-300 font-medium py-3.5 rounded-xl hover:bg-ink-200 dark:hover:bg-[#1E1E1E] disabled:opacity-50 transition-colors"
+              >
+                {t("moderator.close")}
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={submit}
+                className="bg-brand-600 text-white font-semibold py-3.5 rounded-xl hover:bg-brand-700 disabled:opacity-50 transition-colors"
+              >
+                {loading ? "..." : t("moderator.create")}
               </button>
             </div>
           </motion.div>

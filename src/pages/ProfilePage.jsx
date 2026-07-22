@@ -25,6 +25,7 @@ import PillToggle from "../components/ui/PillToggle";
 import RatingStars from "../components/ui/RatingStars";
 import { useAuth } from "../context/AuthContext";
 import { getCompanyBySlug, getMyCompany, getCompanyProducts, getCompanyReviews, createChat, getCategoryTree } from "../api/api";
+import { CHAT_ENABLED } from "../config/chatConfig";
 import ProductCard from "../components/ui/ProductCard";
 import { getPublicCompanyExtras } from "../utils/companyExtras";
 
@@ -131,6 +132,7 @@ export default function ProfilePage() {
   }, [company?.id]);
 
   const handleOpenChat = async () => {
+    if (!CHAT_ENABLED) { alert(t("chat.temporarilyUnavailable")); return; }
     if (!company?.id || chatSubmittingRef.current) return;
     chatSubmittingRef.current = true;
     setChatLoading(true);

@@ -1,10 +1,15 @@
 import axios from "axios";
+import i18n from "../i18n";
 
 const http = axios.create({ baseURL: "/api/v1" });
 
 http.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  // Localized fields (e.g. category nameUz/nameRu/nameEn) are picked server-side
+  // from this header — our i18next codes (ru/uz/en) match its UZ/EN/RU enum once
+  // uppercased. Without it, the backend defaults to UZ regardless of UI language.
+  config.headers["Accept-Language"] = (i18n.language || "ru").toUpperCase();
   return config;
 });
 

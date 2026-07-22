@@ -109,8 +109,12 @@ export default function BannersTab() {
     if (!window.confirm(t("moderator.deleteBannerConfirm"))) return;
     setActionId(b.id);
     try {
-      const ok = await deleteBanner(b.id);
-      if (!ok) { alert(t("moderator.deleteBannerFailed")); return; }
+      // deleteBanner unwraps the {success,data} envelope — a DELETE response
+      // carries no payload, so `data` is always empty/null on success. Treating
+      // that as failure (as this used to) made every successful delete look
+      // like it failed. unwrap() already throws on an actual API error, so a
+      // resolved call here means the delete succeeded.
+      await deleteBanner(b.id);
       setBanners((prev) => prev.filter((x) => x.id !== b.id));
       setEnriched((prev) => {
         if (!(b.id in prev)) return prev;
@@ -288,9 +292,15 @@ function BannerFormModal({ open, onClose, banner, defaultPlacement, onSaved }) {
 
     setLoading(true);
     try {
+      // The update endpoint shares its request DTO with create (same as
+      // updateCompany requiring companyCreatedDate) — omitting placementCode/
+      // startsAt here 400s server-side even though the edit form doesn't
+      // expose them, so send the values already tracked in state.
       const saved = isEdit
         ? await updateBanner(banner.id, {
+          placementCode,
           targetUrl: targetUrl.trim(),
+          startsAt: new Date(startsAt).toISOString(),
           endsAt: new Date(endsAt).toISOString(),
           isActive,
         })

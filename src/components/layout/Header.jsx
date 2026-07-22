@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { getChatUnreadCount, getNotifications, getNotificationsUnreadCount, markNotificationsRead } from "../../api/api";
+import { onChatEvent } from "../../api/chatSocket";
+import { CHAT_ENABLED } from "../../config/chatConfig";
 import {
   Notification,
   Heart,
@@ -117,12 +119,23 @@ export default function Header() {
   useEffect(() => {
     if (!user) return;
     const fetchCounts = () => {
-      getChatUnreadCount().then(setChatUnread).catch(() => {});
+      // Chat backend integration is temporarily disabled (see config/chatConfig.js)
+      // — skip the unread-count call so no chat request goes out.
+      if (CHAT_ENABLED) getChatUnreadCount().then(setChatUnread).catch(() => {});
       getNotificationsUnreadCount().then(setNotifUnread).catch(() => {});
     };
     fetchCounts();
     const id = setInterval(fetchCounts, 30000);
-    return () => clearInterval(id);
+    if (!CHAT_ENABLED) return () => clearInterval(id);
+    // 30s poll is just a fallback — a new_message push means the count is
+    // stale right now, so refetch immediately instead of waiting for the tick.
+    const unsubscribe = onChatEvent("new_message", () => {
+      getChatUnreadCount().then(setChatUnread).catch(() => {});
+    });
+    return () => {
+      clearInterval(id);
+      unsubscribe();
+    };
   }, [user]);
 
   const loadNotifications = useCallback(async () => {

@@ -7,6 +7,7 @@ import ProductThumb from "../components/ui/ProductThumb";
 import { useCart } from "../context/CartContext";
 import { Link, useNavigate } from "react-router-dom";
 import { checkoutRfq, createChat } from "../api/api";
+import { CHAT_ENABLED } from "../config/chatConfig";
 
 export default function CartPage() {
   const { t } = useTranslation();
@@ -24,6 +25,7 @@ export default function CartPage() {
   const [contactingSeller, setContactingSeller] = useState(false);
 
   const handleContactSeller = async () => {
+    if (!CHAT_ENABLED) { alert(t("chat.temporarilyUnavailable")); return; }
     const companyId = items[0]?.companyId;
     if (!companyId) return;
     setContactingSeller(true);

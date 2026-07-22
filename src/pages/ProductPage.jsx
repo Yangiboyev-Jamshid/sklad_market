@@ -25,6 +25,7 @@ import AddToCartButton from "../components/ui/AddToCartButton";
 import ReportModal from "../components/modal/ReportModal";
 import { useCart } from "../context/CartContext";
 import { getProductBySlug, getAllProducts, getProductReviews, createChat } from "../api/api";
+import { CHAT_ENABLED } from "../config/chatConfig";
 
 const TABS = [
   { key: "description", labelKey: "product.tabDescription" },
@@ -77,6 +78,7 @@ export default function ProductPage() {
 
   const chatSubmittingRef = useRef(false);
   const handleOpenChat = async () => {
+    if (!CHAT_ENABLED) { alert(t("chat.temporarilyUnavailable")); return; }
     if (!product?.companyId || chatSubmittingRef.current) return;
     chatSubmittingRef.current = true;
     try {

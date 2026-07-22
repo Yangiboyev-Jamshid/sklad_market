@@ -3,10 +3,16 @@ import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { SearchNormal1, Call, DocumentText1, ArrowLeft2, More, Send, Trash, Paperclip2 } from "iconsax-reactjs";
 import { HiOutlineEmojiHappy } from "react-icons/hi";
-import { getChats, getChatMessages, sendChatMessage, deleteChat, uploadChatImage, uploadChatFile } from "../../api/api";
+import { getChats, getChatMessages, deleteChat, uploadChatImage } from "../../api/api";
+import { subscribeThread, sendChatSocketMessage, sendTyping, sendRead, onChatEvent } from "../../api/chatSocket";
 import { useAuth } from "../../context/AuthContext";
+import { CHAT_ENABLED } from "../../config/chatConfig";
 
 const PER_PAGE = 30;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const TYPING_THROTTLE_MS = 2500;
+const TYPING_EXPIRE_MS = 4000;
 
 function formatTime(iso) {
   if (!iso) return "";
@@ -19,6 +25,14 @@ function initials(name) {
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   if (parts.length === 1) return parts[0][0].toUpperCase();
   return "?";
+}
+
+function MessageStatus({ status }) {
+  if (status === "failed") return <span className="text-danger-500 text-[11px]">!</span>;
+  if (status === "read") return <span className="text-brand-400 text-[11px]">✓✓</span>;
+  if (status === "delivered") return <span className="text-ink-300 dark:text-ink-600 text-[11px]">✓✓</span>;
+  if (status === "sending") return null;
+  return <span className="text-ink-300 dark:text-ink-600 text-[11px]">✓</span>;
 }
 
 export default function ChatPanel() {
@@ -36,14 +50,26 @@ export default function ChatPanel() {
   const [mobileShowChat, setMobileShowChat] = useState(!!requestedThreadId);
   const [deletingId, setDeletingId] = useState(null);
   const [attaching, setAttaching] = useState(false);
+  const [otherTyping, setOtherTyping] = useState(false);
 
   const messagesEndRef = useRef(null);
   const attachInputRef = useRef(null);
-  const sendingRef = useRef(false);
+  const activeIdRef = useRef(activeId);
+  const lastTypingSentRef = useRef(0);
+  const typingTimeoutRef = useRef(null);
 
-  const active = threads.find((t) => t.thread_id === activeId);
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
+
+  const active = threads.find((th) => th.thread_id === activeId);
 
   const loadThreads = useCallback(async () => {
+    // Chat backend integration is temporarily disabled (see config/chatConfig.js).
+    if (!CHAT_ENABLED) {
+      setThreadsLoading(false);
+      return;
+    }
     try {
       const data = await getChats({ per_page: 50 });
       const items = data?.items ?? [];
@@ -61,22 +87,26 @@ export default function ChatPanel() {
   }, [loadThreads]);
 
   const loadMessages = useCallback(async (threadId) => {
-    if (!threadId) return;
+    if (!CHAT_ENABLED || !threadId) return;
     setMessagesLoading(true);
     try {
       const data = await getChatMessages(threadId, { per_page: PER_PAGE });
       const items = (data?.items ?? []).slice().reverse(); // oldest first
       setChatMessages(items);
+      const unreadIds = items.filter((m) => m.sender_id !== user?.id && m.status !== "read").map((m) => m.id);
+      if (unreadIds.length) sendRead(threadId, unreadIds);
     } catch {
       setChatMessages([]);
     } finally {
       setMessagesLoading(false);
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (activeId) {
       setChatMessages([]);
+      setOtherTyping(false);
+      subscribeThread(activeId);
       loadMessages(activeId);
     }
   }, [activeId, loadMessages]);
@@ -85,38 +115,108 @@ export default function ChatPanel() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
-  const sendMessage = async (body) => {
-    if (!activeId || !body?.trim() || sendingRef.current) return;
-    sendingRef.current = true;
+  // Live transport — everything below arrives over the chat WebSocket
+  // (see api/chatSocket.js), not REST.
+  useEffect(() => {
+    const offMessage = onChatEvent("new_message", ({ thread_id, message }) => {
+      if (!message) return;
+      const isMine = message.sender_id === user?.id;
 
+      if (thread_id === activeIdRef.current) {
+        setChatMessages((prev) => {
+          if (prev.some((m) => m.id === message.id)) return prev;
+          if (isMine) {
+            const pendingIdx = prev.findIndex((m) => m._optimistic && m.status !== "failed");
+            if (pendingIdx !== -1) {
+              const copy = prev.slice();
+              copy[pendingIdx] = message;
+              return copy;
+            }
+          }
+          return [...prev, message];
+        });
+        if (!isMine) sendRead(thread_id, [message.id]);
+        setOtherTyping(false);
+      }
+
+      setThreads((prev) => {
+        const idx = prev.findIndex((th) => th.thread_id === thread_id);
+        if (idx === -1) {
+          loadThreads();
+          return prev;
+        }
+        const copy = prev.slice();
+        const isActive = thread_id === activeIdRef.current;
+        copy[idx] = {
+          ...copy[idx],
+          last_message: message,
+          unread_count: isMine || isActive ? 0 : (copy[idx].unread_count ?? 0) + 1,
+        };
+        return copy;
+      });
+    });
+
+    const offRead = onChatEvent("read_receipt", ({ thread_id, message_ids }) => {
+      if (thread_id !== activeIdRef.current || !message_ids?.length) return;
+      setChatMessages((prev) => prev.map((m) => (message_ids.includes(m.id) ? { ...m, status: "read" } : m)));
+    });
+
+    const offTyping = onChatEvent("typing", ({ thread_id, user_id }) => {
+      if (thread_id !== activeIdRef.current || user_id === user?.id) return;
+      setOtherTyping(true);
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => setOtherTyping(false), TYPING_EXPIRE_MS);
+    });
+
+    const offError = onChatEvent("error", (data) => {
+      console.error("[chat] socket error", data);
+    });
+
+    return () => {
+      offMessage();
+      offRead();
+      offTyping();
+      offError();
+      clearTimeout(typingTimeoutRef.current);
+    };
+  }, [user?.id, loadThreads]);
+
+  const sendMessage = (body, attachmentKey, attachmentUrl) => {
+    if (!activeId || !body?.trim()) return;
+    const trimmed = body.trim();
     const optimisticId = `opt-${Date.now()}`;
     const optimistic = {
       id: optimisticId,
-      body: body.trim(),
+      body: trimmed,
+      attachment_url: attachmentUrl,
       thread_id: activeId,
       sender_id: user?.id,
       sender_type: "user",
       sent_at: new Date().toISOString(),
+      status: "sending",
       _optimistic: true,
     };
-
     setChatMessages((prev) => [...prev, optimistic]);
-    setInput("");
-    try {
-      const sent = await sendChatMessage(activeId, body.trim());
-      setChatMessages((prev) => prev.map((m) => (m.id === optimisticId ? (sent ?? { ...optimistic, _optimistic: false }) : m)));
-    } catch (err) {
-      // Real send failed — drop the fake bubble so it doesn't look delivered, and tell the user.
-      setChatMessages((prev) => prev.filter((m) => m.id !== optimisticId));
-      alert(err.message);
-    } finally {
-      sendingRef.current = false;
+    const ok = sendChatSocketMessage(activeId, trimmed, attachmentKey);
+    if (!ok) {
+      setChatMessages((prev) => prev.map((m) => (m.id === optimisticId ? { ...m, status: "failed" } : m)));
     }
   };
 
   const handleSend = () => {
     if (!input.trim()) return;
     sendMessage(input);
+    setInput("");
+  };
+
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    if (!activeId) return;
+    const now = Date.now();
+    if (now - lastTypingSentRef.current > TYPING_THROTTLE_MS) {
+      lastTypingSentRef.current = now;
+      sendTyping(activeId);
+    }
   };
 
   const handleDeleteChat = async (threadId) => {
@@ -124,7 +224,7 @@ export default function ChatPanel() {
     setDeletingId(threadId);
     try {
       await deleteChat(threadId);
-      setThreads((prev) => prev.filter((t) => t.thread_id !== threadId));
+      setThreads((prev) => prev.filter((th) => th.thread_id !== threadId));
       if (activeId === threadId) {
         setActiveId(null);
         setChatMessages([]);
@@ -139,23 +239,20 @@ export default function ChatPanel() {
   const handleAttach = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !activeId) return;
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      alert(t("chat.invalidImageType"));
+      if (attachInputRef.current) attachInputRef.current.value = "";
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      alert(t("chat.imageTooLarge"));
+      if (attachInputRef.current) attachInputRef.current.value = "";
+      return;
+    }
     setAttaching(true);
     try {
-      const isImage = file.type.startsWith("image/");
-      const result = isImage
-        ? await uploadChatImage(activeId, file)
-        : await uploadChatFile(activeId, file);
-      const optimistic = {
-        id: `opt-${Date.now()}`,
-        body: file.name,
-        attachment_url: result?.attachment_url,
-        thread_id: activeId,
-        sender_id: user?.id,
-        sender_type: "user",
-        sent_at: new Date().toISOString(),
-        _optimistic: true,
-      };
-      setChatMessages((prev) => [...prev, optimistic]);
+      const result = await uploadChatImage(activeId, file);
+      sendMessage(file.name, result?.attachment_key, result?.attachment_url);
     } catch (err) {
       alert(err.message);
     } finally {
@@ -168,9 +265,18 @@ export default function ChatPanel() {
     setActiveId(id);
     setMobileShowChat(true);
     setThreads((prev) =>
-      prev.map((t) => (t.thread_id === id ? { ...t, unread_count: 0 } : t))
+      prev.map((th) => (th.thread_id === id ? { ...th, unread_count: 0 } : th))
     );
   };
+
+  if (!CHAT_ENABLED) {
+    return (
+      <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] h-[560px] sm:h-[600px] flex flex-col items-center justify-center gap-2 text-center px-6 transition-colors">
+        <p className="font-semibold text-lg text-ink-900 dark:text-white">{t("chat.temporarilyUnavailable")}</p>
+        <p className="text-sm text-ink-400 dark:text-ink-500 max-w-sm">{t("chat.temporarilyUnavailableDesc")}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] grid grid-cols-1 md:grid-cols-[280px_1fr] overflow-hidden h-[560px] sm:h-[600px] transition-colors">
@@ -261,9 +367,13 @@ export default function ChatPanel() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-ink-900 dark:text-white truncate">{active.other_party?.display_name ?? "—"}</p>
-                  <p className="text-xs flex items-center gap-1 text-success-600 dark:text-success-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-success-500" /> {t("chat.online")}
-                  </p>
+                  {otherTyping ? (
+                    <p className="text-xs text-brand-500 dark:text-brand-400">{t("chat.typing")}</p>
+                  ) : (
+                    <p className="text-xs flex items-center gap-1 text-success-600 dark:text-success-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-success-500" /> {t("chat.online")}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3 text-ink-400 dark:text-white shrink-0">
@@ -306,7 +416,10 @@ export default function ChatPanel() {
                           {m.body}
                         </div>
                       )}
-                      <span className="text-[11px] text-ink-300 dark:text-ink-600 mt-1">{formatTime(m.sent_at)}</span>
+                      <span className="flex items-center gap-1 text-[11px] text-ink-300 dark:text-ink-600 mt-1">
+                        {formatTime(m.sent_at)}
+                        {isMine && <MessageStatus status={m.status} />}
+                      </span>
                     </div>
                   );
                 })
@@ -318,19 +431,25 @@ export default function ChatPanel() {
               <button className="text-[#75809F] text-[24px] hover:text-[#1A94FF] transition-colors shrink-0" type="button">
                 <HiOutlineEmojiHappy />
               </button>
-              <input ref={attachInputRef} type="file" className="hidden" onChange={handleAttach} />
+              <input
+                ref={attachInputRef}
+                type="file"
+                accept={ALLOWED_IMAGE_TYPES.join(",")}
+                className="hidden"
+                onChange={handleAttach}
+              />
               <button
                 onClick={() => attachInputRef.current?.click()}
                 disabled={attaching}
                 className="text-[#75809F] hover:text-[#1A94FF] disabled:opacity-50 transition-colors shrink-0"
                 type="button"
-                title={t("chat.attachFile")}
+                title={t("chat.attachImage")}
               >
                 <Paperclip2 size={22} />
               </button>
               <input
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={handleInputChange}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();

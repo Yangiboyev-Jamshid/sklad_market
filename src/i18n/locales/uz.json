@@ -349,7 +349,13 @@
     "selectChat": "Chatni tanlang",
     "file": "Fayl",
     "attachFile": "Fayl biriktirish",
-    "messagePlaceholder": "Xabar"
+    "attachImage": "Rasm biriktirish",
+    "invalidImageType": "Faqat JPG, PNG yoki WEBP formatidagi rasm biriktirish mumkin",
+    "imageTooLarge": "Rasm hajmi juda katta (maksimum 5 MB)",
+    "typing": "yozmoqda...",
+    "messagePlaceholder": "Xabar",
+    "temporarilyUnavailable": "Chat vaqtincha mavjud emas",
+    "temporarilyUnavailableDesc": "Biz bu funksiya ustida ishlamoqdamiz. Birozdan so'ng qayta urinib ko'ring."
   },
   "moderator": {
     "dashboardTitle": "Moderator paneli",
@@ -466,7 +472,23 @@
     "categorySortOrder": "Tartib raqami",
     "categoryIcon": "Belgi (icon)",
     "enterCategoryRequiredFields": "Nomni uchala tilda ham va slug'ni to'ldiring",
-    "enterCategoryIcon": "Kategoriya belgisini yuklang"
+    "enterCategoryIcon": "Kategoriya belgisini yuklang",
+    "close": "Yopish",
+    "addAttribute": "Atribut qo'shish",
+    "attributeCode": "Kod (tizim uchun)",
+    "attributeLabel": "Atribut nomi",
+    "attributeLabelPlaceholder": "Rang",
+    "attributeDataType": "Qiymat turi",
+    "attributeDataTypeTEXT": "Matn",
+    "attributeDataTypeNUMBER": "Raqam",
+    "attributeDataTypeBOOLEAN": "Ha/Yo'q",
+    "attributeDataTypeSELECT": "Variantlar ro'yxati",
+    "attributeOptionsJson": "Variantlar (JSON massiv)",
+    "attributeSortOrder": "Tartib raqami",
+    "attributeRequired": "Majburiy atribut",
+    "attributeFilterable": "Filtrlarda ishlatiladi",
+    "enterAttributeRequiredFields": "Atribut kodi va nomini kiriting",
+    "attributeAddedSuccess": "«{{label}}» atributi qo'shildi"
   },
   "account": {
     "title": "Mening profilim",

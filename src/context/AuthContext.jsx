@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { logout as apiLogout, getAccessToken, getMyUserContext } from "../api/api";
+import { connectChatSocket, disconnectChatSocket } from "../api/chatSocket";
 
 const AuthContext = createContext(null);
 
@@ -46,6 +47,7 @@ export function AuthProvider({ children }) {
     apiLogout(); // очищает токены из localStorage
     localStorage.removeItem("skladx_user");
     setUser(null);
+    disconnectChatSocket();
   };
 
   // Pulls firstName/lastName/photoUrl from the user service so the header
@@ -90,6 +92,14 @@ export function AuthProvider({ children }) {
       refreshUser();
     }
   }, []);
+
+  // Chat is real-time over a WebSocket (see api/chatSocket.js) — keep it
+  // connected for the whole session whenever a user is signed in, covering
+  // both fresh logins and session restores on page reload.
+  useEffect(() => {
+    if (user) connectChatSocket();
+    else disconnectChatSocket();
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isLoggedIn: !!user, refreshUser }}>

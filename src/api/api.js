@@ -286,18 +286,26 @@ export async function createCategory(data, file) {
   return unwrap(http.post("/categories/create", form));
 }
 
+// /categories/update/:id shares its controller (and multipart contract) with
+// /categories/create — sending a plain JSON body here 415s. Always send the
+// same "file" + "request" multipart shape; "file" is just omitted when the
+// icon isn't being replaced.
 export async function updateCategory(id, data, file) {
-  if (file) {
-    const form = new FormData();
-    form.append("file", file);
-    form.append("request", new Blob([JSON.stringify(data)], { type: "application/json" }));
-    return unwrap(http.put(`/categories/update/${id}`, form));
-  }
-  return unwrap(http.put(`/categories/update/${id}`, data));
+  const form = new FormData();
+  if (file) form.append("file", file);
+  form.append("request", new Blob([JSON.stringify(data)], { type: "application/json" }));
+  return unwrap(http.put(`/categories/update/${id}`, form));
 }
 
 export async function deleteCategory(id) {
   return unwrap(http.delete(`/categories/delete/${id}`));
+}
+
+// Per-category custom attribute (e.g. "color", "material") used for product
+// specs/filtering. Swagger only exposes add/update/delete for these — there's
+// no GET to list a category's existing attributes yet.
+export async function addCategoryAttribute(categoryId, data) {
+  return unwrap(http.post(`/admin/categories/${categoryId}/attributes`, data));
 }
 
 // ─── Company Favorites ────────────────────────────────────────────────────────
@@ -451,9 +459,13 @@ export async function markNotificationsRead({ notification_ids = [], mark_all = 
 }
 
 // ─── Chats ────────────────────────────────────────────────────────────────────
+// Text messages are not sent over REST — see api/chatSocket.js, which opens
+// wss://api.skladmarket.uz/api/v1/ws/chat (authenticated via the short-lived
+// ws_token from getChatWsToken below) and sends them as `{ event: "message" }`.
+// REST here only covers thread management, history and image upload.
 
 export async function createChat({ seller_company_id, product_id } = {}) {
-  return unwrap(http.post("/chats/create", { seller_company_id, product_id }));
+  return unwrap(http.post("/chats", { seller_company_id, product_id }));
 }
 
 export async function getChats({ page = 1, per_page = 20 } = {}) {
@@ -462,10 +474,6 @@ export async function getChats({ page = 1, per_page = 20 } = {}) {
 
 export async function getChatMessages(threadId, { page = 1, per_page = 20, before_id } = {}) {
   return unwrap(http.get(`/chats/${threadId}/messages`, { params: { page, per_page, before_id } }));
-}
-
-export async function sendChatMessage(threadId, body) {
-  return unwrap(http.post(`/chats/${threadId}/messages`, { body }));
 }
 
 export async function getChatUnreadCount() {
@@ -477,12 +485,12 @@ export async function uploadChatImage(threadId, file) {
   return unwrap(http.post(`/chats/${threadId}/messages/image`, toSingleFileForm(file)));
 }
 
-export async function uploadChatFile(threadId, file) {
-  return unwrap(http.post(`/chats/${threadId}/messages/file`, toSingleFileForm(file)));
-}
-
 export async function deleteChat(threadId) {
   return unwrap(http.delete(`/chats/${threadId}`));
+}
+
+export async function getChatWsToken() {
+  return unwrap(http.post("/chats/ws-token"));
 }
 
 // ─── Admin: dashboard ─────────────────────────────────────────────────────────

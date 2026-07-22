@@ -349,7 +349,13 @@
     "selectChat": "Select a chat",
     "file": "File",
     "attachFile": "Attach file",
-    "messagePlaceholder": "Message"
+    "attachImage": "Attach image",
+    "invalidImageType": "Only JPG, PNG or WEBP images can be attached",
+    "imageTooLarge": "Image is too large (max 5 MB)",
+    "typing": "typing...",
+    "messagePlaceholder": "Message",
+    "temporarilyUnavailable": "Chat is temporarily unavailable",
+    "temporarilyUnavailableDesc": "We're still working on this feature. Please check back later."
   },
   "moderator": {
     "dashboardTitle": "Moderator dashboard",
@@ -466,7 +472,23 @@
     "categorySortOrder": "Sort order",
     "categoryIcon": "Icon",
     "enterCategoryRequiredFields": "Fill in the name in all three languages and the slug",
-    "enterCategoryIcon": "Upload a category icon"
+    "enterCategoryIcon": "Upload a category icon",
+    "close": "Close",
+    "addAttribute": "Add attribute",
+    "attributeCode": "Code (for the system)",
+    "attributeLabel": "Attribute name",
+    "attributeLabelPlaceholder": "Color",
+    "attributeDataType": "Value type",
+    "attributeDataTypeTEXT": "Text",
+    "attributeDataTypeNUMBER": "Number",
+    "attributeDataTypeBOOLEAN": "Yes/No",
+    "attributeDataTypeSELECT": "List of options",
+    "attributeOptionsJson": "Options (JSON array)",
+    "attributeSortOrder": "Sort order",
+    "attributeRequired": "Required attribute",
+    "attributeFilterable": "Usable in filters",
+    "enterAttributeRequiredFields": "Fill in the attribute code and name",
+    "attributeAddedSuccess": "Attribute \"{{label}}\" added"
   },
   "account": {
     "title": "My profile",

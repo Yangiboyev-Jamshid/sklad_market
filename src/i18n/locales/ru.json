@@ -349,7 +349,13 @@
     "selectChat": "Выберите чат",
     "file": "Файл",
     "attachFile": "Прикрепить файл",
-    "messagePlaceholder": "Сообщение"
+    "attachImage": "Прикрепить изображение",
+    "invalidImageType": "Можно прикреплять только JPG, PNG или WEBP изображения",
+    "imageTooLarge": "Изображение слишком большое (максимум 5 МБ)",
+    "typing": "печатает...",
+    "messagePlaceholder": "Сообщение",
+    "temporarilyUnavailable": "Чат временно недоступен",
+    "temporarilyUnavailableDesc": "Мы дорабатываем эту функцию. Попробуйте зайти позже."
   },
   "moderator": {
     "dashboardTitle": "Панель модератора",
@@ -466,7 +472,23 @@
     "categorySortOrder": "Порядок сортировки",
     "categoryIcon": "Иконка",
     "enterCategoryRequiredFields": "Заполните название на всех трёх языках и slug",
-    "enterCategoryIcon": "Загрузите иконку категории"
+    "enterCategoryIcon": "Загрузите иконку категории",
+    "close": "Закрыть",
+    "addAttribute": "Добавить атрибут",
+    "attributeCode": "Код (для системы)",
+    "attributeLabel": "Название атрибута",
+    "attributeLabelPlaceholder": "Цвет",
+    "attributeDataType": "Тип значения",
+    "attributeDataTypeTEXT": "Текст",
+    "attributeDataTypeNUMBER": "Число",
+    "attributeDataTypeBOOLEAN": "Да/Нет",
+    "attributeDataTypeSELECT": "Список вариантов",
+    "attributeOptionsJson": "Варианты (JSON-массив)",
+    "attributeSortOrder": "Порядок сортировки",
+    "attributeRequired": "Обязательный атрибут",
+    "attributeFilterable": "Использовать в фильтрах",
+    "enterAttributeRequiredFields": "Заполните код и название атрибута",
+    "attributeAddedSuccess": "Атрибут «{{label}}» добавлен"
   },
   "account": {
     "title": "Мой профиль",
