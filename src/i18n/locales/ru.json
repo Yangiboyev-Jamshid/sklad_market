@@ -282,6 +282,8 @@
     "companyDataUpdated": "✓ Данные компании обновлены",
     "tariffPlan": "Тарифный план",
     "fieldCompanyName": "Название компании",
+    "fieldDescription": "Описание компании",
+    "fieldDescriptionPlaceholder": "Расскажите о компании: чем занимаетесь, что производите или поставляете",
     "fieldIndustry": "Отрасль",
     "fieldPhone": "Телефон",
     "fieldEmail": "Email",

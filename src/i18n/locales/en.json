@@ -282,6 +282,8 @@
     "companyDataUpdated": "✓ Company data updated",
     "tariffPlan": "Pricing plan",
     "fieldCompanyName": "Company name",
+    "fieldDescription": "Company description",
+    "fieldDescriptionPlaceholder": "Tell us about the company: what you do, produce or supply",
     "fieldIndustry": "Industry",
     "fieldPhone": "Phone",
     "fieldEmail": "Email",

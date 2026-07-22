@@ -8,6 +8,7 @@ import {
   Location,
   Buildings2,
   Box1,
+  DocumentText,
   TickCircle,
   Message,
   Sms,
@@ -514,6 +515,9 @@ function CompanyMetaCards({ company, productsTotal, reviewsCount, cityShort, ema
         )}
         {company.industry && (
           <InfoRow icon={Buildings2} label={t("profile.industry")} value={company.industry} />
+        )}
+        {company.stir && (
+          <InfoRow icon={DocumentText} label={t("profile.stir")} value={company.stir} />
         )}
         <InfoRow icon={Box1} label={t("common.productsCount")} value={company.productsCount ?? productsTotal} />
       </div>

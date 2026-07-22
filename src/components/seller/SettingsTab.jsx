@@ -204,6 +204,7 @@ export default function SettingsTab() {
     setProfileDraft({
       name: company?.name ?? "",
       shortDescription: company?.shortDescription ?? "",
+      description: company?.description ?? "",
       stir: company?.stir ?? "",
       phonePrimary: company?.phonePrimary ?? "",
       phoneSecondary: company?.phoneSecondary ?? "",
@@ -238,7 +239,7 @@ export default function SettingsTab() {
         companyCreatedDate: merged.companyCreatedDate,
         ...profileDraft,
       });
-      setCompany(updated);
+      setCompany({ ...company, ...merged, ...profileDraft, ...updated });
       setEditingProfile(false);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2500);
@@ -385,6 +386,21 @@ export default function SettingsTab() {
               )}
             </div>
           ))}
+        </div>
+
+        <div className="py-3.5 border-t border-[#F0F0F0] dark:border-[#1C1C1C]">
+          <p className="text-sm sm:text-xs text-ink-400 dark:text-ink-500 mb-2">{t("seller.fieldDescription")}</p>
+          {editingProfile ? (
+            <textarea
+              value={profileDraft.description ?? ""}
+              onChange={(e) => setProfileDraft((prev) => ({ ...prev, description: e.target.value }))}
+              placeholder={t("seller.fieldDescriptionPlaceholder")}
+              rows={4}
+              className="w-full bg-ink-50 dark:bg-[#171717] border border-brand-400 dark:border-brand-500 rounded-xl px-3 py-2 text-sm outline-none dark:text-white resize-none"
+            />
+          ) : (
+            <p className="text-sm font-medium text-ink-900 dark:text-white whitespace-pre-line">{company?.description || "—"}</p>
+          )}
         </div>
 
         <div className="mt-4">

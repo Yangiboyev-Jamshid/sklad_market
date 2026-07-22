@@ -282,6 +282,8 @@
     "companyDataUpdated": "✓ Kompaniya ma'lumotlari yangilandi",
     "tariffPlan": "Tarif rejasi",
     "fieldCompanyName": "Kompaniya nomi",
+    "fieldDescription": "Kompaniya tavsifi",
+    "fieldDescriptionPlaceholder": "Kompaniya haqida yozing: nima bilan shug'ullanasiz, nima ishlab chiqarasiz yoki yetkazib berasiz",
     "fieldIndustry": "Soha",
     "fieldPhone": "Telefon",
     "fieldEmail": "Email",
