@@ -54,7 +54,8 @@
     "timeMinutesAgo": "{{count}} daqiqa oldin",
     "timeHoursAgo": "{{count}} soat oldin",
     "timeDaysAgo": "{{count}} kun oldin",
-    "language": "Til"
+    "language": "Til",
+    "callCenter": "Aloqa markazi"
   },
   "mobileMenu": {
     "login": "Kirish",
@@ -357,7 +358,10 @@
     "typing": "yozmoqda...",
     "messagePlaceholder": "Xabar",
     "temporarilyUnavailable": "Chat vaqtincha mavjud emas",
-    "temporarilyUnavailableDesc": "Biz bu funksiya ustida ishlamoqdamiz. Birozdan so'ng qayta urinib ko'ring."
+    "temporarilyUnavailableDesc": "Biz bu funksiya ustida ishlamoqdamiz. Birozdan so'ng qayta urinib ko'ring.",
+    "supportTitle": "Texnik yordam",
+    "supportButtonLabel": "Texnik yordam bilan bog'lanish",
+    "supportCallFallback": "Hozircha qo'ng'iroq qiling"
   },
   "moderator": {
     "dashboardTitle": "Moderator paneli",

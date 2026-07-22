@@ -54,7 +54,8 @@
     "timeMinutesAgo": "{{count}} min ago",
     "timeHoursAgo": "{{count}} h ago",
     "timeDaysAgo": "{{count}} d ago",
-    "language": "Language"
+    "language": "Language",
+    "callCenter": "Call center"
   },
   "mobileMenu": {
     "login": "Log in",
@@ -357,7 +358,10 @@
     "typing": "typing...",
     "messagePlaceholder": "Message",
     "temporarilyUnavailable": "Chat is temporarily unavailable",
-    "temporarilyUnavailableDesc": "We're still working on this feature. Please check back later."
+    "temporarilyUnavailableDesc": "We're still working on this feature. Please check back later.",
+    "supportTitle": "Tech support",
+    "supportButtonLabel": "Contact tech support",
+    "supportCallFallback": "Call us for now"
   },
   "moderator": {
     "dashboardTitle": "Moderator dashboard",

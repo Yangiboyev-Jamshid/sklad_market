@@ -54,7 +54,8 @@
     "timeMinutesAgo": "{{count}} мин назад",
     "timeHoursAgo": "{{count}} ч назад",
     "timeDaysAgo": "{{count}} д назад",
-    "language": "Язык"
+    "language": "Язык",
+    "callCenter": "Контакт-центр"
   },
   "mobileMenu": {
     "login": "Войти",
@@ -357,7 +358,10 @@
     "typing": "печатает...",
     "messagePlaceholder": "Сообщение",
     "temporarilyUnavailable": "Чат временно недоступен",
-    "temporarilyUnavailableDesc": "Мы дорабатываем эту функцию. Попробуйте зайти позже."
+    "temporarilyUnavailableDesc": "Мы дорабатываем эту функцию. Попробуйте зайти позже.",
+    "supportTitle": "Техподдержка",
+    "supportButtonLabel": "Связаться с техподдержкой",
+    "supportCallFallback": "Пока позвоните нам"
   },
   "moderator": {
     "dashboardTitle": "Панель модератора",

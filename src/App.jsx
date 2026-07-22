@@ -6,6 +6,7 @@ import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { lazy, Suspense } from "react";
 import Loader from "./components/ui/Loader";
 import FlyToCartLayer from "./components/ui/FlyToCartLayer";
+import SupportChatWidget from "./components/ui/SupportChatWidget";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"))
 const HomePage = lazy(() => import("./pages/HomePage"))
@@ -72,7 +73,11 @@ function App() {
                     <EmailVerificationPage />
                   </Suspense>
                 } />
-                <Route path="/" element={<HomePage />} />
+                <Route path="/" element={
+                  <Suspense fallback={<Loader />}>
+                    <HomePage />
+                  </Suspense>
+                } />
                 <Route path="/catalog" element={
                   <Suspense fallback={<Loader />}>
                     <CatalogPage />
@@ -143,6 +148,7 @@ function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
               <FlyToCartLayer />
+              <SupportChatWidget />
             </CartProvider>
           </AuthProvider>
         </AntDThemeBridge>

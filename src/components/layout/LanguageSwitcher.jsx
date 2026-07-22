@@ -53,7 +53,7 @@ export default function LanguageSwitcher({ variant = "header", alwaysVisible = f
                   <button
                     key={l.code}
                     onClick={() => selectLang(l.code)}
-                    className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${l.code === i18n.language
+                    className={`flex items-center justify-between rounded-lg text-sm transition-colors ${l.code === i18n.language
                       ? "text-brand-600 dark:text-brand-400 font-semibold bg-brand-50 dark:bg-brand-500/10"
                       : "text-ink-500 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-[#171717]"
                       }`}
@@ -73,7 +73,7 @@ export default function LanguageSwitcher({ variant = "header", alwaysVisible = f
     <div className={`relative ${alwaysVisible ? "block" : "hidden sm:block"}`} ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 h-9 sm:h-10 px-2.5 sm:px-3 rounded-full bg-ink-100 dark:bg-[#1C1C1C] text-ink-600 dark:text-ink-300 hover:bg-ink-200 dark:hover:bg-[#1E1E1E] transition-colors text-xs sm:text-sm font-semibold shrink-0"
+        className="flex items-center gap-1.5 py-1 px-2.5 sm:px-3 rounded-xl bg-ink-100 dark:bg-[#1C1C1C] text-ink-600 dark:text-ink-300 hover:bg-ink-200 dark:hover:bg-[#1E1E1E] transition-colors text-xs sm:text-sm font-semibold shrink-0"
         aria-label={t("header.language")}
       >
         {current.label}

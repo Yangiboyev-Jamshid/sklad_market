@@ -80,6 +80,15 @@ export default {
       borderRadius: {
         xl2: "1.25rem",
       },
+      keyframes: {
+        "gradient-pan": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+      },
+      animation: {
+        "gradient-pan": "gradient-pan 8s ease infinite",
+      },
     },
   },
   plugins: [],

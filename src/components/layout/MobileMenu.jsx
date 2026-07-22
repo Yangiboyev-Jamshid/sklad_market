@@ -17,11 +17,13 @@ import {
   LoginCurve,
   UserAdd,
   Profile,
+  Call,
 } from "iconsax-reactjs";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { CONTACT_PHONE } from "../../config/contact";
 import logo from "../../assets/logo.png";
 
 const navItems = [
@@ -182,6 +184,21 @@ export default function MobileMenu({ open, onClose }) {
                   </button>
                 </>
               )}
+
+              <a
+                href={`tel:${CONTACT_PHONE.replace(/\s+/g, "")}`}
+                className="group flex items-center gap-3 rounded-xl px-3 py-3 mt-1 border-t border-ink-100 dark:border-[#1C1C1C] text-ink-500 dark:text-ink-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+              >
+                <span className="flex items-center justify-center w-9 h-9 rounded-full bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 shrink-0">
+                  <Call size={16} variant="Linear" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs text-ink-400 dark:text-ink-500">{t("header.callCenter")}</span>
+                  <span className="block text-[15px] font-semibold text-ink-900 dark:text-white tracking-tight">
+                    {CONTACT_PHONE}
+                  </span>
+                </span>
+              </a>
             </div>
           </motion.div>
         </>

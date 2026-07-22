@@ -4,8 +4,6 @@ import { getCartIconEl } from "../../utils/cartFly";
 
 let uid = 0;
 
-// Renders a short-lived clone of the clicked product that arcs from the
-// "add to cart" button to the header cart icon, then bumps the icon on arrival.
 export default function FlyToCartLayer() {
   const [flights, setFlights] = useState([]);
 
