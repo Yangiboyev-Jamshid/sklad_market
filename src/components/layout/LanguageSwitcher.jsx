@@ -30,15 +30,15 @@ export default function LanguageSwitcher({ variant = "header", alwaysVisible = f
 
   if (variant === "mobile") {
     return (
-      <div className="flex flex-col" ref={ref}>
+      <div ref={ref}>
         <button
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium text-ink-500 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-[#171717] hover:text-ink-800 dark:hover:text-ink-200 transition-colors"
+          className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium text-ink-500 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-[#171717] hover:text-ink-800 dark:hover:text-ink-200 transition-colors"
         >
           <Global size={20} variant="Linear" />
           <span className="flex-1 text-left">{t("header.language")}</span>
-          <span className="text-xs text-ink-400 dark:text-ink-500">{current.label}</span>
-          <ArrowDown2 size={16} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+          <span className="text-sm font-semibold text-ink-700 dark:text-ink-200">{current.name}</span>
+          <ArrowDown2 size={16} className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
         <AnimatePresence initial={false}>
           {open && (
@@ -48,12 +48,12 @@ export default function LanguageSwitcher({ variant = "header", alwaysVisible = f
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="flex flex-col gap-0.5 py-1 pl-11 pr-2">
+              <div className="flex flex-col gap-0.5 pb-1 px-2">
                 {LANGUAGES.map((l) => (
                   <button
                     key={l.code}
                     onClick={() => selectLang(l.code)}
-                    className={`flex items-center justify-between rounded-lg text-sm transition-colors ${l.code === i18n.language
+                    className={`rounded-lg px-3 py-2.5 text-sm text-left transition-colors ${l.code === i18n.language
                       ? "text-brand-600 dark:text-brand-400 font-semibold bg-brand-50 dark:bg-brand-500/10"
                       : "text-ink-500 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-[#171717]"
                       }`}
