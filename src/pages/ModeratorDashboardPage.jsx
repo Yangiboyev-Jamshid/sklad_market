@@ -1,0 +1,79 @@
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import AppShell from "../components/layout/AppShell";
+import { useAuth } from "../context/AuthContext";
+import ModOverviewTab from "../components/moderator/ModOverviewTab";
+import ModProductsTab from "../components/moderator/ModProductsTab";
+import ModCompaniesTab from "../components/moderator/ModCompaniesTab";
+import ComplaintsTab from "../components/moderator/ComplaintsTab";
+import AccountsTab from "../components/moderator/AccountsTab";
+import BannersTab from "../components/moderator/BannersTab";
+import CategoriesTab from "../components/moderator/CategoriesTab";
+import SupportChatTab from "../components/moderator/SupportChatTab";
+
+const tabs = [
+  { id: "overview", labelKey: "moderator.tabOverview", Component: ModOverviewTab },
+  { id: "products", labelKey: "moderator.tabProducts", Component: ModProductsTab },
+  { id: "companies", labelKey: "moderator.tabCompanies", Component: ModCompaniesTab },
+  { id: "complaints", labelKey: "moderator.tabComplaints", Component: ComplaintsTab },
+  { id: "support", labelKey: "moderator.tabSupport", Component: SupportChatTab, adminOnly: true },
+  { id: "accounts", labelKey: "moderator.tabAccounts", Component: AccountsTab },
+  { id: "banners", labelKey: "moderator.tabBanners", Component: BannersTab, adminOnly: true },
+  { id: "categories", labelKey: "moderator.tabCategories", Component: CategoriesTab, adminOnly: true },
+];
+
+export default function ModeratorDashboardPage() {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const isAdmin = (user?.role || "").toUpperCase().includes("ADMIN");
+  const visibleTabs = useMemo(() => tabs.filter((tab) => !tab.adminOnly || isAdmin), [isAdmin]);
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => searchParams.get("tab") || "overview");
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && tab !== activeTab) setActiveTab(tab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const ActiveComponent = visibleTabs.find((tab) => tab.id === activeTab)?.Component || ModOverviewTab;
+
+  return (
+    <AppShell>
+      <div className="p-5 sm:p-10">
+        <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white mb-5 sm:mb-6">{t("moderator.dashboardTitle")}</h1>
+
+        <div style={{ scrollbarWidth: "none" }} className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-transparent sm:border-ink-100 dark:border-[#1C1C1C] px-4 py-2 flex gap-3 mb-5 sm:mb-6 overflow-x-auto transition-colors">
+          {visibleTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`relative py-2.5 px-3 sm:px-0 text-xs sm:text-sm hover:text-black dark:hover:text-[#FFFFFF] font-medium transition-colors whitespace-nowrap ${activeTab === tab.id ? "text-black sm:border-none border rounded-xl dark:text-[#FFFFFF]" : "text-[#8A8A8A]"
+                }`}
+            >
+              {activeTab === tab.id && (
+                <motion.div layoutId="seller-tab-bg" className="absolute inset-0 bg-brand-500/15 rounded-xl -z-10" transition={{ type: "spring", stiffness: 400, damping: 30 }} />
+              )}
+              {t(tab.labelKey)}
+              {activeTab === tab.id && (
+                <motion.div
+                  layoutId="seller-tab-border"
+                  className="hidden sm:block absolute bottom-0 left-0 right-0 h-0.5 bg-[#1A94FF]"
+                  transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
+
+        <AnimatePresence mode="wait">
+          <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <ActiveComponent />
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </AppShell>
+  );
+}

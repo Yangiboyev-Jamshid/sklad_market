@@ -1,0 +1,78 @@
+import { getCompanyBranches } from "../api/api";
+
+async function withBranchPins(items) {
+  const expanded = [];
+  await Promise.all(
+    items.map(async (c) => {
+      expanded.push(c);
+      const branches = await getCompanyBranches(c.companyId).catch(() => []);
+      branches.forEach((b) => {
+        if (b.lat == null || b.lng == null) return;
+        expanded.push({
+          companyId: c.companyId,
+          companyName: `${c.companyName} — ${b.name}`,
+          companyAddress: b.address,
+          slug: c.slug,
+          verificationStatus: c.verificationStatus,
+          lat: b.lat,
+          lng: b.lng,
+        });
+      });
+    })
+  );
+  return expanded;
+}
+
+function groupPinsByLocation(items, getLat, getLng) {
+  const groups = new Map();
+  items.forEach((item) => {
+    const lat = Number(getLat(item));
+    const lng = Number(getLng(item));
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+    if (!groups.has(key)) groups.set(key, { lat, lng, items: [] });
+    groups.get(key).items.push(item);
+  });
+  return Array.from(groups.values());
+}
+
+export function buildProductMapPins(items, navigate, { color, idPrefix = "" } = {}) {
+  const groups = groupPinsByLocation(items, (i) => i.lat, (i) => i.lng);
+  return groups.map((group, i) => ({
+    id: `${idPrefix}${i}`,
+    lat: group.lat,
+    lng: group.lng,
+    color: color ?? (i % 2 === 0 ? "red" : "purple"),
+    label: group.items.length,
+    popover: group.items.slice(0, 6).map((item) => ({
+      name: item.productName ?? item.name ?? "Товар",
+      company: item.companyName ?? "",
+      rating: item.rating,
+      verified: item.verifiedCompany === "VERIFIED",
+      price: item.price,
+      currency: item.currency,
+      onClick: item.productSlug
+        ? () => navigate(`/product/${item.productSlug}`)
+        : item.productId
+          ? () => navigate(`/product/${item.productId}`)
+          : undefined,
+    })),
+  }));
+}
+
+export async function buildCompanyMapPins(items, navigate) {
+  const groups = groupPinsByLocation(await withBranchPins(items), (c) => c.lat, (c) => c.lng);
+  return groups.map((group, i) => ({
+    id: i,
+    lat: group.lat,
+    lng: group.lng,
+    color: "blue",
+    label: group.items.length,
+    popover: group.items.slice(0, 6).map((c) => ({
+      name: c.companyName,
+      company: c.companyAddress,
+      verified: c.verificationStatus === "VERIFIED",
+      onClick: () => navigate(`/company/${c.slug}`),
+    })),
+  }));
+}

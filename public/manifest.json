@@ -1,0 +1,15 @@
+{
+  "name": "Sklad Market",
+  "short_name": "Sklad Market",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#155DFC",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "465x480",
+      "type": "image/png"
+    }
+  ]
+}

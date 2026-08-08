@@ -1,0 +1,225 @@
+import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { Box, Calendar, Moneys, Call } from "iconsax-reactjs";
+import { IoIosClose } from "react-icons/io";
+import { BsCheck } from "react-icons/bs";
+import AppShell from "../components/layout/AppShell";
+import PillToggle from "../components/ui/PillToggle";
+import { useAuth } from "../context/AuthContext";
+import { getLeads, cancelLead, getSellerLeads, updateLeadStatus } from "../api/api";
+
+const STATUS_KEYS = {
+  NEW:       { labelKey: "seller.statusNew",       cls: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-400" },
+  VIEWED:    { labelKey: "seller.statusViewed",     cls: "bg-warning-50 dark:bg-warning-500/15 text-warning-600 dark:text-warning-400" },
+  CONTACTED: { labelKey: "seller.statusContacted",  cls: "bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400" },
+  CLOSED:    { labelKey: "seller.statusClosed",     cls: "bg-ink-100 dark:bg-[#1C1C1C] text-ink-500 dark:text-ink-400" },
+  CANCELED:  { labelKey: "seller.statusCanceled",   cls: "bg-danger-50 dark:bg-danger-500/15 text-danger-600 dark:text-danger-400" },
+};
+
+const ACCENT_CLS = {
+  NEW: "bg-success-500",
+  VIEWED: "bg-warning-500",
+  CONTACTED: "bg-brand-500",
+  CLOSED: "bg-ink-300 dark:bg-ink-600",
+  CANCELED: "bg-danger-500",
+};
+
+function badge(status, t) {
+  const s = STATUS_KEYS[status];
+  const label = s ? t(s.labelKey) : status;
+  const cls = s?.cls ?? "bg-ink-100 text-ink-500";
+  return <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${cls}`}>{label}</span>;
+}
+
+export default function RequestsPage() {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const isSeller = user?.accountType === "seller";
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [actionId, setActionId] = useState(null);
+  const [tab, setTab] = useState(isSeller ? "incoming" : "outgoing");
+  const submittingIdsRef = useRef(new Set());
+
+  useEffect(() => {
+    Promise.all([
+      getLeads({ page: 1, perPage: 50 }),
+      isSeller ? getSellerLeads({ page: 1, perPage: 50 }).catch(() => null) : Promise.resolve(null),
+    ])
+      .then(([mine, incoming]) => {
+        const outgoing = (mine?.items ?? []).map((l) => ({ ...l, direction: "outgoing" }));
+        const received = (incoming?.items ?? []).map((l) => ({ ...l, direction: "incoming" }));
+        setLeads([...received, ...outgoing]);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const cancelRequest = async (id) => {
+    if (submittingIdsRef.current.has(id)) return;
+    submittingIdsRef.current.add(id);
+    setActionId(id);
+    try {
+      await cancelLead(id);
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status: "CANCELED" } : l)));
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      submittingIdsRef.current.delete(id);
+      setActionId(null);
+    }
+  };
+
+  const changeStatus = async (id, status, closeReason) => {
+    if (submittingIdsRef.current.has(id)) return;
+    submittingIdsRef.current.add(id);
+    setActionId(id);
+    try {
+      const updated = await updateLeadStatus(id, { status, closeReason });
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status: updated?.status ?? status } : l)));
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      submittingIdsRef.current.delete(id);
+      setActionId(null);
+    }
+  };
+
+  const visibleLeads = isSeller ? leads.filter((l) => l.direction === tab) : leads;
+
+  return (
+    <AppShell>
+      <div className="p-5 sm:p-10">
+        <div className="flex items-baseline gap-3 mb-5 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-ink-900 dark:text-white">
+            {t("requests.title")}
+          </h1>
+          {!loading && visibleLeads.length > 0 && (
+            <span className="text-sm font-medium text-ink-400 dark:text-ink-500">{visibleLeads.length}</span>
+          )}
+        </div>
+
+        {isSeller && (
+          <div className="mb-6 sm:mb-8 overflow-x-auto relative z-1">
+            <PillToggle
+              options={[
+                { value: "incoming", label: t("requests.tabIncoming") },
+                { value: "outgoing", label: t("requests.tabOutgoing") },
+              ]}
+              value={tab}
+              onChange={setTab}
+              className="w-full scrollbar-none"
+            />
+          </div>
+        )}
+
+        {error && (
+          <div className="text-sm text-danger-600 dark:text-danger-400 bg-danger-50 dark:bg-danger-500/10 rounded-2xl p-3 text-center mb-4">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex flex-col gap-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-28 rounded-2xl bg-ink-100 dark:bg-[#171717] animate-pulse" />
+            ))}
+          </div>
+        ) : visibleLeads.length === 0 ? (
+          <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] flex flex-col items-center justify-center py-20 text-ink-400 gap-3 transition-colors">
+            <div className="w-16 h-16 rounded-2xl bg-ink-50 dark:bg-[#171717] flex items-center justify-center">
+              <Box size={28} />
+            </div>
+            <p className="text-sm">
+              {tab === "incoming" ? t("requests.emptyIncoming") : t("requests.emptyOutgoing")}
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 sm:gap-4">
+            {visibleLeads.map((lead) => {
+              const busy = actionId === lead.id;
+              const items = lead.items ?? [];
+              const total = items.reduce((sum, it) => sum + (it.priceSnapshot ?? 0) * (it.quantity ?? 0), 0);
+              return (
+                <div
+                  key={lead.id}
+                  className={`relative overflow-hidden bg-white dark:bg-[#0D0D0D] border border-ink-100 dark:border-[#1C1C1C] rounded-2xl p-4 sm:p-5 transition-opacity ${busy ? "opacity-50" : ""}`}
+                >
+                  <span className={`absolute left-0 top-0 bottom-0 w-1 ${ACCENT_CLS[lead.status] ?? "bg-ink-200"}`} />
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <p className="text-sm font-semibold text-ink-900 dark:text-white">
+                          {lead.direction === "incoming"
+                            ? lead.contactName || t("requests.requestNumber", { id: lead.id })
+                            : t("requests.requestNumber", { id: lead.id })}
+                        </p>
+                        {badge(lead.status, t)}
+                      </div>
+                      {items.length > 0 && (
+                        <p className="text-xs text-ink-500 dark:text-ink-400 truncate mb-2">
+                          {items.map((it) => `${it.productNameSnapshot} × ${it.quantity}`).join(", ")}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-4 text-xs text-ink-400 dark:text-ink-500">
+                        {total > 0 && (
+                          <span className="flex items-center gap-1.5 font-medium text-ink-700 dark:text-ink-200">
+                            <Moneys size={14} className="text-brand-500 shrink-0" />
+                            {t("seller.sum", { amount: total.toLocaleString() })}
+                          </span>
+                        )}
+                        {lead.neededDate && (
+                          <span className="flex items-center gap-1.5">
+                            <Calendar size={14} className="shrink-0" />
+                            {t("seller.until", { date: lead.neededDate })}
+                          </span>
+                        )}
+                        {lead.direction === "incoming" && lead.contactPhone && (
+                          <span className="flex items-center gap-1.5">
+                            <Call size={14} className="shrink-0" />
+                            {lead.contactPhone}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {lead.status === "NEW" && lead.direction === "incoming" && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          disabled={busy}
+                          onClick={() => changeStatus(lead.id, "CONTACTED")}
+                          className="flex items-center justify-center gap-1.5 bg-success-500 hover:bg-success-600 text-white text-xs font-medium px-3 py-2.5 rounded-xl transition-colors whitespace-nowrap"
+                        >
+                          <BsCheck className="text-[18px]" /> {t("seller.accept")}
+                        </button>
+                        <button
+                          disabled={busy}
+                          onClick={() => changeStatus(lead.id, "CANCELED", t("seller.rejectedBySeller"))}
+                          className="flex items-center justify-center gap-1.5 bg-danger-500 hover:bg-danger-600 text-white text-xs font-medium px-3 py-2.5 rounded-xl transition-colors whitespace-nowrap"
+                        >
+                          <IoIosClose className="text-[18px]" /> {t("seller.reject")}
+                        </button>
+                      </div>
+                    )}
+                    {lead.status === "NEW" && lead.direction !== "incoming" && (
+                      <button
+                        disabled={busy}
+                        onClick={() => cancelRequest(lead.id)}
+                        className="shrink-0 flex items-center justify-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-danger-300 hover:bg-danger-50 dark:hover:bg-danger-500/10 hover:text-danger-600 dark:hover:text-danger-400 text-xs font-medium px-3 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap"
+                      >
+                        <IoIosClose className="text-[18px]" /> {t("requests.cancel")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </AppShell>
+  );
+}

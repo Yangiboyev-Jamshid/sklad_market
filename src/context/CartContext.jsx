@@ -1,0 +1,186 @@
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  addFavorite, removeFavorite, getFavorites, getAccessToken,
+  getCart, addCartItem, updateCartItem, removeCartItem as apiRemoveCartItem, clearCart as apiClearCart,
+  addCompanyFavorite, removeCompanyFavorite, getCompanyFavorites,
+} from "../api/api";
+import { useAuth } from "./AuthContext";
+
+const CartContext = createContext(null);
+
+export function CartProvider({ children }) {
+  const navigate = useNavigate();
+  const { isLoggedIn, user } = useAuth();
+  const roleUpper = (user?.role || "").toUpperCase();
+  const canShop = isLoggedIn && !roleUpper.includes("MODERATOR") && !roleUpper.includes("ADMIN");
+  const [items, setItems] = useState([]);
+  const [cartLoading, setCartLoading] = useState(false);
+  const [favorites, setFavorites] = useState(new Set());
+
+  const reloadCart = useCallback(async () => {
+    if (!getAccessToken()) return;
+    setCartLoading(true);
+    try {
+      const data = await getCart();
+      setItems(data?.items ?? []);
+    } catch {
+      setItems([]);
+    } finally {
+      setCartLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (canShop) reloadCart();
+    else setItems([]);
+  }, [canShop, reloadCart]);
+
+  const addToCart = useCallback(async (product) => {
+    if (!getAccessToken()) { navigate("/login"); return; }
+    try {
+      const newItem = await addCartItem({ productId: product.id, quantity: product.qty || 1 });
+      if (newItem && newItem.id) {
+        setItems((prev) => {
+          const idx = prev.findIndex(
+            (i) => i.productId === newItem.productId || i.id === newItem.id
+          );
+          if (idx !== -1) {
+            const next = [...prev];
+            next[idx] = newItem;
+            return next;
+          }
+          return [...prev, newItem];
+        });
+      } else {
+        await reloadCart();
+      }
+    } catch (err) {
+      console.error("addToCart error:", err.message);
+      alert(err.message);
+      await reloadCart();
+    }
+  }, [navigate, reloadCart]);
+
+  const updateQty = useCallback(async (id, qty) => {
+    const safeQty = Math.max(1, qty);
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, quantity: safeQty } : i)));
+    try {
+      const updated = await updateCartItem(id, { quantity: safeQty });
+      if (updated) setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
+    } catch (err) {
+      console.error(err.message);
+    }
+  }, []);
+
+  const removeFromCart = useCallback(async (id) => {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    try {
+      await apiRemoveCartItem(id);
+    } catch (err) {
+      console.error(err.message);
+      reloadCart();
+    }
+  }, [reloadCart]);
+
+  const emptyCart = useCallback(async () => {
+    setItems([]);
+    try {
+      await apiClearCart();
+    } catch (err) {
+      console.error(err.message);
+      reloadCart();
+    }
+  }, [reloadCart]);
+
+  const total = items.reduce((sum, i) => sum + (i.price ?? 0) * (i.quantity ?? 1), 0);
+  const currency = items[0]?.currency ?? "UZS";
+
+  const loadFavoriteIds = useCallback(async () => {
+    if (!getAccessToken()) return;
+    try {
+      const data = await getFavorites({ page: 1, perPage: 100 });
+      setFavorites(new Set((data?.content ?? []).map((p) => p.id)));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (canShop) loadFavoriteIds();
+    else setFavorites(new Set());
+  }, [canShop, loadFavoriteIds]);
+
+  const toggleFavorite = useCallback(async (productId) => {
+    if (!getAccessToken()) { navigate("/login"); return; }
+    const isFav = favorites.has(productId);
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (isFav) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
+    try {
+      if (isFav) await removeFavorite(productId);
+      else await addFavorite(productId);
+    } catch (err) {
+      alert(err.message);
+      setFavorites((prev) => {
+        const next = new Set(prev);
+        if (isFav) next.add(productId);
+        else next.delete(productId);
+        return next;
+      });
+    }
+  }, [favorites, navigate]);
+
+  const [companyFavorites, setCompanyFavorites] = useState(new Set());
+
+  const loadCompanyFavoriteIds = useCallback(async () => {
+    if (!getAccessToken()) return;
+    try {
+      const data = await getCompanyFavorites({ page: 1, perPage: 100 });
+      setCompanyFavorites(new Set((data?.content ?? []).map((c) => c.id)));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (canShop) loadCompanyFavoriteIds();
+    else setCompanyFavorites(new Set());
+  }, [canShop, loadCompanyFavoriteIds]);
+
+  const toggleCompanyFavorite = useCallback(async (companyId) => {
+    if (!getAccessToken()) { navigate("/login"); return; }
+    const isFav = companyFavorites.has(companyId);
+    setCompanyFavorites((prev) => {
+      const next = new Set(prev);
+      if (isFav) next.delete(companyId);
+      else next.add(companyId);
+      return next;
+    });
+    try {
+      if (isFav) await removeCompanyFavorite(companyId);
+      else await addCompanyFavorite(companyId);
+    } catch {
+      setCompanyFavorites((prev) => {
+        const next = new Set(prev);
+        if (isFav) next.add(companyId);
+        else next.delete(companyId);
+        return next;
+      });
+    }
+  }, [companyFavorites, navigate]);
+
+  return (
+    <CartContext.Provider value={{
+      items, cartLoading, addToCart, updateQty, removeFromCart, emptyCart, reloadCart,
+      total, currency,
+      favorites, toggleFavorite, reloadFavorites: loadFavoriteIds,
+      companyFavorites, toggleCompanyFavorite, reloadCompanyFavorites: loadCompanyFavoriteIds,
+    }}>
+      {children}
+    </CartContext.Provider>
+  );
+}
+
+export function useCart() {
+  return useContext(CartContext);
+}
