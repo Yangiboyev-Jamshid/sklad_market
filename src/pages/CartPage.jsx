@@ -120,7 +120,10 @@ export default function CartPage() {
                     <div className="sm:hidden p-3 flex flex-col gap-3">
                       <div className="flex gap-3">
                         <div className="w-[127px] h-[122px] flex items-center justify-center bg-[#E2E2E2] dark:bg-[#2A2A2A] rounded-xl overflow-hidden shrink-0">
-                          <ProductThumb width="22" height="7" />
+                          {item.primaryImage
+                            ? <img src={item.primaryImage} alt={item.productName} className="w-full h-full object-cover" />
+                            : <ProductThumb width="22" height="7" />
+                          }
                         </div>
                         <div className="min-w-0">
                           <p className="font-semibold text-ink-900 dark:text-white text-sm mb-1 truncate">{item.productName}</p>
