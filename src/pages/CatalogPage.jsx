@@ -7,7 +7,19 @@ import AppShell from "../components/layout/AppShell";
 import ProductCard from "../components/ui/ProductCard";
 import MapView from "../components/ui/MapView";
 import BannerCarousel from "../components/ui/BannerCarousel";
-import { getAllProducts, searchProducts, getCategoryTree, getCatalogMap, getSearchSuggestions, getCatalogFilters, getCategoryCounts } from "../api/api";
+import { getAllProducts, searchProducts, getCategoryTree, getCatalogMap, getSearchSuggestions, getCatalogFilters, getCategoryCounts, getProductsByPriceRange, getProductBySlug } from "../api/api";
+
+const PRICE_FILTER_IMAGE_ENRICH_LIMIT = 60;
+
+async function enrichMissingImages(products) {
+  return Promise.all(
+    products.map(async (p) => {
+      if (p.images || !p.slug) return p;
+      const detail = await getProductBySlug(p.slug).catch(() => null);
+      return detail?.images ? { ...p, images: detail.images } : p;
+    })
+  );
+}
 import { buildProductMapPins } from "../utils/mapPins";
 import { usePublicBanners } from "../hooks/usePublicBanners";
 import { getPublicCompanyExtras } from "../utils/companyExtras";
@@ -152,9 +164,10 @@ export default function CatalogPage() {
   useEffect(() => {
     clearTimeout(debounceRef.current);
     const category = activeCategory !== "all" ? activeCategory : undefined;
+    const minP = minPrice.trim() ? Number(minPrice) : undefined;
+    const maxP = maxPrice.trim() ? Number(maxPrice) : undefined;
+    const hasPriceFilter = minP != null || maxP != null;
     const filterParams = {
-      minPrice: minPrice.trim() ? Number(minPrice) : undefined,
-      maxPrice: maxPrice.trim() ? Number(maxPrice) : undefined,
       inStock: inStockOnly || undefined,
       verified: verifiedOnly || undefined,
     };
@@ -162,7 +175,27 @@ export default function CatalogPage() {
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        if (query.trim()) {
+        if (hasPriceFilter) {
+          const data = await getProductsByPriceRange({
+            fromPrice: minP ?? 0,
+            toPrice: maxP ?? 999999999999,
+            page: 1,
+            perPage: 100,
+          });
+          if (ignore) return;
+          let raw = data?.content ?? [];
+          const hasExtraFilters = !!category || !!query.trim();
+          if (category) raw = raw.filter((p) => String(p.categoryId) === category);
+          if (query.trim()) {
+            const q = query.trim().toLowerCase();
+            raw = raw.filter((p) => p.name?.toLowerCase().includes(q));
+          }
+          const enriched = await enrichMissingImages(raw.slice(0, PRICE_FILTER_IMAGE_ENRICH_LIMIT));
+          if (ignore) return;
+          setProducts(enriched.map((p) => normalizeProduct(p, companyMap, t)));
+          setTotal(hasExtraFilters ? raw.length : data?.totalElements ?? raw.length);
+          setFoundCategoryIds(raw.map((p) => p.categoryId).filter((id) => id != null));
+        } else if (query.trim()) {
           const data = await searchProducts({ query: query.trim(), page: 1, perPage: 40, category, ...filterParams });
           if (ignore) return;
           const raw = data?.content ?? [];
@@ -182,7 +215,7 @@ export default function CatalogPage() {
       } finally {
         if (!ignore) setLoading(false);
       }
-    }, query ? 400 : 0);
+    }, query.trim() || hasPriceFilter ? 400 : 0);
     return () => { ignore = true; clearTimeout(debounceRef.current); };
   }, [query, activeCategory, minPrice, maxPrice, inStockOnly, verifiedOnly, companyMap, t]);
 

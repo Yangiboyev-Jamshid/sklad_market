@@ -119,6 +119,12 @@ export async function getCatalogFilters() {
   return unwrap(http.get("/catalog/filters"));
 }
 
+export async function getProductsByPriceRange({ fromPrice, toPrice, page = 1, perPage = 20 } = {}) {
+  return unwrap(http.get("/catalog/filter/product/price", {
+    params: { fromPrice, toPrice, page: Math.max(page - 1, 0), size: perPage }
+  }))
+}
+
 export async function getCategoryCounts() {
   return unwrap(http.get("/catalog/category-counts"));
 }
@@ -137,7 +143,7 @@ function cacheCompanyDetail(company) {
     const all = JSON.parse(localStorage.getItem(COMPANY_CACHE_KEY) || "{}");
     all[company.id] = { ...all[company.id], ...company };
     localStorage.setItem(COMPANY_CACHE_KEY, JSON.stringify(all));
-  } catch {}
+  } catch { }
   return company;
 }
 
