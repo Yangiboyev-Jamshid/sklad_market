@@ -122,7 +122,7 @@ export default function CompaniesPage() {
 
         {view === "grid" && banners.length > 0 && (
           <div className="mb-5 sm:mb-8">
-            <BannerCarousel banners={banners} perView={2} heightClass="h-[12.5rem]" />
+            <BannerCarousel banners={banners} perView={2} heightClass="sm:h-[12.5rem] h-[8rem]" />
           </div>
         )}
 
