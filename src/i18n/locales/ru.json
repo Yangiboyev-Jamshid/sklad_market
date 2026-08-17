@@ -114,6 +114,7 @@
     "total": "Итог: {{total}} {{currency}}",
     "addToFavorites": "Добавить в фавориты",
     "share": "Поделиться",
+    "linkCopied": "Ссылка скопирована",
     "category": "Категория",
     "minOrderLabel": "Минимальный заказ",
     "availability": "Наличие",

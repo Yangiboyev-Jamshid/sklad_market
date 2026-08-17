@@ -114,6 +114,7 @@
     "total": "Total: {{total}} {{currency}}",
     "addToFavorites": "Add to favorites",
     "share": "Share",
+    "linkCopied": "Link copied",
     "category": "Category",
     "minOrderLabel": "Minimum order",
     "availability": "Availability",

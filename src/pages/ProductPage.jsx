@@ -126,6 +126,24 @@ export default function ProductPage() {
     }
   };
 
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: product?.name, url: shareUrl });
+      } catch {
+        // user cancelled the share sheet
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      alert(t("product.linkCopied"));
+    } catch {
+      alert(shareUrl);
+    }
+  };
+
   useEffect(() => {
     setLoading(true);
     getProductBySlug(id)
@@ -296,7 +314,10 @@ export default function ProductPage() {
             >
               <Heart size={18} variant={isFav ? "Bold" : "Linear"} className={isFav ? "text-danger-500" : ""} /> {t("product.addToFavorites")}
             </button>
-            <button className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 font-medium py-3.5 rounded-2xl flex items-center justify-center gap-2 text-ink-700 dark:text-ink-200 transition-colors">
+            <button
+              onClick={handleShare}
+              className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 font-medium py-3.5 rounded-2xl flex items-center justify-center gap-2 text-ink-700 dark:text-ink-200 transition-colors"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 16 16" fill="none">
                 <path d="M10.6761 12.7192C10.5278 12.9488 10.2007 13.0074 9.9545 12.8485L5.75114 10.1345C5.50494 9.97557 5.42373 9.65333 5.57199 9.4237C5.72025 9.19407 6.04737 9.13546 6.29356 9.29442L10.4969 12.0084C10.7431 12.1673 10.8243 12.4896 10.6761 12.7192Z" fill="#7F7F7F" />
                 <path d="M10.6761 4.42143C10.5278 4.19181 10.2007 4.1332 9.9545 4.29216L5.75114 7.0061C5.50494 7.16506 5.42373 7.4873 5.57199 7.71693C5.72025 7.94656 6.04737 8.00516 6.29356 7.8462L10.4969 5.13227C10.7431 4.97331 10.8243 4.65106 10.6761 4.42143Z" fill="#7F7F7F" />
