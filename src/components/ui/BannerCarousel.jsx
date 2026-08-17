@@ -27,7 +27,7 @@ function useIsDesktop() {
   return isDesktop;
 }
 
-export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[50vh]", perView = 1 }) {
+export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[410px]", perView = 1 }) {
   const isDesktop = useIsDesktop();
   const effectivePerView = isDesktop ? perView : 1;
 
