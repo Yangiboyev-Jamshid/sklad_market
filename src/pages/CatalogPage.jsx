@@ -263,7 +263,7 @@ export default function CatalogPage() {
 
         {view === "grid" && banners.length > 0 && (
           <div className="mb-5 sm:mb-6">
-            <BannerCarousel banners={banners} perView={2} heightClass="sm:h-[12.5rem] h-[8rem]" />
+            <BannerCarousel banners={banners} perView={2} heightClass="sm:h-[210px] h-[8rem]" />
           </div>
         )}
 
