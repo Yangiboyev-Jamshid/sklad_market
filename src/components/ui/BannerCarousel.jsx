@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft2, ArrowRight2, DocumentUpload } from "iconsax-reactjs";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
-import BannerRequestChat from "./BannerRequestChat";
+import { createBannerChat } from "../../api/api";
+import { connectSupportChatSocket, subscribeSupportThread, sendSupportChatMessage } from "../../api/supportChatSocket";
+import { addBannerThread } from "../../utils/bannerChatStore";
 
 const AUTOPLAY_MS = 4500;
 const SWIPE_DISTANCE = 60;
@@ -31,13 +34,31 @@ function useIsDesktop() {
 }
 
 export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[410px]", perView = 1, allowSellerDownloadRequest = false }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const isSeller = (user?.role || "").toUpperCase() === "SELLER";
   const showDownloadRequest = allowSellerDownloadRequest && isSeller;
-  const [activeRequestBanner, setActiveRequestBanner] = useState(null);
-  const [requestChatOpen, setRequestChatOpen] = useState(false);
   const [hoveredBannerId, setHoveredBannerId] = useState(null);
+  const [requesting, setRequesting] = useState(false);
+
+  const handleBannerRequest = async () => {
+    if (requesting) return;
+    setRequesting(true);
+    try {
+      const subject = t("chat.bannerRequestTitle");
+      const data = await createBannerChat({ subject });
+      addBannerThread(user?.id, { thread_id: data.thread_id, subject });
+      connectSupportChatSocket(i18n.language || "uz");
+      subscribeSupportThread(data.thread_id);
+      sendSupportChatMessage(data.thread_id, t("chat.bannerRequestAutoMessage"), `opt-${Date.now()}`);
+      navigate(`/seller?tab=messages&thread=${data.thread_id}&type=support`);
+    } catch (err) {
+      alert(err.message || t("chat.temporarilyUnavailable"));
+    } finally {
+      setRequesting(false);
+    }
+  };
 
   const isDesktop = useIsDesktop();
   const effectivePerView = isDesktop ? perView : 1;
@@ -113,11 +134,12 @@ export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[
                 {showDownloadRequest && (
                   <button
                     type="button"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveRequestBanner(banner); setRequestChatOpen(true); }}
-                    className={`absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-black/60 text-white text-xs font-medium backdrop-blur-sm hover:bg-black/75 transition-opacity ${hoveredBannerId === banner.id ? "opacity-100" : "opacity-0 pointer-events-none"
+                    disabled={requesting}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleBannerRequest(); }}
+                    className={`absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-black/60 text-white text-xs font-medium backdrop-blur-sm hover:bg-black/75 hover:opacity-100 transition-opacity disabled:opacity-50 ${hoveredBannerId === banner.id ? "opacity-100" : "opacity-60"
                       }`}
                   >
-                    <DocumentUpload size={16} variant="Bold" /> {t("chat.bannerUploadContactLabel")}
+                    <DocumentUpload size={16} variant="Bold" /> {requesting ? "..." : t("chat.bannerUploadContactLabel")}
                   </button>
                 )}
               </div>
@@ -163,15 +185,6 @@ export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[
             ))}
           </div>
         </>
-      )}
-
-      {showDownloadRequest && activeRequestBanner && (
-        <BannerRequestChat
-          key={activeRequestBanner.id}
-          open={requestChatOpen}
-          banner={activeRequestBanner}
-          onClose={() => setRequestChatOpen(false)}
-        />
       )}
     </div>
   );

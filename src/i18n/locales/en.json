@@ -428,6 +428,7 @@
     "bannerUploadContactLabel": "Contact admin about uploading a banner",
     "bannerRequestTitle": "Banner request",
     "bannerRequestAutoMessage": "Hello! I'd like to ask about placing (uploading) an advertising banner. Please assist.",
+    "bannerThreadRowHint": "Conversation with admin",
     "retry": "Retry"
   },
   "moderator": {

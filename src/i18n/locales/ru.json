@@ -428,6 +428,7 @@
     "bannerUploadContactLabel": "Связаться с админом по загрузке баннера",
     "bannerRequestTitle": "Запрос баннера",
     "bannerRequestAutoMessage": "Здравствуйте! Хочу узнать по поводу размещения (загрузки) рекламного баннера. Прошу помочь.",
+    "bannerThreadRowHint": "Переписка с админом",
     "retry": "Повторить"
   },
   "moderator": {

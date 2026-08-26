@@ -1,12 +1,22 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { SearchNormal1, Call, DocumentText1, ArrowLeft2, More, Send, Trash, Paperclip2 } from "iconsax-reactjs";
+import { SearchNormal1, Call, DocumentText1, ArrowLeft2, More, Send, Trash, Paperclip2, MessageQuestion } from "iconsax-reactjs";
 import { HiOutlineEmojiHappy } from "react-icons/hi";
-import { getChats, getChatMessages, deleteChat, uploadChatImage, normalizePhotoUrl } from "../../api/api";
+import { getChats, getChatMessages, deleteChat, uploadChatImage, normalizePhotoUrl, getSupportChatMessages } from "../../api/api";
 import { subscribeThread, sendChatSocketMessage, sendTyping, sendRead, onChatEvent, confirmChatSend } from "../../api/chatSocket";
+import {
+  connectSupportChatSocket,
+  subscribeSupportThread,
+  sendSupportChatMessage,
+  sendSupportTyping,
+  sendSupportRead,
+  onSupportChatEvent,
+  confirmSupportChatSend,
+} from "../../api/supportChatSocket";
 import { useAuth } from "../../context/AuthContext";
 import { CHAT_ENABLED } from "../../config/chatConfig";
+import { getBannerThreads } from "../../utils/bannerChatStore";
 
 const PER_PAGE = 30;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -53,14 +63,17 @@ function MessageStatus({ status, onRetry, retryTitle }) {
 }
 
 export default function ChatPanel() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const requestedThreadId = searchParams.get("thread");
+  const requestedThreadType = searchParams.get("type") === "support" ? "support" : "chat";
 
-  const [threads, setThreads] = useState([]);
+  const [chatThreads, setChatThreads] = useState([]);
+  const [supportThreads, setSupportThreads] = useState([]);
   const [threadsLoading, setThreadsLoading] = useState(true);
   const [activeId, setActiveId] = useState(requestedThreadId ? Number(requestedThreadId) : null);
+  const [activeType, setActiveType] = useState(requestedThreadType);
   const [chatMessages, setChatMessages] = useState([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [input, setInput] = useState("");
@@ -74,6 +87,7 @@ export default function ChatPanel() {
   const messagesEndRef = useRef(null);
   const attachInputRef = useRef(null);
   const activeIdRef = useRef(activeId);
+  const activeTypeRef = useRef(activeType);
   const lastTypingSentRef = useRef(0);
   const typingTimeoutRef = useRef(null);
 
@@ -81,19 +95,24 @@ export default function ChatPanel() {
     activeIdRef.current = activeId;
   }, [activeId]);
 
-  const active = threads.find((th) => th.thread_id === activeId);
+  useEffect(() => {
+    activeTypeRef.current = activeType;
+  }, [activeType]);
+
+  const allThreads = useMemo(() => [...chatThreads, ...supportThreads], [chatThreads, supportThreads]);
+  const active = allThreads.find((th) => th.thread_id === activeId && th.type === activeType);
 
   const filteredThreads = useMemo(() => {
     const query = threadSearch.trim().toLowerCase();
-    if (!query) return threads;
-    return threads.filter((th) => {
-      const haystack = [th.other_party?.display_name, th.product?.name, th.last_message?.body]
+    if (!query) return allThreads;
+    return allThreads.filter((th) => {
+      const haystack = [th.other_party?.display_name, th.product?.name, th.subject, th.last_message?.body]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
       return haystack.includes(query);
     });
-  }, [threads, threadSearch]);
+  }, [allThreads, threadSearch]);
 
   const loadThreads = useCallback(async () => {
     if (!CHAT_ENABLED) {
@@ -102,11 +121,11 @@ export default function ChatPanel() {
     }
     try {
       const data = await getChats({ per_page: 50 });
-      const items = (data?.items ?? []).map((th) => ({ ...th, other_party: normalizeOtherParty(th.other_party) }));
-      setThreads(items);
-      setActiveId((prev) => prev ?? items[0]?.thread_id ?? null);
+      const items = (data?.items ?? []).map((th) => ({ ...th, type: "chat", other_party: normalizeOtherParty(th.other_party) }));
+      setChatThreads(items);
+      setActiveId((prev) => (prev != null ? prev : items[0]?.thread_id ?? null));
     } catch {
-      setThreads([]);
+      setChatThreads([]);
     } finally {
       setThreadsLoading(false);
     }
@@ -115,6 +134,20 @@ export default function ChatPanel() {
   useEffect(() => {
     loadThreads();
   }, [loadThreads]);
+
+  const loadSupportThreads = useCallback(() => {
+    const userId = user?.id;
+    if (!userId) {
+      setSupportThreads([]);
+      return;
+    }
+    const tracked = getBannerThreads(userId);
+    setSupportThreads(tracked.map((t) => ({ thread_id: t.thread_id, subject: t.subject, type: "support" })));
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadSupportThreads();
+  }, [loadSupportThreads]);
 
   const loadMessages = useCallback(async (threadId) => {
     if (!CHAT_ENABLED || !threadId) return;
@@ -132,14 +165,35 @@ export default function ChatPanel() {
     }
   }, [user?.id]);
 
-  useEffect(() => {
-    if (activeId) {
+  const loadSupportMessages = useCallback(async (threadId) => {
+    if (!CHAT_ENABLED || !threadId) return;
+    setMessagesLoading(true);
+    try {
+      const data = await getSupportChatMessages(threadId, { per_page: PER_PAGE });
+      const items = (data?.items ?? []).slice().reverse();
+      setChatMessages(items);
+      const unreadIds = items.filter((m) => m.sender_id !== user?.id && m.status !== "read").map((m) => m.id);
+      if (unreadIds.length) sendSupportRead(threadId, unreadIds);
+    } catch {
       setChatMessages([]);
-      setOtherTyping(false);
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!activeId) return;
+    setChatMessages([]);
+    setOtherTyping(false);
+    if (activeType === "support") {
+      connectSupportChatSocket(i18n.language || "uz");
+      subscribeSupportThread(activeId);
+      loadSupportMessages(activeId);
+    } else {
       subscribeThread(activeId);
       loadMessages(activeId);
     }
-  }, [activeId, loadMessages]);
+  }, [activeId, activeType, loadMessages, loadSupportMessages, i18n.language]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -153,7 +207,7 @@ export default function ChatPanel() {
       if (!message) return;
       const isMine = message.sender_id === user?.id;
 
-      if (thread_id === activeIdRef.current) {
+      if (activeTypeRef.current === "chat" && thread_id === activeIdRef.current) {
         setChatMessages((prev) => {
           if (prev.some((m) => m.id === message.id)) return prev;
           if (isMine) {
@@ -171,14 +225,14 @@ export default function ChatPanel() {
         setOtherTyping(false);
       }
 
-      setThreads((prev) => {
+      setChatThreads((prev) => {
         const idx = prev.findIndex((th) => th.thread_id === thread_id);
         if (idx === -1) {
           loadThreads();
           return prev;
         }
         const copy = prev.slice();
-        const isActive = thread_id === activeIdRef.current;
+        const isActive = activeTypeRef.current === "chat" && thread_id === activeIdRef.current;
         copy[idx] = {
           ...copy[idx],
           last_message: message,
@@ -189,12 +243,12 @@ export default function ChatPanel() {
     });
 
     const offRead = onChatEvent("read_receipt", ({ thread_id, message_ids }) => {
-      if (thread_id !== activeIdRef.current || !message_ids?.length) return;
+      if (activeTypeRef.current !== "chat" || thread_id !== activeIdRef.current || !message_ids?.length) return;
       setChatMessages((prev) => prev.map((m) => (message_ids.includes(m.id) ? { ...m, status: "read" } : m)));
     });
 
     const offTyping = onChatEvent("typing", ({ thread_id, user_id }) => {
-      if (thread_id !== activeIdRef.current || user_id === user?.id) return;
+      if (activeTypeRef.current !== "chat" || thread_id !== activeIdRef.current || user_id === user?.id) return;
       setOtherTyping(true);
       clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => setOtherTyping(false), TYPING_EXPIRE_MS);
@@ -221,6 +275,61 @@ export default function ChatPanel() {
     };
   }, [user?.id, loadThreads]);
 
+  useEffect(() => {
+    const offOpen = onSupportChatEvent("open", () => setSocketConnected(true));
+    const offClose = onSupportChatEvent("close", () => setSocketConnected(false));
+
+    const offMessage = onSupportChatEvent("new_message", ({ thread_id, message }) => {
+      if (!message) return;
+      const isMine = message.sender_id === user?.id;
+
+      if (activeTypeRef.current === "support" && thread_id === activeIdRef.current) {
+        setChatMessages((prev) => {
+          if (prev.some((m) => m.id === message.id)) return prev;
+          if (isMine) {
+            const pendingIdx = prev.findIndex((m) => m._optimistic && m.status !== "failed");
+            if (pendingIdx !== -1) {
+              confirmSupportChatSend(prev[pendingIdx].id);
+              const copy = prev.slice();
+              copy[pendingIdx] = message;
+              return copy;
+            }
+          }
+          return [...prev, message];
+        });
+        if (!isMine) sendSupportRead(thread_id, [message.id]);
+        setOtherTyping(false);
+      }
+    });
+
+    const offRead = onSupportChatEvent("read_receipt", ({ thread_id, message_ids }) => {
+      if (activeTypeRef.current !== "support" || thread_id !== activeIdRef.current || !message_ids?.length) return;
+      setChatMessages((prev) => prev.map((m) => (message_ids.includes(m.id) ? { ...m, status: "read" } : m)));
+    });
+
+    const offTyping = onSupportChatEvent("typing", ({ thread_id, user_id }) => {
+      if (activeTypeRef.current !== "support" || thread_id !== activeIdRef.current || user_id === user?.id) return;
+      setOtherTyping(true);
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => setOtherTyping(false), TYPING_EXPIRE_MS);
+    });
+
+    const offSendTimeout = onSupportChatEvent("send_timeout", ({ client_id }) => {
+      if (!client_id) return;
+      setChatMessages((prev) => prev.map((m) => (m.id === client_id ? { ...m, status: "failed" } : m)));
+    });
+
+    return () => {
+      offOpen();
+      offClose();
+      offMessage();
+      offRead();
+      offTyping();
+      offSendTimeout();
+      clearTimeout(typingTimeoutRef.current);
+    };
+  }, [user?.id]);
+
   const sendMessage = (body, attachmentKey, attachmentUrl) => {
     if (!activeId || !body?.trim()) return;
     const trimmed = body.trim();
@@ -238,7 +347,11 @@ export default function ChatPanel() {
       _optimistic: true,
     };
     setChatMessages((prev) => [...prev, optimistic]);
-    sendChatSocketMessage(activeId, trimmed, attachmentKey, optimisticId);
+    if (activeType === "support") {
+      sendSupportChatMessage(activeId, trimmed, optimisticId);
+    } else {
+      sendChatSocketMessage(activeId, trimmed, attachmentKey, optimisticId);
+    }
   };
 
   const retryMessage = (id) => {
@@ -246,7 +359,11 @@ export default function ChatPanel() {
     const msg = chatMessages.find((m) => m.id === id);
     if (!msg) return;
     setChatMessages((prev) => prev.map((m) => (m.id === id ? { ...m, status: "sending" } : m)));
-    sendChatSocketMessage(activeId, msg.body, msg.attachment_key, id);
+    if (activeType === "support") {
+      sendSupportChatMessage(activeId, msg.body, id);
+    } else {
+      sendChatSocketMessage(activeId, msg.body, msg.attachment_key, id);
+    }
   };
 
   const handleSend = () => {
@@ -261,7 +378,8 @@ export default function ChatPanel() {
     const now = Date.now();
     if (now - lastTypingSentRef.current > TYPING_THROTTLE_MS) {
       lastTypingSentRef.current = now;
-      sendTyping(activeId);
+      if (activeType === "support") sendSupportTyping(activeId);
+      else sendTyping(activeId);
     }
   };
 
@@ -270,7 +388,7 @@ export default function ChatPanel() {
     setDeletingId(threadId);
     try {
       await deleteChat(threadId);
-      setThreads((prev) => prev.filter((th) => th.thread_id !== threadId));
+      setChatThreads((prev) => prev.filter((th) => th.thread_id !== threadId));
       if (activeId === threadId) {
         setActiveId(null);
         setChatMessages([]);
@@ -284,7 +402,7 @@ export default function ChatPanel() {
 
   const handleAttach = async (e) => {
     const file = e.target.files?.[0];
-    if (!file || !activeId) return;
+    if (!file || !activeId || activeType === "support") return;
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
       alert(t("chat.invalidImageType"));
       if (attachInputRef.current) attachInputRef.current.value = "";
@@ -307,12 +425,15 @@ export default function ChatPanel() {
     }
   };
 
-  const openChat = (id) => {
+  const openChat = (id, type) => {
     setActiveId(id);
+    setActiveType(type);
     setMobileShowChat(true);
-    setThreads((prev) =>
-      prev.map((th) => (th.thread_id === id ? { ...th, unread_count: 0 } : th))
-    );
+    if (type === "chat") {
+      setChatThreads((prev) =>
+        prev.map((th) => (th.thread_id === id ? { ...th, unread_count: 0 } : th))
+      );
+    }
   };
 
   if (!CHAT_ENABLED) {
@@ -352,7 +473,7 @@ export default function ChatPanel() {
                 </div>
               </div>
             ))
-          ) : threads.length === 0 ? (
+          ) : allThreads.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-ink-400 dark:text-ink-500 text-sm">
               {t("chat.noActiveChats")}
             </div>
@@ -361,46 +482,56 @@ export default function ChatPanel() {
               {t("chat.noSearchResults")}
             </div>
           ) : (
-            filteredThreads.map((thread) => (
-              <div
-                key={thread.thread_id}
-                className={`group w-full flex mt-4 items-center gap-3 p-2 text-left border rounded-xl border-ink-50 dark:border-[#1C1C1C]/60 transition-colors ${activeId === thread.thread_id ? "bg-brand-50 dark:bg-brand-500/10" : "hover:bg-ink-50 dark:hover:bg-[#171717]"
-                  } ${deletingId === thread.thread_id ? "opacity-50" : ""}`}
-              >
-                <button onClick={() => openChat(thread.thread_id)} className="flex flex-1 items-center gap-3 min-w-0 text-left">
-                  <div className="w-10 h-10 rounded-full bg-brand-600 text-white dark:text-black flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
-                    {thread.other_party?.avatar_url ? (
-                      <img src={thread.other_party.avatar_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      initials(thread.other_party?.display_name)
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-ink-900 dark:text-white truncate">{thread.other_party?.display_name ?? "—"}</p>
-                      <span className="text-[11px] text-ink-300 dark:text-ink-600 shrink-0">{formatTime(thread.last_message?.sent_at)}</span>
-                    </div>
-                    <p className="text-xs text-[#7F7F7F] truncate">
-                      <span>{thread.last_message?.body || "—"}</span><br />
-                    </p>
-                    <div className="text-[10px] flex items-center justify-between text-[#7F7F7F] truncate">
-                      <span>{thread.product?.name}</span>
-                      {thread.unread_count > 0 && <div className="flex justify-center items-end">
-                        <span className="text-[7px] w-[11px] h-[11px] flex items-center justify-center dark:text-black text-white rounded-full bg-brand-600">{thread.unread_count}</span>
-                      </div>}
-                    </div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => handleDeleteChat(thread.thread_id)}
-                  disabled={deletingId === thread.thread_id}
-                  title={t("chat.deleteChat")}
-                  className="shrink-0 opacity-0 group-hover:opacity-100 text-ink-300 hover:text-danger-500 dark:text-ink-600 dark:hover:text-danger-500 transition-opacity p-1"
+            filteredThreads.map((thread) => {
+              const isSupport = thread.type === "support";
+              const displayName = isSupport ? (thread.subject || t("chat.bannerRequestTitle")) : (thread.other_party?.display_name ?? "—");
+              return (
+                <div
+                  key={`${thread.type}-${thread.thread_id}`}
+                  className={`group w-full flex mt-4 items-center gap-3 p-2 text-left border rounded-xl border-ink-50 dark:border-[#1C1C1C]/60 transition-colors ${activeId === thread.thread_id && activeType === thread.type ? "bg-brand-50 dark:bg-brand-500/10" : "hover:bg-ink-50 dark:hover:bg-[#171717]"
+                    } ${deletingId === thread.thread_id ? "opacity-50" : ""}`}
                 >
-                  <Trash size={16} />
-                </button>
-              </div>
-            ))
+                  <button onClick={() => openChat(thread.thread_id, thread.type)} className="flex flex-1 items-center gap-3 min-w-0 text-left">
+                    <div className={`w-10 h-10 rounded-full text-white dark:text-black flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden ${isSupport ? "bg-[#2E6FFC]" : "bg-brand-600"}`}>
+                      {isSupport ? (
+                        <MessageQuestion size={18} variant="Bold" />
+                      ) : thread.other_party?.avatar_url ? (
+                        <img src={thread.other_party.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        initials(thread.other_party?.display_name)
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-ink-900 dark:text-white truncate">{displayName}</p>
+                        <span className="text-[11px] text-ink-300 dark:text-ink-600 shrink-0">{formatTime(thread.last_message?.sent_at)}</span>
+                      </div>
+                      <p className="text-xs text-[#7F7F7F] truncate">
+                        <span>{isSupport ? t("chat.bannerThreadRowHint") : (thread.last_message?.body || "—")}</span><br />
+                      </p>
+                      {!isSupport && (
+                        <div className="text-[10px] flex items-center justify-between text-[#7F7F7F] truncate">
+                          <span>{thread.product?.name}</span>
+                          {thread.unread_count > 0 && <div className="flex justify-center items-end">
+                            <span className="text-[7px] w-[11px] h-[11px] flex items-center justify-center dark:text-black text-white rounded-full bg-brand-600">{thread.unread_count}</span>
+                          </div>}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                  {!isSupport && (
+                    <button
+                      onClick={() => handleDeleteChat(thread.thread_id)}
+                      disabled={deletingId === thread.thread_id}
+                      title={t("chat.deleteChat")}
+                      className="shrink-0 opacity-0 group-hover:opacity-100 text-ink-300 hover:text-danger-500 dark:text-ink-600 dark:hover:text-danger-500 transition-opacity p-1"
+                    >
+                      <Trash size={16} />
+                    </button>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       </div>
@@ -414,14 +545,18 @@ export default function ChatPanel() {
                   <ArrowLeft2 size={20} />
                 </button>
                 <div className="w-10 h-10 rounded-xl bg-[#2E6FFC] text-white dark:text-black flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
-                  {active.other_party?.avatar_url ? (
+                  {active.type === "support" ? (
+                    <MessageQuestion size={18} variant="Bold" />
+                  ) : active.other_party?.avatar_url ? (
                     <img src={active.other_party.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
                     initials(active.other_party?.display_name)
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-ink-900 dark:text-white truncate">{active.other_party?.display_name ?? "—"}</p>
+                  <p className="text-sm font-semibold text-ink-900 dark:text-white truncate">
+                    {active.type === "support" ? (active.subject || t("chat.bannerRequestTitle")) : (active.other_party?.display_name ?? "—")}
+                  </p>
                   {otherTyping ? (
                     <p className="text-xs text-brand-500 dark:text-brand-400">{t("chat.typing")}</p>
                   ) : socketConnected ? (
@@ -435,10 +570,12 @@ export default function ChatPanel() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-ink-400 dark:text-white shrink-0">
-                <Call size={24} />
-                <More size={24} style={{ transform: "rotate(90deg)" }} />
-              </div>
+              {active.type !== "support" && (
+                <div className="flex items-center gap-3 text-ink-400 dark:text-white shrink-0">
+                  <Call size={24} />
+                  <More size={24} style={{ transform: "rotate(90deg)" }} />
+                </div>
+              )}
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5 flex flex-col gap-3">
@@ -496,22 +633,26 @@ export default function ChatPanel() {
               <button className="text-[#75809F] text-[24px] hover:text-[#1A94FF] transition-colors shrink-0" type="button">
                 <HiOutlineEmojiHappy />
               </button>
-              <input
-                ref={attachInputRef}
-                type="file"
-                accept={ALLOWED_IMAGE_TYPES.join(",")}
-                className="hidden"
-                onChange={handleAttach}
-              />
-              <button
-                onClick={() => attachInputRef.current?.click()}
-                disabled={attaching}
-                className="text-[#75809F] hover:text-[#1A94FF] disabled:opacity-50 transition-colors shrink-0"
-                type="button"
-                title={t("chat.attachImage")}
-              >
-                <Paperclip2 size={22} />
-              </button>
+              {active.type !== "support" && (
+                <>
+                  <input
+                    ref={attachInputRef}
+                    type="file"
+                    accept={ALLOWED_IMAGE_TYPES.join(",")}
+                    className="hidden"
+                    onChange={handleAttach}
+                  />
+                  <button
+                    onClick={() => attachInputRef.current?.click()}
+                    disabled={attaching}
+                    className="text-[#75809F] hover:text-[#1A94FF] disabled:opacity-50 transition-colors shrink-0"
+                    type="button"
+                    title={t("chat.attachImage")}
+                  >
+                    <Paperclip2 size={22} />
+                  </button>
+                </>
+              )}
               <input
                 value={input}
                 onChange={handleInputChange}

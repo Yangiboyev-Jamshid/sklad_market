@@ -428,7 +428,8 @@
     "retry": "Qayta urinish",
     "bannerUploadContactLabel": "Banner yuklash uchun admin bilan bog'laning",
     "bannerRequestTitle": "Banner so'rovi",
-    "bannerRequestAutoMessage": "Assalomu alaykum! Men reklama banneri joylashtirish (yuklash) yuzasidan bog'lanmoqchiman. Iltimos, yordam bering."
+    "bannerRequestAutoMessage": "Assalomu alaykum! Men reklama banneri joylashtirish (yuklash) yuzasidan bog'lanmoqchiman. Iltimos, yordam bering.",
+    "bannerThreadRowHint": "Admin bilan yozishma"
   },
   "moderator": {
     "dashboardTitle": "Moderator paneli",
