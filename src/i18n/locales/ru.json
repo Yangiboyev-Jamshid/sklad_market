@@ -425,6 +425,9 @@
     "loginToChat": "Войдите, чтобы написать в техподдержку",
     "chatClosed": "Чат закрыт",
     "startNewChat": "Начать новый чат",
+    "bannerUploadContactLabel": "Связаться с админом по загрузке баннера",
+    "bannerRequestTitle": "Запрос баннера",
+    "bannerRequestAutoMessage": "Здравствуйте! Хочу узнать по поводу размещения (загрузки) рекламного баннера. Прошу помочь.",
     "retry": "Повторить"
   },
   "moderator": {

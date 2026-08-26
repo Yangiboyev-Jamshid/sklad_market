@@ -189,7 +189,7 @@ export default function HomePage() {
               <p className="text-sm">{t("home.bannersEmpty")}</p>
             </div>
           ) : (
-            <BannerCarousel banners={banners} />
+            <BannerCarousel banners={banners} allowSellerDownloadRequest />
           )}
         </div>
 

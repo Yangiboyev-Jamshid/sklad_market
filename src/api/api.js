@@ -516,6 +516,10 @@ export async function createSupportChat({ subject } = {}) {
   return unwrap(http.post("/support/chats/create", subject ? { subject } : {}));
 }
 
+export async function createBannerChat({ subject } = {}) {
+  return unwrap(http.post("/support/chats/banner/create", subject ? { subject } : {}));
+}
+
 export async function getSupportChatMessages(threadId, { page = 1, per_page = 30, before_id } = {}) {
   return unwrap(http.get(`/support/chats/${threadId}/messages`, { params: { page, per_page, before_id } }));
 }

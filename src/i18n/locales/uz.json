@@ -425,7 +425,10 @@
     "loginToChat": "Texnik yordam bilan yozishish uchun tizimga kiring",
     "chatClosed": "Chat yopilgan",
     "startNewChat": "Yangi chat boshlash",
-    "retry": "Qayta urinish"
+    "retry": "Qayta urinish",
+    "bannerUploadContactLabel": "Banner yuklash uchun admin bilan bog'laning",
+    "bannerRequestTitle": "Banner so'rovi",
+    "bannerRequestAutoMessage": "Assalomu alaykum! Men reklama banneri joylashtirish (yuklash) yuzasidan bog'lanmoqchiman. Iltimos, yordam bering."
   },
   "moderator": {
     "dashboardTitle": "Moderator paneli",

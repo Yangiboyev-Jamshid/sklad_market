@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft2, ArrowRight2 } from "iconsax-reactjs";
+import { ArrowLeft2, ArrowRight2, DocumentUpload } from "iconsax-reactjs";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "../../context/AuthContext";
+import BannerRequestChat from "./BannerRequestChat";
 
 const AUTOPLAY_MS = 4500;
 const SWIPE_DISTANCE = 60;
@@ -27,7 +30,15 @@ function useIsDesktop() {
   return isDesktop;
 }
 
-export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[410px]", perView = 1 }) {
+export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[410px]", perView = 1, allowSellerDownloadRequest = false }) {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const isSeller = (user?.role || "").toUpperCase() === "SELLER";
+  const showDownloadRequest = allowSellerDownloadRequest && isSeller;
+  const [activeRequestBanner, setActiveRequestBanner] = useState(null);
+  const [requestChatOpen, setRequestChatOpen] = useState(false);
+  const [hoveredBannerId, setHoveredBannerId] = useState(null);
+
   const isDesktop = useIsDesktop();
   const effectivePerView = isDesktop ? perView : 1;
 
@@ -84,16 +95,32 @@ export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[
             style={{ gridTemplateColumns: `repeat(${group.length}, minmax(0, 1fr))` }}
           >
             {group.map((banner) => (
-              <a
+              <div
                 key={banner.id}
-                href={banner.href || undefined}
-                target={banner.href ? "_blank" : undefined}
-                rel={banner.href ? "noopener noreferrer" : undefined}
-                onClick={(e) => { if (wasDragged.current) e.preventDefault(); }}
-                className={`block h-full rounded-2xl overflow-hidden ${banner.href ? "cursor-pointer" : "cursor-default"}`}
+                className="relative h-full"
+                onMouseEnter={() => setHoveredBannerId(banner.id)}
+                onMouseLeave={() => setHoveredBannerId((id) => (id === banner.id ? null : id))}
               >
-                <img src={banner.img} alt="banner" className="w-full h-full object-cover pointer-events-none" draggable={false} />
-              </a>
+                <a
+                  href={banner.href || undefined}
+                  target={banner.href ? "_blank" : undefined}
+                  rel={banner.href ? "noopener noreferrer" : undefined}
+                  onClick={(e) => { if (wasDragged.current) e.preventDefault(); }}
+                  className={`block h-full rounded-2xl overflow-hidden ${banner.href ? "cursor-pointer" : "cursor-default"}`}
+                >
+                  <img src={banner.img} alt="banner" className="w-full h-full object-cover pointer-events-none" draggable={false} />
+                </a>
+                {showDownloadRequest && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveRequestBanner(banner); setRequestChatOpen(true); }}
+                    className={`absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-black/60 text-white text-xs font-medium backdrop-blur-sm hover:bg-black/75 transition-opacity ${hoveredBannerId === banner.id ? "opacity-100" : "opacity-0 pointer-events-none"
+                      }`}
+                  >
+                    <DocumentUpload size={16} variant="Bold" /> {t("chat.bannerUploadContactLabel")}
+                  </button>
+                )}
+              </div>
             ))}
           </motion.div>
         </AnimatePresence>
@@ -136,6 +163,15 @@ export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[
             ))}
           </div>
         </>
+      )}
+
+      {showDownloadRequest && activeRequestBanner && (
+        <BannerRequestChat
+          key={activeRequestBanner.id}
+          open={requestChatOpen}
+          banner={activeRequestBanner}
+          onClose={() => setRequestChatOpen(false)}
+        />
       )}
     </div>
   );
