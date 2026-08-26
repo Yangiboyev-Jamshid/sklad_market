@@ -1,5 +1,9 @@
 import axios from "axios";
 import i18n from "../i18n";
+import {
+  isAuthRefreshStaleSessionError,
+  refreshAccessTokenSingleflight,
+} from "./authRefresh";
 
 const http = axios.create({ baseURL: "/api/v1" });
 
@@ -9,21 +13,6 @@ http.interceptors.request.use((config) => {
   config.headers["Accept-Language"] = (i18n.language || "ru").toUpperCase();
   return config;
 });
-
-let refreshPromise = null;
-
-async function refreshTokens() {
-  const refreshToken = localStorage.getItem("refresh_token");
-  if (!refreshToken) throw new Error("No refresh token");
-  const res = await axios.post("/api/v1/auth/refresh", { refreshToken });
-  const data = res.data?.data ?? {};
-  const accessToken = data.access_token ?? data.accessToken;
-  const nextRefreshToken = data.refresh_token ?? data.refreshToken;
-  if (!accessToken) throw new Error("Refresh response missing access token");
-  localStorage.setItem("access_token", accessToken);
-  if (nextRefreshToken) localStorage.setItem("refresh_token", nextRefreshToken);
-  return accessToken;
-}
 
 http.interceptors.response.use(
   (res) => res,
@@ -42,13 +31,16 @@ http.interceptors.response.use(
       config._retry = true;
       if (localStorage.getItem("refresh_token")) {
         try {
-          refreshPromise = refreshPromise ?? refreshTokens();
-          const token = await refreshPromise;
-          refreshPromise = null;
+          const { accessToken: token } = await refreshAccessTokenSingleflight({
+            acceptLanguage: (i18n.language || "ru").toUpperCase(),
+          });
+          config.headers = config.headers ?? {};
           config.headers.Authorization = `Bearer ${token}`;
           return http(config);
-        } catch {
-          refreshPromise = null;
+        } catch (refreshError) {
+          // An older request must not clear a newer login/role session that won the refresh race.
+          if (isAuthRefreshStaleSessionError(refreshError)) throw refreshError;
+          // The existing shared-client logout path below remains authoritative.
         }
       }
       if (localStorage.getItem("access_token")) {

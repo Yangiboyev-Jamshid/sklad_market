@@ -19,7 +19,7 @@ export default function SearchSuggestions({ products, loading, onSelect }) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -6 }}
         transition={{ duration: 0.15 }}
-        className="absolute left-0 right-0 top-full mt-2 z-30 bg-white dark:bg-[#0D0D0D] border border-ink-100 dark:border-[#1C1C1C] rounded-2xl shadow-xl overflow-hidden"
+        className="absolute inset-x-0 top-full z-30 mt-2 w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-ink-100 bg-white shadow-xl dark:border-[#1C1C1C] dark:bg-[#0D0D0D]"
       >
         {loading ? (
           <div className="flex flex-col gap-1.5 p-2.5">

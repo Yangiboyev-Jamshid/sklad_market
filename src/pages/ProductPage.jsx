@@ -28,6 +28,8 @@ import ReviewModal from "../components/modal/ReviewModal";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { getProductBySlug, getAllProducts, getProductReviews, createProductReview, createChat } from "../api/api";
+import { getSimilarProducts } from "../ai/api/aiClient";
+import { isAiAgentEnabled } from "../ai/flag";
 import { CHAT_ENABLED } from "../config/chatConfig";
 
 const TABS = [
@@ -76,6 +78,7 @@ export default function ProductPage() {
   const [showReport, setShowReport] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [similar, setSimilar] = useState([]);
+  const [similarSource, setSimilarSource] = useState("category");
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewSummary, setReviewSummary] = useState({ rating: 0, count: 0 });
@@ -159,13 +162,48 @@ export default function ProductPage() {
 
   useEffect(() => {
     if (!product) return;
-    getAllProducts({ page: 1, perPage: 60 })
-      .then((data) => {
-        const items = (data?.items ?? []).filter((p) => p.categoryId === product.category?.id && p.id !== product.id);
-        setSimilar(items.slice(0, 4).map((p) => normalizeProduct(p, t)));
-      })
-      .catch(() => setSimilar([]));
-  }, [product, t]);
+    const controller = new AbortController();
+    let ignore = false;
+
+    const loadSimilar = async () => {
+      const catalog = await getAllProducts({ page: 1, perPage: 60 }).catch(() => ({ items: [] }));
+      if (ignore) return;
+      const catalogItems = catalog?.items ?? [];
+      const fallback = catalogItems
+        .filter((item) => item.categoryId === product.category?.id && item.id !== product.id)
+        .slice(0, 4)
+        .map((item) => normalizeProduct(item, t));
+
+      if (!isAiAgentEnabled() || !isLoggedIn) {
+        setSimilar(fallback);
+        setSimilarSource("category");
+        return;
+      }
+
+      try {
+        const response = await getSimilarProducts(product.id, { limit: 4, signal: controller.signal });
+        if (ignore) return;
+        const catalogById = new Map(catalogItems.map((item) => [Number(item.id), item]));
+        const recommended = (response?.items ?? []).map((item) => normalizeProduct({
+          ...catalogById.get(Number(item.productId)),
+          ...item,
+          id: item.productId,
+        }, t));
+        setSimilar(recommended.length > 0 ? recommended : fallback);
+        setSimilarSource(recommended.length > 0 ? "ai" : "category");
+      } catch (error) {
+        if (ignore || error?.code === "ERR_CANCELED") return;
+        setSimilar(fallback);
+        setSimilarSource("category");
+      }
+    };
+
+    loadSimilar();
+    return () => {
+      ignore = true;
+      controller.abort();
+    };
+  }, [product, t, isLoggedIn]);
 
   if (loading) {
     return (
@@ -476,7 +514,14 @@ export default function ProductPage() {
 
         {similar.length > 0 && (
           <div className="mt-8 sm:mt-10">
-            <h2 className="text-xl sm:text-2xl font-display font-bold text-ink-900 dark:text-white mb-4">{t("product.similarProducts")}</h2>
+            <div className="mb-4 flex items-center gap-2">
+              <h2 className="text-xl sm:text-2xl font-display font-bold text-ink-900 dark:text-white">{t("product.similarProducts")}</h2>
+              {similarSource === "ai" && (
+                <span className="rounded-full bg-brand-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-700 dark:bg-brand-500/10 dark:text-brand-300">
+                  {t("product.aiRecommended")}
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-6 sm:gap-5">
               {similar.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
             </div>

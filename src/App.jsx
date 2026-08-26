@@ -109,9 +109,11 @@ function App() {
                   </Suspense>
                 } />
                 <Route path="/ai-agent" element={
-                  <Suspense fallback={<Loader />}>
-                    <AiAgentPage />
-                  </Suspense>
+                  <RequireAuth>
+                    <Suspense fallback={<Loader />}>
+                      <AiAgentPage />
+                    </Suspense>
+                  </RequireAuth>
                 } />
                 <Route path="/companies" element={
                   <Suspense fallback={<Loader />}>

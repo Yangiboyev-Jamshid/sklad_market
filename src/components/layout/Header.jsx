@@ -13,7 +13,6 @@ import {
   Sun1,
   Moon,
   HamburgerMenu,
-  Messages1,
   Messages2,
   Profile,
   Element3,
@@ -32,6 +31,7 @@ import { useTheme } from "../../context/ThemeContext";
 import MobileMenu from "./MobileMenu";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { cartIconRefs } from "../../utils/cartFly";
+import AiAgentLogo from "../../ai/components/AiAgentLogo";
 
 const NOTIF_LABEL_KEYS = {
   PRODUCT_CREATED: "header.notifProductCreated",
@@ -262,7 +262,7 @@ export default function Header() {
               onClick={() => navigate("/ai-agent")}
               className="hidden sm:flex items-center gap-5 px-4 py-2 rounded-full border border-ink-200 dark:border-[#1C1C1C] text-ink-500 dark:text-ink-400 hover:border-brand-300 dark:hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors text-sm w-full max-w-xs"
             >
-              <Messages1 size={18} variant="Linear" />
+              <AiAgentLogo size={20} />
               <span className="flex-1 text-left text-xs text-black dark:text-white">{t("nav.aiAgent")}</span>
               <kbd className="text-[14px] bg-ink-100 dark:bg-[#2A2A2A] px-3 rounded-full ml-5 font-mono text-ink-500 dark:text-white">
                 ⌘ K
@@ -503,7 +503,7 @@ export default function Header() {
                       onClick={() => { setCartMenuOpen(false); navigate("/cart"); }}
                     />
                     <DropdownItem
-                      icon={Messages1}
+                      icon={AiAgentLogo}
                       label={t("nav.aiAgent")}
                       onClick={() => { setCartMenuOpen(false); navigate("/ai-agent"); }}
                     />

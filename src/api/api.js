@@ -1,4 +1,6 @@
 import http, { unwrap } from "./http";
+import i18n from "../i18n";
+import { refreshAccessTokenSingleflight } from "./authRefresh";
 
 function toSingleFileForm(file) {
   const form = new FormData();
@@ -41,6 +43,15 @@ export async function resetPassword({ username }) {
 export async function confirmResetPassword({ username, confirmCode, newPassword }) {
   const message = await unwrap(http.post("/auth/registration/reset-password/confirm", { username, confirmCode, newPassword }));
   return { message };
+}
+
+// Public standalone entry point. It joins the same refresh single-flight used by ordinary and AI
+// requests, so callers cannot spend a rotating refresh token concurrently.
+export async function refreshAccessToken() {
+  const result = await refreshAccessTokenSingleflight({
+    acceptLanguage: (i18n.language || "ru").toUpperCase(),
+  });
+  return result.data;
 }
 
 export async function verifyAccount({ username, code }) {

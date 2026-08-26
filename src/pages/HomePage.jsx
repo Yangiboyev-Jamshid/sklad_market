@@ -11,6 +11,10 @@ import Catalog from "../components/modal/Catalog";
 import { getCatalogBySaleType, searchProducts, getPopularProducts, getAllProducts } from "../api/api";
 import { usePublicBanners } from "../hooks/usePublicBanners";
 import { getPublicCompanyExtras } from "../utils/companyExtras";
+import { useAuth } from "../context/AuthContext";
+import DashboardAiAssistant from "../ai/components/DashboardAiAssistant";
+import DashboardAiSearchPanel from "../ai/components/DashboardAiSearchPanel";
+import { isAiAgentEnabled } from "../ai/flag";
 
 function levenshtein(a, b) {
   const m = a.length;
@@ -65,6 +69,7 @@ function normalizeProduct(p, imageMap, companyMap, t) {
 
 export default function HomePage() {
   const { t } = useTranslation();
+  const { user, isLoggedIn } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [saleType, setSaleType] = useState("wholesale");
   const [query, setQuery] = useState("");
@@ -77,6 +82,11 @@ export default function HomePage() {
   const [topSuggestOpen, setTopSuggestOpen] = useState(false);
   const [heroSuggestOpen, setHeroSuggestOpen] = useState(false);
   const debounceRef = useRef(null);
+  const isSearching = Boolean(query.trim());
+  const aiSearchActive = isAiAgentEnabled() && isLoggedIn && query.trim().length >= 2;
+  const productGridClass = aiSearchActive
+    ? "grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-x-2 gap-y-6 sm:gap-5"
+    : "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-6 sm:gap-5";
 
   useEffect(() => {
     getAllProducts({ page: 1, perPage: 200 })
@@ -180,7 +190,9 @@ export default function HomePage() {
           <Catalog isOpen={isOpen} onClose={() => setIsOpen(false)} />
         </div>
 
-        <div className="mb-6 sm:mb-8 relative z-1">
+        {!isSearching && <DashboardAiAssistant user={user} isLoggedIn={isLoggedIn} />}
+
+        {!isSearching && <div className="mb-6 sm:mb-8 relative z-1">
           {bannersLoading ? (
             <div className="h-44 sm:h-56 rounded-2xl bg-ink-100 dark:bg-[#1C1C1C] animate-pulse" />
           ) : banners.length === 0 ? (
@@ -191,9 +203,9 @@ export default function HomePage() {
           ) : (
             <BannerCarousel banners={banners} allowSellerDownloadRequest />
           )}
-        </div>
+        </div>}
 
-        <div className="mb-6 sm:mb-8 overflow-x-auto relative z-1">
+        {!isSearching && <div className="mb-6 sm:mb-8 overflow-x-auto relative z-1">
           <PillToggle
             options={[
               { value: "wholesale", label: t("home.wholesale") },
@@ -203,10 +215,12 @@ export default function HomePage() {
             onChange={setSaleType}
             className="w-full scrollbar-none"
           />
-        </div>
+        </div>}
 
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between px-1 sm:px-8 md:px-16 gap-3 mb-4 sm:mb-5 relative z-1">
-          <h2 className="text-xl sm:text-2xl font-display font-bold text-ink-900 dark:text-white">{t("home.popularProducts")}</h2>
+          <h2 className="text-xl sm:text-2xl font-display font-bold text-ink-900 dark:text-white">
+            {t(isSearching ? "home.searchResults" : "home.popularProducts")}
+          </h2>
           <div className="relative sm:flex items-center w-full sm:w-64">
             <Input
               placeholder={t("common.searchProduct")}
@@ -227,27 +241,32 @@ export default function HomePage() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-2 px-1 sm:px-8 md:px-16 sm:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-6 sm:gap-5">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] h-64 animate-pulse" />
-            ))}
-          </div>
-        ) : products.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="mb-3 text-ink-400 dark:text-ink-600">
-              <Box size="54" />
-            </p>
-            <p className="text-base font-semibold text-ink-700 dark:text-white">{t("home.productsNotFound")}</p>
-            {query && (
-              <p className="text-sm text-ink-400 mt-1">{t("common.tryAnotherQuery")}</p>
+        <div className={`relative isolate grid items-start gap-6 px-1 sm:px-8 md:px-16 ${aiSearchActive ? "xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]" : ""}`}>
+          <div className="relative z-10 min-w-0">
+            {loading ? (
+              <div className={productGridClass}>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="h-64 animate-pulse rounded-2xl border border-ink-100 bg-white dark:border-[#1C1C1C] dark:bg-[#0D0D0D]" />
+                ))}
+              </div>
+            ) : products.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <p className="mb-3 text-ink-400 dark:text-ink-600">
+                  <Box size="54" />
+                </p>
+                <p className="text-base font-semibold text-ink-700 dark:text-white">{t("home.productsNotFound")}</p>
+                {query && (
+                  <p className="text-sm text-ink-400 mt-1">{t("common.tryAnotherQuery")}</p>
+                )}
+              </div>
+            ) : (
+              <div className={productGridClass}>
+                {products.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+              </div>
             )}
           </div>
-        ) : (
-          <div className="grid grid-cols-2 px-1 sm:px-8 md:px-16 sm:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-6 sm:gap-5">
-            {products.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
-          </div>
-        )}
+          <DashboardAiSearchPanel query={query} isLoggedIn={isLoggedIn} />
+        </div>
       </div>
     </AppShell >
   );

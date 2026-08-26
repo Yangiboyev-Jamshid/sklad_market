@@ -68,7 +68,49 @@
     "wholesale": "Wholesale",
     "retail": "Retail",
     "popularProducts": "Popular products",
-    "productsNotFound": "No products found"
+    "searchResults": "Search results",
+    "productsNotFound": "No products found",
+    "aiAssistant": {
+      "badge": "AI assistant",
+      "greeting": "Hi, {{name}}!",
+      "title": "What can I help you find?",
+      "subtitle": "AI searches products and companies by meaning, compares results, and recommends suitable suppliers.",
+      "open": "Open AI assistant",
+      "searchAction": "Search “{{query}}” with AI across products and companies",
+      "queryPrompt": "Find products and companies for “{{query}}”. Show the best matches and explain why they fit.",
+      "howToTitle": "How to use the assistant",
+      "instructions": [
+        "Describe the product, quantity, budget, and preferred location.",
+        "Review the product and company cards, then open them to verify current details.",
+        "AI can recommend and prepare drafts, but it never orders or contacts anyone automatically."
+      ],
+      "firstTimeBadge": "First visit",
+      "firstTimeTitle": "A quick guide to Sklad Market",
+      "buyerGuide": "Buyers search and compare products or suppliers, open a result card, and review a request before sending it to a seller.",
+      "sellerGuide": "Sellers maintain their company catalog, review buyer requests and messages, and approve AI-prepared drafts before anything is sent or published.",
+      "generalGuide": "Use the catalog to discover products and companies, then use requests and chat to continue with the right seller.",
+      "dismiss": "Got it",
+      "panel": {
+        "title": "AI smart matches",
+        "subtitle": "Meaning-based results for “{{query}}” from products and companies.",
+        "filterLabel": "Filter AI results",
+        "filter": { "ALL": "All", "PRODUCT": "Products", "COMPANY": "Companies" },
+        "type": { "PRODUCT": "Product", "COMPANY": "Company" },
+        "loading": "AI is finding relevant products and companies",
+        "unnamed": "Unnamed result",
+        "productCount": "{{count}} products",
+        "verified": "Verified",
+        "openResult": "Open result",
+        "rateLimited": "AI search is receiving too many requests. Please wait briefly.",
+        "budgetExceeded": "Today's semantic AI limit has been reached. Basic catalog search still works.",
+        "error": "AI matches are temporarily unavailable. Normal search is still working.",
+        "retry": "Try again",
+        "empty": "AI found no additional matches for this search.",
+        "emptyFilter": "No AI matches in this result type.",
+        "stale": "AI results use an older catalog snapshot. Open a result to verify current details.",
+        "continueChat": "Ask AI about these results"
+      }
+    }
   },
   "catalogModal": {
     "categoriesNotFound": "No categories found",
@@ -133,7 +175,8 @@
     "safeDeal": "Secure deal through the platform",
     "verifiedData": "Verified company data",
     "originalProducts": "Original products with documents",
-    "similarProducts": "Similar products"
+    "similarProducts": "Similar products",
+    "aiRecommended": "AI recommended"
   },
   "cart": {
     "title": "Cart",
