@@ -62,7 +62,7 @@ export default function AiAgentPage() {
     setMessagesLoading(true);
     try {
       const data = await getAiConversationMessages(conversationId, { per_page: 50 });
-      const items = (data?.items ?? []).slice().reverse();
+      const items = (data?.items ?? []).slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       setMessages(items);
     } catch {
       setMessages([]);

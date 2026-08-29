@@ -154,7 +154,7 @@ export default function ChatPanel() {
     setMessagesLoading(true);
     try {
       const data = await getChatMessages(threadId, { per_page: PER_PAGE });
-      const items = (data?.items ?? []).slice().reverse();
+      const items = (data?.items ?? []).slice().sort((a, b) => new Date(a.sent_at) - new Date(b.sent_at));
       setChatMessages(items);
       const unreadIds = items.filter((m) => m.sender_id !== user?.id && m.status !== "read").map((m) => m.id);
       if (unreadIds.length) sendRead(threadId, unreadIds);
@@ -170,7 +170,7 @@ export default function ChatPanel() {
     setMessagesLoading(true);
     try {
       const data = await getSupportChatMessages(threadId, { per_page: PER_PAGE });
-      const items = (data?.items ?? []).slice().reverse();
+      const items = (data?.items ?? []).slice().sort((a, b) => new Date(a.sent_at) - new Date(b.sent_at));
       setChatMessages(items);
       const unreadIds = items.filter((m) => m.sender_id !== user?.id && m.status !== "read").map((m) => m.id);
       if (unreadIds.length) sendSupportRead(threadId, unreadIds);

@@ -82,7 +82,7 @@ export default function SupportChatWidget() {
     setMessagesLoading(true);
     try {
       const data = await getSupportChatMessages(threadId, { per_page: 30 });
-      const items = (data?.items ?? []).slice().reverse();
+      const items = (data?.items ?? []).slice().sort((a, b) => new Date(a.sent_at) - new Date(b.sent_at));
       setMessages(items);
       const unreadIds = items.filter((m) => m.sender_id !== user?.id && m.status !== "read").map((m) => m.id);
       if (unreadIds.length) sendSupportRead(threadId, unreadIds);

@@ -209,7 +209,7 @@ export default function SupportChatTab() {
     setMessagesLoading(true);
     try {
       const data = await getSupportChatMessages(th.thread_id, { per_page: 30 });
-      const items = (data?.items ?? []).slice().reverse();
+      const items = (data?.items ?? []).slice().sort((a, b) => new Date(a.sent_at) - new Date(b.sent_at));
       setMessages(items);
       if (canChatWith(th)) {
         subscribeSupportThread(th.thread_id);
