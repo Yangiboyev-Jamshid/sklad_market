@@ -18,7 +18,6 @@ const CartPage = lazy(() => import("./pages/CartPage"))
 const RequestsPage = lazy(() => import("./pages/RequestsPage"))
 const ChatPage = lazy(() => import("./pages/ChatPage"))
 const AiAgentPage = lazy(() => import("./pages/AiAgentPage"))
-const BuyingIntentsPage = lazy(() => import("./pages/BuyingIntentsPage"))
 const CompaniesPage = lazy(() => import("./pages/CompaniesPage"))
 const ProfilePage = lazy(() => import("./pages/ProfilePage"))
 const UserProfilePage = lazy(() => import("./pages/UserProfilePage"))
@@ -113,13 +112,6 @@ function App() {
                   <Suspense fallback={<Loader />}>
                     <AiAgentPage />
                   </Suspense>
-                } />
-                <Route path="/buying-intents" element={
-                  <RequireAuth>
-                    <Suspense fallback={<Loader />}>
-                      <BuyingIntentsPage />
-                    </Suspense>
-                  </RequireAuth>
                 } />
                 <Route path="/companies" element={
                   <Suspense fallback={<Loader />}>

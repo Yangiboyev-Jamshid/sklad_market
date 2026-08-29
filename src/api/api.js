@@ -665,38 +665,6 @@ export async function suggestListing({ description, imageIds } = {}) {
   return unwrap(http.post("/ai/seller/suggest-listing", { description, imageIds }));
 }
 
-export async function recommendSuppliers({ need, categorySlug, regionId, limit } = {}) {
-  return unwrap(http.post("/ai/recommendations/suppliers", { need, categorySlug, regionId, limit }));
-}
-
-export async function createBuyingIntent(data) {
-  return unwrap(http.post("/ai/buying-intents", data));
-}
-
-export async function getMyBuyingIntents({ page = 1, per_page = 20, status } = {}) {
-  return unwrap(http.get("/ai/buying-intents/mine", { params: { page, per_page, status } }));
-}
-
-export async function searchBuyingIntents({ category, region, q, limit } = {}) {
-  return unwrap(http.get("/ai/buying-intents/search", { params: { category, region, q, limit } }));
-}
-
-export async function getBuyingIntent(id) {
-  return unwrap(http.get(`/ai/buying-intents/${id}`));
-}
-
-export async function updateBuyingIntent(id, data) {
-  return unwrap(http.put(`/ai/buying-intents/${id}`, data));
-}
-
-export async function closeBuyingIntent(id) {
-  return unwrap(http.post(`/ai/buying-intents/${id}/close`));
-}
-
-export async function publishBuyingIntent(id, publicationConsent) {
-  return unwrap(http.post(`/ai/buying-intents/${id}/publish`, { publicationConsent }));
-}
-
 export async function getAiDraft(id) {
   return unwrap(http.get(`/ai/drafts/${id}`));
 }

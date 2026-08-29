@@ -50,7 +50,7 @@ export default function AiSearchResults({ items, loading, onSelect }) {
                   <p className="text-xs text-ink-400 dark:text-ink-500 truncate flex items-center gap-1">
                     {item.type === "COMPANY" ? (
                       <>
-                        <Building size={12} /> {item.productCount ?? 0} {t("ai.supplierRecommendProducts")}
+                        <Building size={12} /> {item.productCount ?? 0} {t("ai.productsLabel")}
                       </>
                     ) : (
                       <>
