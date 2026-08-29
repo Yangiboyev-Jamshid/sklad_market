@@ -8,18 +8,6 @@ import { createAiConversation, getAiConversations, getAiConversationMessages, de
 import { streamAiMessage } from "../api/aiChatStream";
 import { aiSuggestions } from "../data/mockData";
 
-function mergeDelta(current, payload) {
-  if (typeof payload === "string") return current + payload;
-  if (payload && typeof payload === "object") {
-    if (typeof payload.content === "string") {
-      return payload.content.startsWith(current) ? payload.content : current + payload.content;
-    }
-    if (typeof payload.delta === "string") return current + payload.delta;
-    if (typeof payload.token === "string") return current + payload.token;
-  }
-  return current;
-}
-
 function extractDraftId(message) {
   if (!message?.toolPayload) return null;
   try {
@@ -146,25 +134,24 @@ export default function AiAgentPage() {
     setStreaming(true);
 
     let text_ = "";
-    let toolName = null;
-    let toolPayload = null;
-
     const controller = new AbortController();
     abortRef.current = controller;
 
     await streamAiMessage(conversationId, trimmed, {
       signal: controller.signal,
-      onDelta: (payload) => {
-        text_ = mergeDelta(text_, payload);
-        if (payload && typeof payload === "object") {
-          if (payload.toolName) toolName = payload.toolName;
-          if (payload.toolPayload) toolPayload = payload.toolPayload;
-        }
-        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: text_, toolName, toolPayload } : m)));
+      onToken: (chunk) => {
+        text_ += chunk;
+        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: text_ } : m)));
       },
-      onDone: () => {
+      onDone: async (payload) => {
         setStreaming(false);
-        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, _streaming: false } : m)));
+        try {
+          const data = await getAiConversationMessages(conversationId, { per_page: 5 });
+          const serverMsg = (data?.items ?? []).find((m) => m.id === payload?.messageId);
+          setMessages((prev) => prev.map((m) => (m.id === assistantId ? (serverMsg ?? { ...m, _streaming: false }) : m)));
+        } catch {
+          setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, _streaming: false } : m)));
+        }
         loadConversations();
       },
       onError: (err) => {

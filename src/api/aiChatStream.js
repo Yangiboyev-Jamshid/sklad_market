@@ -26,7 +26,14 @@ function parsePayload(raw) {
   }
 }
 
-export async function streamAiMessage(conversationId, content, { onDelta, onDone, onError, signal, lang } = {}) {
+// Real backend SSE protocol (confirmed against production):
+//   :keep-alive                                   (comment line, ignored)
+//   event:token   data:{"text":"..."}              (incremental text chunk, append)
+//   event:usage   data:{"tokensIn":.,"tokensOut":.,"budgetRemaining":.}
+//   event:done    data:{"messageId":"...","conversationId":"..."}
+//   event:error   data:{...}
+export async function streamAiMessage(conversationId, content, { onToken, onUsage, onDone, onError, signal, lang } = {}) {
+  let doneFired = false;
   try {
     const token = getAccessToken();
     const res = await fetch(`/api/v1/ai/conversations/${conversationId}/messages`, {
@@ -57,14 +64,20 @@ export async function streamAiMessage(conversationId, content, { onDelta, onDone
       buffer = rest;
       for (const { event, data } of events) {
         const payload = parsePayload(data);
-        if (event === "error") {
+        if (event === "token") {
+          onToken?.(payload?.text ?? "");
+        } else if (event === "usage") {
+          onUsage?.(payload);
+        } else if (event === "done") {
+          doneFired = true;
+          onDone?.(payload);
+        } else if (event === "error") {
           onError?.(new Error(typeof payload === "string" ? payload : payload?.message || "AI error"));
           return;
         }
-        onDelta?.(payload, event);
       }
     }
-    onDone?.();
+    if (!doneFired) onDone?.(null);
   } catch (err) {
     if (err.name !== "AbortError") onError?.(err);
   }
