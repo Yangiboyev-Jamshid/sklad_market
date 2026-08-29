@@ -54,7 +54,7 @@ export default function BuyingIntentsPage() {
         </div>
 
         <PillToggle
-          className="mb-6 w-full sm:w-fit"
+          className="mb-6 w-full"
           options={[
             { value: "board", label: t("ai.buyingIntentsTabBoard") },
             { value: "mine", label: t("ai.buyingIntentsTabMine") },

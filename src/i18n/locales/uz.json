@@ -134,7 +134,8 @@
     "safeDeal": "Platforma orqali xavfsiz bitim",
     "verifiedData": "Kompaniyaning tasdiqlangan ma'lumotlari",
     "originalProducts": "Hujjatlar bilan original mahsulot",
-    "similarProducts": "O'xshash mahsulotlar"
+    "similarProducts": "O'xshash mahsulotlar",
+    "aiRecommended": "AI tavsiya etadi"
   },
   "cart": {
     "title": "Savat",

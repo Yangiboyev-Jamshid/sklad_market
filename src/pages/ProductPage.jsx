@@ -117,7 +117,7 @@ export default function ProductPage() {
       try {
         await navigator.share({ title: product?.name, url: shareUrl });
       } catch {
-        // user cancelled the share sheet
+        
       }
       return;
     }
@@ -470,7 +470,12 @@ export default function ProductPage() {
 
         {similar.length > 0 && (
           <div className="mt-8 sm:mt-10">
-            <h2 className="text-xl sm:text-2xl font-display font-bold text-ink-900 dark:text-white mb-4">{t("product.similarProducts")}</h2>
+            <div className="mb-4 flex items-center gap-2">
+              <h2 className="text-xl sm:text-2xl font-display font-bold text-ink-900 dark:text-white">{t("product.similarProducts")}</h2>
+              <span className="rounded-full bg-brand-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-700 dark:bg-brand-500/10 dark:text-brand-300">
+                {t("product.aiRecommended")}
+              </span>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-6 sm:gap-5">
               {similar.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
             </div>

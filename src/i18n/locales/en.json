@@ -134,7 +134,8 @@
     "safeDeal": "Secure deal through the platform",
     "verifiedData": "Verified company data",
     "originalProducts": "Original products with documents",
-    "similarProducts": "Similar products"
+    "similarProducts": "Similar products",
+    "aiRecommended": "AI recommended"
   },
   "cart": {
     "title": "Cart",

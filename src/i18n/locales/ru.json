@@ -134,7 +134,8 @@
     "safeDeal": "Безопасная сделка через платформу",
     "verifiedData": "Верифицированный данные компании",
     "originalProducts": "Оригинальная продукция с документами",
-    "similarProducts": "Похожие товары"
+    "similarProducts": "Похожие товары",
+    "aiRecommended": "Рекомендовано AI"
   },
   "cart": {
     "title": "Корзина",

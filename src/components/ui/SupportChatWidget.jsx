@@ -239,7 +239,7 @@ export default function SupportChatWidget() {
     <>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 w-14 h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-popover flex items-center justify-center transition-colors"
+        className="fixed bottom-20 right-5 sm:bottom-6 sm:right-6 z-40 w-14 h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-popover flex items-center justify-center transition-colors"
         aria-label={t("chat.supportButtonLabel")}
       >
         <AnimatePresence mode="wait" initial={false}>
@@ -263,7 +263,7 @@ export default function SupportChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.97 }}
             transition={{ duration: 0.15 }}
-            className="fixed bottom-[92px] right-5 sm:bottom-[104px] sm:right-6 z-40 w-[calc(100vw-2.5rem)] max-w-sm bg-[#FAFAFA] dark:bg-[#121212] rounded-2xl shadow-popover border border-ink-100 dark:border-[#1C1C1C] overflow-hidden flex flex-col"
+            className="fixed bottom-[150px] right-5 sm:bottom-[104px] sm:right-6 z-40 w-[calc(100vw-2.5rem)] max-w-sm bg-[#FAFAFA] dark:bg-[#121212] rounded-2xl shadow-popover border border-ink-100 dark:border-[#1C1C1C] overflow-hidden flex flex-col"
           >
             <div className="flex shrink-0 items-center justify-between px-4 py-3 border-b border-ink-100 dark:border-[#1C1C1C] bg-white dark:bg-[#0D0D0D]">
               <div className="flex items-center gap-2 min-w-0">
@@ -337,7 +337,7 @@ export default function SupportChatWidget() {
                       return (
                         <div key={m.id} className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}>
                           <div
-                            className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${isMine ? "bg-brand-600 text-white" : "bg-ink-50 dark:bg-[#171717] text-ink-700 dark:text-ink-200"
+                            className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${isMine ? "bg-brand-600 text-white" : "bg-white dark:bg-[#171717] text-ink-700 dark:text-ink-200"
                               }`}
                           >
                             {m.body}

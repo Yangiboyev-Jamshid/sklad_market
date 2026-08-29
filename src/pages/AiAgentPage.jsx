@@ -173,64 +173,99 @@ export default function AiAgentPage() {
     try {
       await cancelAiDraft(draftId);
     } catch {
-      // ignore, still mark cancelled locally
+
     }
     setDraftStatuses((prev) => ({ ...prev, [draftId]: "cancelled" }));
   };
 
+  const sidebarContent = (
+    <>
+      <div className="flex items-center justify-between p-4 border-b border-ink-100 dark:border-[#1C1C1C]">
+        <p className="font-semibold text-ink-900 dark:text-white">{t("ai.conversations")}</p>
+        <button onClick={() => setSidebarOpen(false)} className="md:hidden text-ink-400">
+          <CloseCircle size={20} />
+        </button>
+      </div>
+      <div className="p-3">
+        <button
+          onClick={startNewConversation}
+          className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm py-2.5 rounded-xl transition-colors"
+        >
+          <Add size={18} /> {t("ai.newChat")}
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto px-3 pb-3">
+        {conversationsLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-12 rounded-xl bg-ink-100 dark:bg-[#171717] animate-pulse mb-2" />
+          ))
+        ) : conversations.length === 0 ? (
+          <p className="text-sm text-ink-400 text-center mt-6">{t("ai.noConversations")}</p>
+        ) : (
+          conversations.map((c) => (
+            <div
+              key={c.id}
+              onClick={() => openConversation(c.id)}
+              className={`group flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer mb-1 transition-colors ${activeId === c.id ? "bg-brand-50 dark:bg-brand-500/10" : "hover:bg-ink-50 dark:hover:bg-[#171717]"}`}
+            >
+              <MessageQuestion size={16} className="text-ink-400 shrink-0" />
+              <span className="flex-1 min-w-0 truncate text-sm text-ink-700 dark:text-ink-200">{c.title || t("ai.newChat")}</span>
+              <button
+                onClick={(e) => handleDeleteConversation(c.id, e)}
+                title={t("ai.deleteConversation")}
+                className="shrink-0 opacity-0 group-hover:opacity-100 text-ink-300 hover:text-danger-500 transition-opacity"
+              >
+                <Trash size={14} />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </>
+  );
+
   return (
     <AppShell>
       <div className="flex h-[calc(100vh-64px)] sm:h-[calc(100vh-72px)]">
-        <div className={`w-72 shrink-0 border-r border-ink-100 dark:border-[#1C1C1C] bg-white dark:bg-[#0D0D0D] flex-col ${sidebarOpen ? "fixed inset-0 z-40 flex" : "hidden md:flex"}`}>
-          <div className="flex items-center justify-between p-4 border-b border-ink-100 dark:border-[#1C1C1C]">
-            <p className="font-semibold text-ink-900 dark:text-white">{t("ai.conversations")}</p>
-            <button onClick={() => setSidebarOpen(false)} className="md:hidden text-ink-400">
-              <CloseCircle size={20} />
-            </button>
-          </div>
-          <div className="p-3">
-            <button
-              onClick={startNewConversation}
-              className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm py-2.5 rounded-xl transition-colors"
-            >
-              <Add size={18} /> {t("ai.newChat")}
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto px-3 pb-3">
-            {conversationsLoading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-12 rounded-xl bg-ink-100 dark:bg-[#171717] animate-pulse mb-2" />
-              ))
-            ) : conversations.length === 0 ? (
-              <p className="text-sm text-ink-400 text-center mt-6">{t("ai.noConversations")}</p>
-            ) : (
-              conversations.map((c) => (
-                <div
-                  key={c.id}
-                  onClick={() => openConversation(c.id)}
-                  className={`group flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer mb-1 transition-colors ${activeId === c.id ? "bg-brand-50 dark:bg-brand-500/10" : "hover:bg-ink-50 dark:hover:bg-[#171717]"}`}
-                >
-                  <MessageQuestion size={16} className="text-ink-400 shrink-0" />
-                  <span className="flex-1 min-w-0 truncate text-sm text-ink-700 dark:text-ink-200">{c.title || t("ai.newChat")}</span>
-                  <button
-                    onClick={(e) => handleDeleteConversation(c.id, e)}
-                    title={t("ai.deleteConversation")}
-                    className="shrink-0 opacity-0 group-hover:opacity-100 text-ink-300 hover:text-danger-500 transition-opacity"
-                  >
-                    <Trash size={14} />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
+        <div className="hidden md:flex w-72 shrink-0 border-r border-ink-100 dark:border-[#1C1C1C] bg-white dark:bg-[#0D0D0D] flex-col">
+          {sidebarContent}
         </div>
 
+        <AnimatePresence>
+          {sidebarOpen && (
+            <>
+              <motion.div
+                key="ai-sidebar-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setSidebarOpen(false)}
+                className="fixed inset-0 z-30 bg-ink-900/50 backdrop-blur-sm md:hidden"
+              />
+              <motion.div
+                key="ai-sidebar-drawer"
+                initial={{ x: "-100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "-100%" }}
+                transition={{ type: "spring", stiffness: 320, damping: 34 }}
+                className="w-72 shrink-0 border-r border-ink-100 dark:border-[#1C1C1C] bg-white dark:bg-[#0D0D0D] flex flex-col fixed inset-y-0 left-0 z-40 md:hidden"
+              >
+                {sidebarContent}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
         <div className="flex-1 min-w-0 flex flex-col">
-          <div className="md:hidden flex items-center gap-2 px-4 py-3 border-b border-ink-100 dark:border-[#1C1C1C]">
-            <button onClick={() => setSidebarOpen(true)} className="text-ink-500 dark:text-ink-300">
-              <HamburgerMenu size={20} />
+          <div className="md:hidden flex items-center px-4 py-2.5 border-b border-ink-100 dark:border-[#1C1C1C]">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-medium text-ink-600 dark:text-ink-300"
+            >
+              <HamburgerMenu size={16} />
+              {t("ai.conversations")}
             </button>
-            <span className="text-sm font-medium text-ink-900 dark:text-white">{t("ai.pageTitle")}</span>
           </div>
 
           <div className="max-w-3xl w-full mx-auto flex flex-col flex-1 min-h-0 px-4 sm:px-6 py-5 sm:py-8">
@@ -247,7 +282,7 @@ export default function AiAgentPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 }}
                         onClick={() => send(s)}
-                        className="bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3.5 sm:px-4 py-5 sm:py-3 text-xs sm:text-sm text-ink-700 dark:text-ink-200 hover:border-brand-300 dark:hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+                        className={`bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3.5 sm:px-4 py-5 sm:py-3 text-xs sm:text-sm text-ink-700 dark:text-ink-200 hover:border-brand-300 dark:hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors ${i === 4 ? "sm:col-span-2" : ""}`}
                       >
                         {s}
                       </motion.button>
