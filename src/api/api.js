@@ -653,8 +653,8 @@ export async function aiSemanticSearch(q, { limit } = {}) {
   return unwrap(http.get("/ai/search", { params: { q, limit } }));
 }
 
-export async function aiBusinessSearch({ q, types, categorySlug, regionId, minPrice, maxPrice, currency, limit = 10 } = {}) {
-  return unwrap(http.get("/ai/business-search", { params: { q, types, categorySlug, regionId, minPrice, maxPrice, currency, limit } }));
+export async function aiBusinessSearch({ q, types, categorySlug, regionId, minPrice, maxPrice, currency, limit = 10 } = {}, { signal } = {}) {
+  return unwrap(http.get("/ai/business-search", { params: { q, types, categorySlug, regionId, minPrice, maxPrice, currency, limit }, signal }));
 }
 
 export async function getSimilarProducts(productId, { limit } = {}) {

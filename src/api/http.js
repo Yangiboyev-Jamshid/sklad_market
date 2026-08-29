@@ -63,6 +63,7 @@ http.interceptors.response.use(
 
     const rejected = new Error(extractErrorMessage(error));
     rejected.status = response?.status;
+    rejected.aiCode = response?.headers?.["x-ai-error-code"];
     return Promise.reject(rejected);
   }
 );

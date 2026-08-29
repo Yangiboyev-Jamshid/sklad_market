@@ -1,5 +1,7 @@
 import { getAccessToken } from "./api";
 
+const STREAM_INACTIVITY_MS = 120000; // backend resets its own 120s inactivity timeout on every chunk
+
 function parseSseBuffer(buffer) {
   const events = [];
   let rest = buffer;
@@ -26,16 +28,44 @@ function parsePayload(raw) {
   }
 }
 
-// Real backend SSE protocol (confirmed against production):
-//   :keep-alive                                   (comment line, ignored)
-//   event:token   data:{"text":"..."}              (incremental text chunk, append)
-//   event:usage   data:{"tokensIn":.,"tokensOut":.,"budgetRemaining":.}
-//   event:done    data:{"messageId":"...","conversationId":"..."}
-//   event:error   data:{...}
-export async function streamAiMessage(conversationId, content, { onToken, onUsage, onDone, onError, signal, lang } = {}) {
-  let doneFired = false;
+// Real backend SSE protocol (AI_API.md §4, confirmed against production):
+//   :keep-alive                                   (comment line, ignored, proves the connection is alive)
+//   event:token       data:{"text":"..."}          (incremental text chunk, append)
+//   event:tool_start  data:{"tool":"...","summary":"..."}
+//   event:tool_end    data:{"tool":"...","status":"ok"}
+//   event:result_set  data:{...}                   (free-form structured results to render as cards)
+//   event:draft       data:{"draftId":"...","type":"LEAD","payload":{}}
+//   event:usage       data:{"tokensIn":.,"tokensOut":.,"budgetRemaining":.}
+//   event:done        data:{"messageId":"...","conversationId":"..."}   -- terminal, success
+//   event:error       data:{"code":"...","message":"..."}               -- terminal, failure
+// A stream that closes without a "done" or "error" event is itself a failure (§4) — the frontend
+// must not treat that as a successful turn.
+export async function streamAiMessage(conversationId, content, {
+  onToken, onToolStart, onToolEnd, onResultSet, onDraft, onUsage, onDone, onError, signal, lang,
+} = {}) {
+  let settled = false;
+  let watchdog;
+
+  const fail = (err) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(watchdog);
+    onError?.(err);
+  };
+  const succeed = (payload) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(watchdog);
+    onDone?.(payload);
+  };
+  const resetWatchdog = () => {
+    clearTimeout(watchdog);
+    watchdog = setTimeout(() => fail(Object.assign(new Error("AI stream timed out"), { code: "timeout" })), STREAM_INACTIVITY_MS);
+  };
+
   try {
     const token = getAccessToken();
+    resetWatchdog();
     const res = await fetch(`/api/v1/ai/conversations/${conversationId}/messages`, {
       method: "POST",
       headers: {
@@ -49,7 +79,7 @@ export async function streamAiMessage(conversationId, content, { onToken, onUsag
     });
 
     if (!res.ok || !res.body) {
-      throw new Error(`AI stream failed (status ${res.status})`);
+      throw Object.assign(new Error(`AI stream failed (status ${res.status})`), { status: res.status });
     }
 
     const reader = res.body.getReader();
@@ -59,6 +89,7 @@ export async function streamAiMessage(conversationId, content, { onToken, onUsag
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
+      resetWatchdog();
       buffer += decoder.decode(value, { stream: true });
       const { events, rest } = parseSseBuffer(buffer);
       buffer = rest;
@@ -66,19 +97,34 @@ export async function streamAiMessage(conversationId, content, { onToken, onUsag
         const payload = parsePayload(data);
         if (event === "token") {
           onToken?.(payload?.text ?? "");
+        } else if (event === "tool_start") {
+          onToolStart?.(payload);
+        } else if (event === "tool_end") {
+          onToolEnd?.(payload);
+        } else if (event === "result_set") {
+          onResultSet?.(payload);
+        } else if (event === "draft") {
+          onDraft?.(payload);
         } else if (event === "usage") {
           onUsage?.(payload);
         } else if (event === "done") {
-          doneFired = true;
-          onDone?.(payload);
+          succeed(payload);
+          return;
         } else if (event === "error") {
-          onError?.(new Error(typeof payload === "string" ? payload : payload?.message || "AI error"));
+          const code = payload?.code;
+          fail(Object.assign(new Error(payload?.message || "AI error"), { code }));
           return;
         }
       }
     }
-    if (!doneFired) onDone?.(null);
+    // Stream closed by the server with neither "done" nor "error" — per AI_API.md §4 this is a failure.
+    fail(new Error("AI stream ended unexpectedly"));
   } catch (err) {
-    if (err.name !== "AbortError") onError?.(err);
+    if (err.name === "AbortError") {
+      settled = true;
+      clearTimeout(watchdog);
+      return;
+    }
+    fail(err);
   }
 }

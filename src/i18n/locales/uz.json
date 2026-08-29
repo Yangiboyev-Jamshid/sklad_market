@@ -68,7 +68,50 @@
     "wholesale": "Optom",
     "retail": "Donalab",
     "popularProducts": "Ommabop mahsulotlar",
-    "productsNotFound": "Mahsulotlar topilmadi"
+    "productsNotFound": "Mahsulotlar topilmadi",
+    "aiAssistant": {
+      "badge": "AI yordamchi",
+      "greeting": "Assalomu alaykum, {{name}}!",
+      "title": "Nimani topishga yordam beray?",
+      "subtitle": "AI mahsulotlar va kompaniyalarni mazmuni bo'yicha qidiradi, taqqoslaydi va mos yetkazib beruvchilarni tavsiya qiladi.",
+      "open": "AI yordamchisini ochish",
+      "howToTitle": "AI yordamchidan foydalanish",
+      "instructions": [
+        "Mahsulot, miqdor, budjet va kerakli hududni yozing.",
+        "Mahsulot va kompaniya kartalarini ko'rib, joriy ma'lumotni tekshirish uchun ularni oching.",
+        "AI tavsiya va qoralama tayyorlaydi, ammo o'zi buyurtma bermaydi yoki hech kim bilan bog'lanmaydi."
+      ],
+      "buyerGuide": "Xaridor mahsulot yoki yetkazib beruvchini qidiradi va taqqoslaydi, natija kartasini ochadi, so'ng sotuvchiga yuborishdan oldin so'rovni tekshiradi.",
+      "sellerGuide": "Sotuvchi kompaniya katalogini yuritadi, xaridor so'rovlari va xabarlarini ko'radi hamda AI tayyorlagan qoralamani yuborish yoki e'lon qilishdan oldin tasdiqlaydi.",
+      "generalGuide": "Katalog orqali mahsulot va kompaniyalarni toping, keyin kerakli sotuvchi bilan so'rov yoki chat orqali ishlashni davom ettiring.",
+      "dismiss": "Tushunarli",
+      "panel": {
+        "title": "AI aqlli natijalari",
+        "subtitle": "“{{query}}” uchun mahsulot va kompaniyalar orasidan mazmuniy natijalar.",
+        "filterLabel": "AI natijalarini filtrlash",
+        "filter": {
+          "ALL": "Barchasi",
+          "PRODUCT": "Mahsulotlar",
+          "COMPANY": "Kompaniyalar"
+        },
+        "type": {
+          "PRODUCT": "Mahsulot",
+          "COMPANY": "Kompaniya"
+        },
+        "loading": "AI mos mahsulot va kompaniyalarni qidirmoqda",
+        "unnamed": "Nomsiz natija",
+        "productCount": "{{count}} ta mahsulot",
+        "verified": "Tasdiqlangan",
+        "openResult": "Natijani ochish",
+        "rateLimited": "AI qidiruviga so'rovlar juda ko'p. Biroz kuting.",
+        "budgetExceeded": "Bugungi mazmuniy AI limiti tugadi. Oddiy katalog qidiruvi ishlashda davom etadi.",
+        "error": "AI natijalari vaqtincha mavjud emas. Oddiy qidiruv ishlashda davom etadi.",
+        "retry": "Qayta urinish",
+        "empty": "AI bu qidiruv uchun qo'shimcha moslik topmadi.",
+        "emptyFilter": "Bu turdagi AI natijalari topilmadi."
+      },
+      "firstTimeTitle": "Sklad Market bo'yicha qisqa yo'riqnoma"
+    }
   },
   "catalogModal": {
     "categoriesNotFound": "Kategoriyalar topilmadi",
@@ -681,6 +724,11 @@
     "deleteConversation": "Suhbatni o'chirish",
     "deleteConversationConfirm": "Ushbu suhbat o'chirilsinmi?",
     "errorGeneric": "Xatolik yuz berdi. Qayta urinib ko'ring",
+    "errorRateLimited": "So'rovlar soni chegarasiga yetdingiz. Birozdan so'ng qayta urinib ko'ring",
+    "errorBudgetExceeded": "Kunlik AI limitingiz tugadi. Ertaga qayta urinib ko'ring",
+    "errorProviderError": "AI xizmati vaqtincha ishlamayapti. Birozdan so'ng qayta urinib ko'ring",
+    "errorTimeout": "So'rov vaqti tugadi. Qayta urinib ko'ring",
+    "errorInvalidInput": "Xabar juda uzun yoki noto'g'ri. Qisqaroq yozib ko'ring",
     "retry": "Qayta urinish",
     "draftTitle": "So'rov tayyorlandi",
     "draftConfirmButton": "Tasdiqlash",

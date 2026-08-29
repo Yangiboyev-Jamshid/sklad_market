@@ -2,8 +2,9 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import ProductThumb from "./ProductThumb";
+import AiSearchResults from "./AiSearchResults";
 
-export default function SearchSuggestions({ products, loading, onSelect }) {
+export default function SearchSuggestions({ products, loading, onSelect, aiItems = [], aiLoading = false }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -57,6 +58,7 @@ export default function SearchSuggestions({ products, loading, onSelect }) {
             ))}
           </ul>
         )}
+        <AiSearchResults items={aiItems} loading={aiLoading} onSelect={onSelect} />
       </motion.div>
     </AnimatePresence>
   );

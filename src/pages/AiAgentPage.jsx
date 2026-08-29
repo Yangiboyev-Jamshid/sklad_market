@@ -1,14 +1,35 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Add, Trash, MessageQuestion, HamburgerMenu, CloseCircle } from "iconsax-reactjs";
+import { Send, Add, Trash, MessageQuestion, HamburgerMenu, CloseCircle, TickCircle, Building3, Box1 } from "iconsax-reactjs";
 import { useTranslation } from "react-i18next";
 import AppShell from "../components/layout/AppShell";
 import AiDraftModal from "../components/ai/AiDraftModal";
+import ProductThumb from "../components/ui/ProductThumb";
 import { createAiConversation, getAiConversations, getAiConversationMessages, deleteAiConversation, cancelAiDraft } from "../api/api";
 import { streamAiMessage } from "../api/aiChatStream";
 import { aiSuggestions } from "../data/mockData";
 
-function extractDraftId(message) {
+const MAX_INPUT_LENGTH = 4000;
+
+const AI_ERROR_MESSAGE_KEYS = {
+  rate_limited: "ai.errorRateLimited",
+  budget_exceeded: "ai.errorBudgetExceeded",
+  provider_error: "ai.errorProviderError",
+  timeout: "ai.errorTimeout",
+  invalid_input: "ai.errorInvalidInput",
+};
+
+function aiErrorMessage(err, t) {
+  const key = AI_ERROR_MESSAGE_KEYS[err?.code];
+  if (key) return t(key);
+  if (err?.status === 401) return t("ai.errorGeneric");
+  return err?.message || t("ai.errorGeneric");
+}
+
+// History messages (MessageDto from GET .../messages) carry the draft reference in toolPayload —
+// the live SSE "draft" event carries it directly, this is only needed when re-opening a past chat.
+function draftIdFromToolPayload(message) {
   if (!message?.toolPayload) return null;
   try {
     const parsed = typeof message.toolPayload === "string" ? JSON.parse(message.toolPayload) : message.toolPayload;
@@ -18,8 +39,29 @@ function extractDraftId(message) {
   }
 }
 
+// result_set payloads are free-form (AI_API.md §4) — only render entries that look like a
+// product or supplier-company reference (matches SearchResultItem / BusinessSearchItem shape).
+// Anything else (including buying-intent related shapes) is silently skipped, not rendered.
+function normalizeResultItems(payload) {
+  const raw = Array.isArray(payload) ? payload : payload?.items;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((it) => it && typeof it === "object" && it.slug && it.name)
+    .map((it) => ({
+      type: it.type === "COMPANY" || it.logoUrl || it.productCount != null ? "COMPANY" : "PRODUCT",
+      id: it.id ?? it.productId ?? it.companyId,
+      slug: it.slug,
+      name: it.name,
+      image: it.imageUrl ?? it.logoUrl ?? null,
+      price: it.price,
+      currency: it.currency,
+      productCount: it.productCount,
+    }));
+}
+
 export default function AiAgentPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [conversations, setConversations] = useState([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
@@ -62,7 +104,10 @@ export default function AiAgentPage() {
     setMessagesLoading(true);
     try {
       const data = await getAiConversationMessages(conversationId, { per_page: 50 });
-      const items = (data?.items ?? []).slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      const items = (data?.items ?? [])
+        .slice()
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+        .map((m) => ({ ...m, draftId: draftIdFromToolPayload(m) }));
       setMessages(items);
     } catch {
       setMessages([]);
@@ -108,7 +153,7 @@ export default function AiAgentPage() {
   useEffect(() => () => abortRef.current?.abort(), []);
 
   const send = async (text) => {
-    const trimmed = (text ?? input).trim();
+    const trimmed = (text ?? input).trim().slice(0, MAX_INPUT_LENGTH);
     if (!trimmed || streaming) return;
     setInput("");
     setError("");
@@ -122,7 +167,7 @@ export default function AiAgentPage() {
         setConversations((prev) => [created, ...prev]);
       }
     } catch (err) {
-      setError(err.message || t("ai.errorGeneric"));
+      setError(aiErrorMessage(err, t));
       return;
     }
 
@@ -130,34 +175,53 @@ export default function AiAgentPage() {
     setMessages((prev) => [...prev, userMessage]);
 
     const assistantId = `assistant-${localIdRef.current++}`;
-    setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", createdAt: new Date().toISOString(), _streaming: true }]);
+    setMessages((prev) => [
+      ...prev,
+      { id: assistantId, role: "assistant", content: "", createdAt: new Date().toISOString(), _streaming: true, toolEvents: [], resultSets: [], draftId: null },
+    ]);
     setStreaming(true);
 
     let text_ = "";
     const controller = new AbortController();
     abortRef.current = controller;
 
+    const updateAssistant = (updater) => {
+      setMessages((prev) => prev.map((m) => (m.id === assistantId ? updater(m) : m)));
+    };
+
     await streamAiMessage(conversationId, trimmed, {
       signal: controller.signal,
       onToken: (chunk) => {
         text_ += chunk;
-        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: text_ } : m)));
+        updateAssistant((m) => ({ ...m, content: text_ }));
       },
-      onDone: async (payload) => {
+      onToolStart: (payload) => {
+        updateAssistant((m) => ({ ...m, toolEvents: [...(m.toolEvents ?? []), { tool: payload?.tool, summary: payload?.summary, status: "running" }] }));
+      },
+      onToolEnd: (payload) => {
+        updateAssistant((m) => ({
+          ...m,
+          toolEvents: (m.toolEvents ?? []).map((te) => (te.tool === payload?.tool && te.status === "running" ? { ...te, status: payload?.status || "ok" } : te)),
+        }));
+      },
+      onResultSet: (payload) => {
+        const items = normalizeResultItems(payload);
+        if (!items.length) return;
+        updateAssistant((m) => ({ ...m, resultSets: [...(m.resultSets ?? []), items] }));
+      },
+      onDraft: (payload) => {
+        if (!payload?.draftId) return;
+        updateAssistant((m) => ({ ...m, draftId: payload.draftId, draftType: payload.type }));
+      },
+      onDone: (payload) => {
         setStreaming(false);
-        try {
-          const data = await getAiConversationMessages(conversationId, { per_page: 5 });
-          const serverMsg = (data?.items ?? []).find((m) => m.id === payload?.messageId);
-          setMessages((prev) => prev.map((m) => (m.id === assistantId ? (serverMsg ?? { ...m, _streaming: false }) : m)));
-        } catch {
-          setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, _streaming: false } : m)));
-        }
+        updateAssistant((m) => ({ ...m, _streaming: false, id: payload?.messageId ?? m.id }));
         loadConversations();
       },
       onError: (err) => {
         setStreaming(false);
-        setError(err.message || t("ai.errorGeneric"));
-        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, _streaming: false } : m)));
+        setError(aiErrorMessage(err, t));
+        updateAssistant((m) => ({ ...m, _streaming: false }));
       },
     });
   };
@@ -300,9 +364,10 @@ export default function AiAgentPage() {
                   ) : (
                     <AnimatePresence initial={false}>
                       {messages.map((m) => {
-                        const isMine = m.role === "user";
-                        const draftId = extractDraftId(m);
+                        const isMine = String(m.role || "").toUpperCase() === "USER";
+                        const draftId = m.draftId ?? null;
                         const draftStatus = draftId ? draftStatuses[draftId] : null;
+                        const isThinking = m._streaming && !m.content && !(m.toolEvents?.length);
                         return (
                           <motion.div
                             key={m.id}
@@ -316,7 +381,75 @@ export default function AiAgentPage() {
                                 : "bg-white dark:bg-[#0D0D0D] border border-ink-100 dark:border-[#1C1C1C] text-ink-700 dark:text-ink-200"
                                 }`}
                             >
-                              {m.content || (m._streaming ? "…" : "")}
+                              {!isMine && m.toolEvents?.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                  {m.toolEvents.map((te, i) => (
+                                    <span
+                                      key={i}
+                                      className={`inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full border ${te.status === "running"
+                                        ? "border-brand-200 dark:border-brand-500/40 text-brand-600 dark:text-brand-400"
+                                        : "border-ink-200 dark:border-[#1C1C1C] text-ink-500 dark:text-ink-400"
+                                        }`}
+                                    >
+                                      {te.status === "running" ? (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" />
+                                      ) : (
+                                        <TickCircle size={12} />
+                                      )}
+                                      {te.summary || te.tool}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              {isThinking ? (
+                                <span className="inline-flex gap-1 items-center text-ink-400" aria-label={t("ai.thinking")}>
+                                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.3s]" />
+                                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.15s]" />
+                                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" />
+                                </span>
+                              ) : (
+                                m.content
+                              )}
+
+                              {!isMine && m.resultSets?.length > 0 && (
+                                <div className="flex flex-col gap-2 mt-3">
+                                  {m.resultSets.map((items, si) => (
+                                    <div key={si} className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                      {items.map((it) => (
+                                        <button
+                                          key={`${it.type}-${it.id}`}
+                                          type="button"
+                                          onClick={() => navigate(it.type === "COMPANY" ? `/company/${it.slug}` : `/product/${it.slug}`)}
+                                          className="flex flex-col gap-1.5 text-left bg-ink-50 dark:bg-[#171717] border border-ink-100 dark:border-[#1C1C1C] rounded-xl p-2 hover:border-brand-300 dark:hover:border-brand-500 transition-colors"
+                                        >
+                                          <div className="w-full aspect-square rounded-lg overflow-hidden bg-[#EBEBEB] dark:bg-[#2A2A2A] flex items-center justify-center">
+                                            {it.image ? (
+                                              <img src={it.image} alt="" className="w-full h-full object-cover" />
+                                            ) : it.type === "COMPANY" ? (
+                                              <Building3 size={20} className="text-ink-400" />
+                                            ) : (
+                                              <ProductThumb />
+                                            )}
+                                          </div>
+                                          <p className="text-xs font-medium text-ink-900 dark:text-white line-clamp-2">{it.name}</p>
+                                          <p className="text-[11px] text-ink-400 dark:text-ink-500 flex items-center gap-1">
+                                            {it.type === "COMPANY" ? (
+                                              <>
+                                                <Building3 size={11} /> {it.productCount ?? 0} {t("ai.productsLabel")}
+                                              </>
+                                            ) : (
+                                              <>
+                                                <Box1 size={11} /> {Number(it.price ?? 0).toLocaleString()} {it.currency}
+                                              </>
+                                            )}
+                                          </p>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             {draftId && !draftStatus && (
                               <div className="flex items-center gap-2 mt-2">
@@ -356,22 +489,28 @@ export default function AiAgentPage() {
               </p>
             )}
 
-            <div className="sticky bottom-5 flex items-center gap-2 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 mt-4">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && !streaming && handleSend()}
-                placeholder={t("ai.placeholder")}
-                disabled={streaming}
-                className="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder:text-ink-400 dark:text-white disabled:opacity-60"
-              />
-              <button
-                onClick={handleSend}
-                disabled={streaming || !input.trim()}
-                className="text-brand-600 dark:text-brand-400 hover:text-brand-700 disabled:opacity-40 transition-colors shrink-0"
-              >
-                <Send size={20} variant="Bold" />
-              </button>
+            <div className="sticky bottom-5 flex flex-col gap-1 mt-4">
+              <div className="flex items-center gap-2 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-4 sm:px-5 py-3 sm:py-3.5">
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value.slice(0, MAX_INPUT_LENGTH))}
+                  onKeyDown={(e) => e.key === "Enter" && !streaming && handleSend()}
+                  placeholder={t("ai.placeholder")}
+                  disabled={streaming}
+                  maxLength={MAX_INPUT_LENGTH}
+                  className="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder:text-ink-400 dark:text-white disabled:opacity-60"
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={streaming || !input.trim()}
+                  className="text-brand-600 dark:text-brand-400 hover:text-brand-700 disabled:opacity-40 transition-colors shrink-0"
+                >
+                  <Send size={20} variant="Bold" />
+                </button>
+              </div>
+              {input.length > MAX_INPUT_LENGTH * 0.8 && (
+                <span className="text-[11px] text-ink-400 self-end pr-1">{input.length}/{MAX_INPUT_LENGTH}</span>
+              )}
             </div>
           </div>
         </div>

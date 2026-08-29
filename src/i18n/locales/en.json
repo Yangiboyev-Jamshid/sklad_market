@@ -68,7 +68,50 @@
     "wholesale": "Wholesale",
     "retail": "Retail",
     "popularProducts": "Popular products",
-    "productsNotFound": "No products found"
+    "productsNotFound": "No products found",
+    "aiAssistant": {
+      "badge": "AI assistant",
+      "greeting": "Hi, {{name}}!",
+      "title": "What can I help you find?",
+      "subtitle": "AI searches products and companies by meaning, compares results, and recommends suitable suppliers.",
+      "open": "Open AI assistant",
+      "howToTitle": "How to use the assistant",
+      "instructions": [
+        "Describe the product, quantity, budget, and preferred location.",
+        "Review the product and company cards, then open them to verify current details.",
+        "AI can recommend and prepare drafts, but it never orders or contacts anyone automatically."
+      ],
+      "buyerGuide": "Buyers search and compare products or suppliers, open a result card, and review a request before sending it to a seller.",
+      "sellerGuide": "Sellers maintain their company catalog, review buyer requests and messages, and approve AI-prepared drafts before anything is sent or published.",
+      "generalGuide": "Use the catalog to discover products and companies, then use requests and chat to continue with the right seller.",
+      "dismiss": "Got it",
+      "panel": {
+        "title": "AI smart matches",
+        "subtitle": "Meaning-based results for “{{query}}” from products and companies.",
+        "filterLabel": "Filter AI results",
+        "filter": {
+          "ALL": "All",
+          "PRODUCT": "Products",
+          "COMPANY": "Companies"
+        },
+        "type": {
+          "PRODUCT": "Product",
+          "COMPANY": "Company"
+        },
+        "loading": "AI is finding relevant products and companies",
+        "unnamed": "Unnamed result",
+        "productCount": "{{count}} products",
+        "verified": "Verified",
+        "openResult": "Open result",
+        "rateLimited": "AI search is receiving too many requests. Please wait briefly.",
+        "budgetExceeded": "Today's semantic AI limit has been reached. Basic catalog search still works.",
+        "error": "AI matches are temporarily unavailable. Normal search is still working.",
+        "retry": "Try again",
+        "empty": "AI found no additional matches for this search.",
+        "emptyFilter": "No AI matches in this result type."
+      },
+      "firstTimeTitle": "A quick guide to Sklad Market"
+    }
   },
   "catalogModal": {
     "categoriesNotFound": "No categories found",
@@ -681,6 +724,11 @@
     "deleteConversation": "Delete conversation",
     "deleteConversationConfirm": "Delete this conversation?",
     "errorGeneric": "Something went wrong. Please try again",
+    "errorRateLimited": "You've hit the request limit. Please try again shortly",
+    "errorBudgetExceeded": "Your daily AI limit is used up. Try again tomorrow",
+    "errorProviderError": "The AI service is temporarily unavailable. Please try again shortly",
+    "errorTimeout": "The request timed out. Please try again",
+    "errorInvalidInput": "Message is too long or invalid. Try a shorter message",
     "retry": "Retry",
     "draftTitle": "Request prepared",
     "draftConfirmButton": "Confirm",

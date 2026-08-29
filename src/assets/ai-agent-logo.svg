@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Sklad AI agent</title>
+  <desc id="desc">A conversation bubble with smart result lines and a sparkle</desc>
+  <defs>
+    <linearGradient id="ai-agent-gradient" x1="8" y1="7" x2="57" y2="59" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B6FF6"/>
+      <stop offset="0.58" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#039484"/>
+    </linearGradient>
+    <filter id="ai-agent-shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#1B3F95" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect x="3" y="3" width="58" height="58" rx="18" fill="url(#ai-agent-gradient)" filter="url(#ai-agent-shadow)"/>
+  <rect x="3.75" y="3.75" width="56.5" height="56.5" rx="17.25" fill="none" stroke="#fff" stroke-opacity="0.2" stroke-width="1.5"/>
+  <path d="M16 19.5A6.5 6.5 0 0 1 22.5 13h20a6.5 6.5 0 0 1 6.5 6.5v15a6.5 6.5 0 0 1-6.5 6.5H30l-9.2 7.1a1.75 1.75 0 0 1-2.8-1.38V40A6.48 6.48 0 0 1 16 35.25V19.5Z" fill="#fff"/>
+  <rect x="24" y="23" width="17" height="3.5" rx="1.75" fill="#2563EB"/>
+  <rect x="24" y="30" width="12" height="3.5" rx="1.75" fill="#039484"/>
+  <path d="M49.2 9.5c.42 3.2 2.18 4.95 5.3 5.5-3.12.55-4.88 2.3-5.3 5.5-.42-3.2-2.18-4.95-5.3-5.5 3.12-.55 4.88-2.3 5.3-5.5Z" fill="#fff"/>
+</svg>

@@ -8,9 +8,12 @@ import BannerCarousel from "../components/ui/BannerCarousel";
 import SearchSuggestions from "../components/ui/SearchSuggestions";
 import { Input } from "antd";
 import Catalog from "../components/modal/Catalog";
-import { getCatalogBySaleType, searchProducts, getPopularProducts, getAllProducts } from "../api/api";
+import { getCatalogBySaleType, searchProducts, getPopularProducts, getAllProducts, aiBusinessSearch } from "../api/api";
 import { usePublicBanners } from "../hooks/usePublicBanners";
 import { getPublicCompanyExtras } from "../utils/companyExtras";
+import { useAuth } from "../context/AuthContext";
+import DashboardAiAssistant from "../components/ai/DashboardAiAssistant";
+import DashboardAiSearchPanel from "../components/ai/DashboardAiSearchPanel";
 
 function levenshtein(a, b) {
   const m = a.length;
@@ -65,6 +68,7 @@ function normalizeProduct(p, imageMap, companyMap, t) {
 
 export default function HomePage() {
   const { t } = useTranslation();
+  const { user, isLoggedIn } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [saleType, setSaleType] = useState("wholesale");
   const [query, setQuery] = useState("");
@@ -76,7 +80,15 @@ export default function HomePage() {
   const [allProducts, setAllProducts] = useState(null);
   const [topSuggestOpen, setTopSuggestOpen] = useState(false);
   const [heroSuggestOpen, setHeroSuggestOpen] = useState(false);
+  const [aiSuggestResults, setAiSuggestResults] = useState([]);
+  const [aiSuggestLoading, setAiSuggestLoading] = useState(false);
   const debounceRef = useRef(null);
+  const aiSuggestDebounceRef = useRef(null);
+  const isSearching = Boolean(query.trim());
+  const aiSearchActive = isLoggedIn && query.trim().length >= 2;
+  const productGridClass = aiSearchActive
+    ? "grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-6 sm:gap-5"
+    : "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-6 sm:gap-5";
 
   useEffect(() => {
     getAllProducts({ page: 1, perPage: 200 })
@@ -141,6 +153,26 @@ export default function HomePage() {
     return () => { ignore = true; clearTimeout(debounceRef.current); };
   }, [query, saleType, imageMap, companyMap, allProducts, t]);
 
+  useEffect(() => {
+    clearTimeout(aiSuggestDebounceRef.current);
+    const q = query.trim();
+    if (!isLoggedIn || q.length < 2) {
+      aiSuggestDebounceRef.current = setTimeout(() => {
+        setAiSuggestResults([]);
+        setAiSuggestLoading(false);
+      }, 0);
+      return () => clearTimeout(aiSuggestDebounceRef.current);
+    }
+    aiSuggestDebounceRef.current = setTimeout(() => {
+      setAiSuggestLoading(true);
+      aiBusinessSearch({ q, limit: 6 })
+        .then((data) => setAiSuggestResults(data?.items ?? []))
+        .catch(() => setAiSuggestResults([]))
+        .finally(() => setAiSuggestLoading(false));
+    }, 250);
+    return () => clearTimeout(aiSuggestDebounceRef.current);
+  }, [query, isLoggedIn]);
+
   return (
     <AppShell>
       <div className="p-4 sm:p-6 md:p-10 bg-[#F9FAFB] dark:bg-[#121212]">
@@ -173,12 +205,16 @@ export default function HomePage() {
                   products={products.slice(0, 6)}
                   loading={loading}
                   onSelect={() => setTopSuggestOpen(false)}
+                  aiItems={aiSuggestResults}
+                  aiLoading={aiSuggestLoading}
                 />
               )}
             </div>
           </div>
           <Catalog isOpen={isOpen} onClose={() => setIsOpen(false)} />
         </div>
+
+        {!isSearching && <DashboardAiAssistant user={user} isLoggedIn={isLoggedIn} />}
 
         <div className="mb-6 sm:mb-8 relative z-1">
           {bannersLoading ? (
@@ -222,32 +258,39 @@ export default function HomePage() {
                 products={products.slice(0, 6)}
                 loading={loading}
                 onSelect={() => setHeroSuggestOpen(false)}
+                aiItems={aiSuggestResults}
+                aiLoading={aiSuggestLoading}
               />
             )}
           </div>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-2 px-1 sm:px-8 md:px-16 sm:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-6 sm:gap-5">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] h-64 animate-pulse" />
-            ))}
-          </div>
-        ) : products.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="mb-3 text-ink-400 dark:text-ink-600">
-              <Box size="54" />
-            </p>
-            <p className="text-base font-semibold text-ink-700 dark:text-white">{t("home.productsNotFound")}</p>
-            {query && (
-              <p className="text-sm text-ink-400 mt-1">{t("common.tryAnotherQuery")}</p>
+        <div className={`relative isolate grid items-start gap-6 px-1 sm:px-8 md:px-16 ${aiSearchActive ? "xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]" : ""}`}>
+          <div className="relative z-10 min-w-0">
+            {loading ? (
+              <div className={productGridClass}>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] h-64 animate-pulse" />
+                ))}
+              </div>
+            ) : products.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <p className="mb-3 text-ink-400 dark:text-ink-600">
+                  <Box size="54" />
+                </p>
+                <p className="text-base font-semibold text-ink-700 dark:text-white">{t("home.productsNotFound")}</p>
+                {query && (
+                  <p className="text-sm text-ink-400 mt-1">{t("common.tryAnotherQuery")}</p>
+                )}
+              </div>
+            ) : (
+              <div className={productGridClass}>
+                {products.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+              </div>
             )}
           </div>
-        ) : (
-          <div className="grid grid-cols-2 px-1 sm:px-8 md:px-16 sm:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-6 sm:gap-5">
-            {products.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
-          </div>
-        )}
+          <DashboardAiSearchPanel query={query} isLoggedIn={isLoggedIn} />
+        </div>
       </div>
     </AppShell >
   );
