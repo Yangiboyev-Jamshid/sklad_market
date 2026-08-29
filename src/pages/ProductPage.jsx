@@ -27,7 +27,7 @@ import ReportModal from "../components/modal/ReportModal";
 import ReviewModal from "../components/modal/ReviewModal";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import { getProductBySlug, getAllProducts, getProductReviews, createProductReview, createChat } from "../api/api";
+import { getProductBySlug, getProductReviews, createProductReview, createChat, getSimilarProducts } from "../api/api";
 import { CHAT_ENABLED } from "../config/chatConfig";
 
 const TABS = [
@@ -36,21 +36,6 @@ const TABS = [
   { key: "delivery", labelKey: "product.tabDelivery" },
   { key: "reviews", labelKey: "product.tabReviews" },
 ];
-
-function normalizeProduct(p, t) {
-  return {
-    id: p.id,
-    slug: p.slug,
-    name: p.name,
-    price: p.price ?? 0,
-    unit: p.currency ?? "UZS",
-    minProduct: p.minProduct ?? p.min,
-    measureUnit: p.unit,
-    company: p.companyId ? t("common.companyFallback", { id: p.companyId }) : "",
-    image: p.images?.find((img) => img.is_primary)?.url ?? p.images?.[0]?.url ?? null,
-    verified: p.status === "ACTIVE" || p.isPromoted,
-  };
-}
 
 function displayText(value, fallback = "") {
   if (value == null) return fallback;
@@ -159,13 +144,22 @@ export default function ProductPage() {
 
   useEffect(() => {
     if (!product) return;
-    getAllProducts({ page: 1, perPage: 60 })
+    getSimilarProducts(product.id, { limit: 8 })
       .then((data) => {
-        const items = (data?.items ?? []).filter((p) => p.categoryId === product.category?.id && p.id !== product.id);
-        setSimilar(items.slice(0, 4).map((p) => normalizeProduct(p, t)));
+        const items = (data?.items ?? []).map((p) => ({
+          id: p.productId,
+          slug: p.slug,
+          name: p.name,
+          price: p.price ?? 0,
+          unit: p.currency ?? "UZS",
+          image: p.imageUrl ?? null,
+          company: "",
+          verified: false,
+        }));
+        setSimilar(items.slice(0, 4));
       })
       .catch(() => setSimilar([]));
-  }, [product, t]);
+  }, [product]);
 
   if (loading) {
     return (

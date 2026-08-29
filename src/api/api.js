@@ -630,3 +630,81 @@ export async function deleteBanner(id) {
 export async function uploadBannerImage(id, file) {
   return unwrap(http.post(`/admin/banners/${id}/image`, toSingleFileForm(file)));
 }
+
+// AI service
+
+export async function createAiConversation({ title } = {}) {
+  return unwrap(http.post("/ai/conversations", title ? { title } : {}));
+}
+
+export async function getAiConversations({ page = 1, per_page = 20 } = {}) {
+  return unwrap(http.get("/ai/conversations", { params: { page, per_page } }));
+}
+
+export async function deleteAiConversation(id) {
+  return unwrap(http.delete(`/ai/conversations/${id}`));
+}
+
+export async function getAiConversationMessages(id, { page = 1, per_page = 20 } = {}) {
+  return unwrap(http.get(`/ai/conversations/${id}/messages`, { params: { page, per_page } }));
+}
+
+export async function aiSemanticSearch(q, { limit } = {}) {
+  return unwrap(http.get("/ai/search", { params: { q, limit } }));
+}
+
+export async function aiBusinessSearch({ q, types, categorySlug, regionId, minPrice, maxPrice, currency, limit = 10 } = {}) {
+  return unwrap(http.get("/ai/business-search", { params: { q, types, categorySlug, regionId, minPrice, maxPrice, currency, limit } }));
+}
+
+export async function getSimilarProducts(productId, { limit } = {}) {
+  return unwrap(http.get(`/ai/similar/${productId}`, { params: { limit } }));
+}
+
+export async function suggestListing({ description, imageIds } = {}) {
+  return unwrap(http.post("/ai/seller/suggest-listing", { description, imageIds }));
+}
+
+export async function recommendSuppliers({ need, categorySlug, regionId, limit } = {}) {
+  return unwrap(http.post("/ai/recommendations/suppliers", { need, categorySlug, regionId, limit }));
+}
+
+export async function createBuyingIntent(data) {
+  return unwrap(http.post("/ai/buying-intents", data));
+}
+
+export async function getMyBuyingIntents({ page = 1, per_page = 20, status } = {}) {
+  return unwrap(http.get("/ai/buying-intents/mine", { params: { page, per_page, status } }));
+}
+
+export async function searchBuyingIntents({ category, region, q, limit } = {}) {
+  return unwrap(http.get("/ai/buying-intents/search", { params: { category, region, q, limit } }));
+}
+
+export async function getBuyingIntent(id) {
+  return unwrap(http.get(`/ai/buying-intents/${id}`));
+}
+
+export async function updateBuyingIntent(id, data) {
+  return unwrap(http.put(`/ai/buying-intents/${id}`, data));
+}
+
+export async function closeBuyingIntent(id) {
+  return unwrap(http.post(`/ai/buying-intents/${id}/close`));
+}
+
+export async function publishBuyingIntent(id, publicationConsent) {
+  return unwrap(http.post(`/ai/buying-intents/${id}/publish`, { publicationConsent }));
+}
+
+export async function getAiDraft(id) {
+  return unwrap(http.get(`/ai/drafts/${id}`));
+}
+
+export async function confirmAiDraft(id, data) {
+  return unwrap(http.post(`/ai/drafts/${id}/confirm`, data));
+}
+
+export async function cancelAiDraft(id) {
+  return unwrap(http.post(`/ai/drafts/${id}/cancel`));
+}

@@ -49,6 +49,7 @@ const PAGE_TITLE_KEYS = [
   { test: (p) => p.startsWith("/favorites"), titleKey: "nav.favorites" },
   { test: (p) => p.startsWith("/cart"), titleKey: "nav.cart" },
   { test: (p) => p.startsWith("/ai-agent"), titleKey: "nav.aiAgent" },
+  { test: (p) => p.startsWith("/buying-intents"), titleKey: "nav.buyingIntents" },
   { test: (p) => p.startsWith("/companies"), titleKey: "nav.companies" },
   { test: (p) => p.startsWith("/company/"), titleKey: "nav.profile" },
   { test: (p) => p.startsWith("/profile"), titleKey: "nav.profile" },

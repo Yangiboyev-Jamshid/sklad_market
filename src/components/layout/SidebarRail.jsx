@@ -7,7 +7,8 @@ import {
   SecurityUser,
   DollarCircle,
   ClipboardText,
-  ElementPlus
+  ElementPlus,
+  MessageQuestion
 } from "iconsax-reactjs";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -18,6 +19,7 @@ const navItems = [
   { to: "/", labelKey: "nav.home", icon: Home2 },
   { to: "/catalog", labelKey: "nav.catalog", icon: BoxAdd },
   { to: "/requests", labelKey: "nav.requests", icon: ClipboardText, hideForModerator: true, requireAuth: true },
+  { to: "/buying-intents", labelKey: "nav.buyingIntents", icon: MessageQuestion, hideForModerator: true, requireAuth: true },
   { to: "/profile", labelKey: "nav.profile", icon: UserSquare, sellerOnly: true },
   { to: "/companies", labelKey: "nav.companies", icon: Buildings },
   { to: "/seller", labelKey: "nav.seller", icon: SecurityUser, sellerOnly: true },

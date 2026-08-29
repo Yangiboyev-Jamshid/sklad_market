@@ -7,10 +7,11 @@ import AppShell from "../components/layout/AppShell";
 import ProductCard from "../components/ui/ProductCard";
 import MapView from "../components/ui/MapView";
 import BannerCarousel from "../components/ui/BannerCarousel";
-import { getAllProducts, searchProducts, getCategoryTree, getCatalogMap, getSearchSuggestions, getCatalogFilters, getCategoryCounts, getProductsByPriceRange } from "../api/api";
+import { getAllProducts, searchProducts, getCategoryTree, getCatalogMap, getSearchSuggestions, getCatalogFilters, getCategoryCounts, getProductsByPriceRange, aiBusinessSearch } from "../api/api";
 import { buildProductMapPins } from "../utils/mapPins";
 import { usePublicBanners } from "../hooks/usePublicBanners";
 import { getPublicCompanyExtras } from "../utils/companyExtras";
+import AiSearchResults from "../components/ui/AiSearchResults";
 
 function mostCommonCategoryId(ids) {
   if (!ids.length) return null;
@@ -60,6 +61,8 @@ export default function CatalogPage() {
   const [filterMeta, setFilterMeta] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [aiResults, setAiResults] = useState([]);
+  const [aiResultsLoading, setAiResultsLoading] = useState(false);
   const [mapPins, setMapPins] = useState([]);
   const [mapLoading, setMapLoading] = useState(false);
   const [foundCategoryIds, setFoundCategoryIds] = useState([]);
@@ -152,11 +155,20 @@ export default function CatalogPage() {
   useEffect(() => {
     clearTimeout(suggestDebounceRef.current);
     if (!query.trim()) {
-      suggestDebounceRef.current = setTimeout(() => setSuggestions([]), 0);
+      suggestDebounceRef.current = setTimeout(() => {
+        setSuggestions([]);
+        setAiResults([]);
+      }, 0);
       return () => clearTimeout(suggestDebounceRef.current);
     }
     suggestDebounceRef.current = setTimeout(() => {
-      getSearchSuggestions(query.trim()).then(setSuggestions).catch(() => setSuggestions([]));
+      const q = query.trim();
+      getSearchSuggestions(q).then(setSuggestions).catch(() => setSuggestions([]));
+      setAiResultsLoading(true);
+      aiBusinessSearch({ q, limit: 6 })
+        .then((data) => setAiResults(data?.items ?? []))
+        .catch(() => setAiResults([]))
+        .finally(() => setAiResultsLoading(false));
     }, 250);
     return () => clearTimeout(suggestDebounceRef.current);
   }, [query]);
@@ -235,6 +247,8 @@ export default function CatalogPage() {
               suggestions={suggestions}
               suggestionsOpen={suggestionsOpen}
               setSuggestionsOpen={setSuggestionsOpen}
+              aiResults={aiResults}
+              aiResultsLoading={aiResultsLoading}
             />
             <button
               onClick={() => setFiltersOpen(true)}
@@ -259,6 +273,8 @@ export default function CatalogPage() {
           suggestions={suggestions}
           suggestionsOpen={suggestionsOpen}
           setSuggestionsOpen={setSuggestionsOpen}
+          aiResults={aiResults}
+          aiResultsLoading={aiResultsLoading}
         />
 
         {view === "grid" && banners.length > 0 && (
@@ -373,8 +389,9 @@ export default function CatalogPage() {
   );
 }
 
-function SearchBox({ wrapperClass, query, setQuery, suggestions, suggestionsOpen, setSuggestionsOpen }) {
+function SearchBox({ wrapperClass, query, setQuery, suggestions, suggestionsOpen, setSuggestionsOpen, aiResults = [], aiResultsLoading = false }) {
   const { t } = useTranslation();
+  const showDropdown = suggestionsOpen && (suggestions.length > 0 || aiResultsLoading || aiResults.length > 0);
   return (
     <div className={`relative ${wrapperClass}`}>
       <div className="flex items-center gap-2 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-4 py-2.5 w-full">
@@ -388,18 +405,23 @@ function SearchBox({ wrapperClass, query, setQuery, suggestions, suggestionsOpen
           className="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder:text-ink-400 dark:text-white"
         />
       </div>
-      {suggestionsOpen && suggestions.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl shadow-popover z-20 overflow-hidden">
-          {suggestions.map((s, i) => (
-            <button
-              key={i}
-              type="button"
-              onMouseDown={() => { setQuery(s); setSuggestionsOpen(false); }}
-              className="w-full text-left px-4 py-2.5 text-sm text-ink-700 dark:text-ink-200 hover:bg-ink-50 dark:hover:bg-[#171717] transition-colors"
-            >
-              {s}
-            </button>
-          ))}
+      {showDropdown && (
+        <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl shadow-popover z-20 overflow-hidden max-h-[70vh] overflow-y-auto">
+          {suggestions.length > 0 && (
+            <div>
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onMouseDown={() => { setQuery(s); setSuggestionsOpen(false); }}
+                  className="w-full text-left px-4 py-2.5 text-sm text-ink-700 dark:text-ink-200 hover:bg-ink-50 dark:hover:bg-[#171717] transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+          <AiSearchResults items={aiResults} loading={aiResultsLoading} onSelect={() => setSuggestionsOpen(false)} />
         </div>
       )}
     </div>

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { ArrowDown2, CloudAdd, Trash } from "iconsax-reactjs";
-import { createProduct, publishProduct, uploadProductImages, getCategoryTree, getMyCompany } from "../../api/api";
+import { createProduct, publishProduct, uploadProductImages, getCategoryTree, getMyCompany, suggestListing } from "../../api/api";
 import { flattenCategoryTree } from "../../utils/categories";
 import { UNIT_OPTIONS } from "../../data/units";
 
@@ -33,6 +33,10 @@ export default function AddProductModal({ open, onClose, companyId }) {
   const [success, setSuccess] = useState("");
   const submittingRef = useRef(false);
 
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState(null);
+  const [aiError, setAiError] = useState("");
+
   useEffect(() => {
     if (!open) return;
     getCategoryTree()
@@ -59,6 +63,28 @@ export default function AddProductModal({ open, onClose, companyId }) {
     setWholesaleEnabled(true); setRetailEnabled(false);
     setWholesalePrice(""); setWholesaleMinQty(""); setWholesaleUnit(UNIT_OPTIONS[0].value); setWholesaleVolume("");
     setRetailPrice(""); setRetailQuantity(""); setRetailUnit(UNIT_OPTIONS[0].value);
+    setAiSuggestion(null); setAiError("");
+  };
+
+  const handleAiSuggest = async () => {
+    if (!description.trim()) return;
+    setAiLoading(true);
+    setAiError("");
+    setAiSuggestion(null);
+    try {
+      const result = await suggestListing({ description: description.trim() });
+      setAiSuggestion(result);
+    } catch (err) {
+      setAiError(err.message || t("ai.sellerAssistError"));
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const applyAiSuggestion = () => {
+    if (!aiSuggestion?.category?.slug) return;
+    const match = categoriesList.find((c) => c.slug === aiSuggestion.category.slug);
+    if (match) setCategoryId(String(match.id));
   };
 
   const handleClose = () => { reset(); onClose(); };
@@ -290,8 +316,62 @@ export default function AddProductModal({ open, onClose, companyId }) {
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-ink-50 dark:bg-[#171717] rounded-xl px-4 py-3 text-sm outline-none placeholder:text-ink-400 dark:text-white mb-4 resize-none"
+              className="w-full bg-ink-50 dark:bg-[#171717] rounded-xl px-4 py-3 text-sm outline-none placeholder:text-ink-400 dark:text-white mb-2 resize-none"
             />
+
+            <button
+              type="button"
+              onClick={handleAiSuggest}
+              disabled={aiLoading || !description.trim()}
+              className="mb-4 flex items-center gap-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline disabled:opacity-50 disabled:no-underline"
+            >
+              {aiLoading ? t("ai.sellerAssistLoading") : `✨ ${t("ai.sellerAssistButton")}`}
+            </button>
+
+            {aiError && (
+              <p className="text-sm text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-2.5 mb-4">
+                {aiError}
+              </p>
+            )}
+
+            {aiSuggestion && (
+              <div className="rounded-xl border border-brand-200 dark:border-brand-500/30 bg-brand-50/50 dark:bg-brand-500/5 p-3.5 mb-4 text-sm flex flex-col gap-1.5">
+                {aiSuggestion.category && (
+                  <p>
+                    <span className="font-semibold text-ink-900 dark:text-white">{t("ai.sellerAssistCategory")}:</span>{" "}
+                    <span className="text-ink-700 dark:text-ink-200">
+                      {aiSuggestion.category.name}
+                      {aiSuggestion.categoryConfidence != null && ` (${Math.round(aiSuggestion.categoryConfidence * 100)}%)`}
+                    </span>
+                  </p>
+                )}
+                {aiSuggestion.attributes?.length > 0 && (
+                  <div>
+                    <span className="font-semibold text-ink-900 dark:text-white">{t("ai.sellerAssistAttributes")}:</span>
+                    <ul className="list-disc list-inside text-ink-700 dark:text-ink-200">
+                      {aiSuggestion.attributes.map((a) => (
+                        <li key={a.code}>{a.label}: {String(a.value)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {aiSuggestion.missingRequired?.length > 0 && (
+                  <p className="text-amber-600 dark:text-amber-400">
+                    <span className="font-semibold">{t("ai.sellerAssistMissing")}:</span> {aiSuggestion.missingRequired.join(", ")}
+                  </p>
+                )}
+                {aiSuggestion.notes && <p className="text-ink-500 dark:text-ink-400">{aiSuggestion.notes}</p>}
+                {aiSuggestion.category?.slug && (
+                  <button
+                    type="button"
+                    onClick={applyAiSuggestion}
+                    className="self-start mt-1 text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    {t("ai.sellerAssistApply")}
+                  </button>
+                )}
+              </div>
+            )}
 
             { }
             <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">
