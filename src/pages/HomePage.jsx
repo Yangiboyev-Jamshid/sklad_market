@@ -214,7 +214,7 @@ export default function HomePage() {
           <Catalog isOpen={isOpen} onClose={() => setIsOpen(false)} />
         </div>
 
-        {!isSearching && <DashboardAiAssistant user={user} isLoggedIn={isLoggedIn} />}
+        <DashboardAiAssistant user={user} isLoggedIn={isLoggedIn} />
 
         <div className="mb-6 sm:mb-8 relative z-1">
           {bannersLoading ? (
@@ -242,7 +242,9 @@ export default function HomePage() {
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between px-1 sm:px-8 md:px-16 gap-3 mb-4 sm:mb-5 relative z-1">
-          <h2 className="text-xl sm:text-2xl font-display font-bold text-ink-900 dark:text-white">{t("home.popularProducts")}</h2>
+          <h2 className="text-xl sm:text-2xl font-display font-bold text-ink-900 dark:text-white">
+            {t(isSearching ? "home.searchResults" : "home.popularProducts")}
+          </h2>
           <div className="relative sm:flex items-center w-full sm:w-64">
             <Input
               placeholder={t("common.searchProduct")}
@@ -260,6 +262,7 @@ export default function HomePage() {
                 onSelect={() => setHeroSuggestOpen(false)}
                 aiItems={aiSuggestResults}
                 aiLoading={aiSuggestLoading}
+                align="right"
               />
             )}
           </div>

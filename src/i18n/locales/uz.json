@@ -111,7 +111,8 @@
         "emptyFilter": "Bu turdagi AI natijalari topilmadi."
       },
       "firstTimeTitle": "Sklad Market bo'yicha qisqa yo'riqnoma"
-    }
+    },
+    "searchResults": "Qidiruv natijalari"
   },
   "catalogModal": {
     "categoriesNotFound": "Kategoriyalar topilmadi",
@@ -620,7 +621,8 @@
     "assignToMe": "O'zimga biriktirish",
     "supportAssignedToOther": "Bu chat allaqachon boshqa xodimga biriktirilgan",
     "confirmCloseSupportChat": "Ushbu texnik yordam chati yopilsinmi?",
-    "closeSupportChat": "Chatni yopish"
+    "closeSupportChat": "Chatni yopish",
+    "tabAiRequests": "AI so'rovlari"
   },
   "account": {
     "title": "Mening profilim",
@@ -757,6 +759,37 @@
     "sellerAssistNotes": "Izoh",
     "sellerAssistLoading": "Tahlil qilinmoqda...",
     "sellerAssistError": "Taklif olishda xatolik yuz berdi",
-    "productsLabel": "mahsulot"
+    "productsLabel": "mahsulot",
+    "rateLimits": {
+      "title": "So'rovlarni boshqarish",
+      "open": "Ochish",
+      "close": "Yopish",
+      "help": "Foydalanuvchilar uchun AI so'rovlari chegarasini (RPM) va kunlik token byudjetini bu yerda o'zgartirishingiz mumkin.",
+      "loading": "Yuklanmoqda...",
+      "empty": "Hozircha hech qanday alohida chegara o'rnatilmagan.",
+      "error": "Ma'lumotlarni yuklab bo'lmadi.",
+      "rpmLabel": "So'rov/daqiqa",
+      "budgetLabel": "Kunlik token byudjeti",
+      "usage": "Ishlatilgan: {{used}} / Qolgan: {{remaining}}",
+      "save": "Saqlash",
+      "reset": "Standartga qaytarish",
+      "invalidRpm": "So'rov/daqiqa 0 dan 10000 gachа butun son bo'lishi kerak.",
+      "invalidBudget": "Kunlik token byudjeti 0 dan 100 000 000 gachа butun son bo'lishi kerak.",
+      "roles": {
+        "title": "Rollar bo'yicha kvotalar",
+        "help": "Har bir rol uchun soatlik va kunlik so'rov chegarasini belgilang.",
+        "loading": "Yuklanmoqda...",
+        "error": "Kvotalarni yuklab bo'lmadi.",
+        "hourly": "Soatlik chegara",
+        "daily": "Kunlik chegara",
+        "role": "Rol nomi",
+        "add": "Qo'shish",
+        "invalidRole": "Rol nomi katta harflar, raqam va pastki chiziqdan iborat bo'lishi kerak.",
+        "invalidLimits": "Chegaralar 0 dan 1 000 000 gacha bo'lishi va kunlik chegara soatlikdan kichik bo'lmasligi kerak."
+      },
+      "userColumn": "Foydalanuvchi",
+      "searchPlaceholder": "Foydalanuvchi bo'yicha qidirish...",
+      "searchEmpty": "Qidiruvga mos foydalanuvchi topilmadi."
+    }
   }
 }

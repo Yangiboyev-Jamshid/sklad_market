@@ -676,3 +676,25 @@ export async function confirmAiDraft(id, data) {
 export async function cancelAiDraft(id) {
   return unwrap(http.post(`/ai/drafts/${id}/cancel`));
 }
+
+// AI admin: per-user rate-limit overrides and per-role request quotas (ADMIN / SUPER_ADMIN only)
+
+export async function getAiRateLimits({ signal } = {}) {
+  return unwrap(http.get("/ai/admin/rate-limits", { signal }));
+}
+
+export async function updateAiRateLimit(userSub, { requestsPerMinute, dailyTokenBudget } = {}) {
+  return unwrap(http.put(`/ai/admin/rate-limits/${encodeURIComponent(userSub)}`, { requestsPerMinute, dailyTokenBudget }));
+}
+
+export async function resetAiRateLimit(userSub) {
+  return unwrap(http.delete(`/ai/admin/rate-limits/${encodeURIComponent(userSub)}`));
+}
+
+export async function getAiRoleQuotas({ signal } = {}) {
+  return unwrap(http.get("/ai/admin/role-quotas", { signal }));
+}
+
+export async function updateAiRoleQuota(roleName, { hourlyRequestLimit, dailyRequestLimit } = {}) {
+  return unwrap(http.put(`/ai/admin/role-quotas/${encodeURIComponent(roleName)}`, { hourlyRequestLimit, dailyRequestLimit }));
+}

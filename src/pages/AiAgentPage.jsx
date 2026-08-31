@@ -5,7 +5,9 @@ import { Send, Add, Trash, MessageQuestion, HamburgerMenu, CloseCircle, TickCirc
 import { useTranslation } from "react-i18next";
 import AppShell from "../components/layout/AppShell";
 import AiDraftModal from "../components/ai/AiDraftModal";
+import AiRequestsNavLink from "../components/ai/AiRequestsNavLink";
 import ProductThumb from "../components/ui/ProductThumb";
+import { useAuth } from "../context/AuthContext";
 import { createAiConversation, getAiConversations, getAiConversationMessages, deleteAiConversation, cancelAiDraft } from "../api/api";
 import { streamAiMessage } from "../api/aiChatStream";
 import { aiSuggestions } from "../data/mockData";
@@ -27,16 +29,31 @@ function aiErrorMessage(err, t) {
   return err?.message || t("ai.errorGeneric");
 }
 
-// History messages (MessageDto from GET .../messages) carry the draft reference in toolPayload —
-// the live SSE "draft" event carries it directly, this is only needed when re-opening a past chat.
-function draftIdFromToolPayload(message) {
+// History messages (MessageDto from GET .../messages) carry tool output — including result_set
+// product/company cards and draft references — on separate role:"TOOL" rows, not on the assistant's
+// own text row. The live SSE session renders these as they stream in; re-opening a past conversation
+// has to walk the TOOL rows and re-attach their payload to the assistant row that follows them.
+//
+// The persisted toolPayload is not the raw live-stream event shape — the backend wraps it in a
+// canonical envelope: { "resultSet": { items: [...] }, "draftRef": { "draftId": "...", "type": "LEAD" } }.
+function parseToolPayload(message) {
   if (!message?.toolPayload) return null;
   try {
-    const parsed = typeof message.toolPayload === "string" ? JSON.parse(message.toolPayload) : message.toolPayload;
-    return parsed?.draftId ?? parsed?.draft_id ?? null;
+    return typeof message.toolPayload === "string" ? JSON.parse(message.toolPayload) : message.toolPayload;
   } catch {
     return null;
   }
+}
+
+function draftIdFromToolPayload(message) {
+  const parsed = parseToolPayload(message);
+  return parsed?.draftRef?.draftId ?? parsed?.draftId ?? parsed?.draft_id ?? null;
+}
+
+function resultItemsFromToolPayload(message) {
+  const parsed = parseToolPayload(message);
+  const fromEnvelope = normalizeResultItems(parsed?.resultSet);
+  return fromEnvelope.length > 0 ? fromEnvelope : normalizeResultItems(parsed);
 }
 
 // result_set payloads are free-form (AI_API.md §4) — only render entries that look like a
@@ -62,6 +79,7 @@ function normalizeResultItems(payload) {
 export default function AiAgentPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [conversations, setConversations] = useState([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
@@ -104,10 +122,30 @@ export default function AiAgentPage() {
     setMessagesLoading(true);
     try {
       const data = await getAiConversationMessages(conversationId, { per_page: 50 });
-      const items = (data?.items ?? [])
+      const sorted = (data?.items ?? [])
         .slice()
-        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-        .map((m) => ({ ...m, draftId: draftIdFromToolPayload(m) }));
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+      const items = [];
+      let pendingResultSets = [];
+      let pendingDraftId = null;
+      for (const m of sorted) {
+        if (String(m.role || "").toUpperCase() === "TOOL") {
+          const resultItems = resultItemsFromToolPayload(m);
+          if (resultItems.length > 0) pendingResultSets = [...pendingResultSets, resultItems];
+          pendingDraftId = draftIdFromToolPayload(m) ?? pendingDraftId;
+          continue;
+        }
+        const enriched = { ...m };
+        if (String(m.role || "").toUpperCase() === "ASSISTANT") {
+          const ownResultItems = resultItemsFromToolPayload(m);
+          enriched.resultSets = pendingResultSets.length > 0 ? pendingResultSets : (ownResultItems.length > 0 ? [ownResultItems] : []);
+          enriched.draftId = pendingDraftId ?? draftIdFromToolPayload(m);
+          pendingResultSets = [];
+          pendingDraftId = null;
+        }
+        items.push(enriched);
+      }
       setMessages(items);
     } catch {
       setMessages([]);
@@ -333,6 +371,9 @@ export default function AiAgentPage() {
           </div>
 
           <div className="max-w-3xl w-full mx-auto flex flex-col flex-1 min-h-0 px-4 sm:px-6 py-5 sm:py-8">
+            <div className="flex justify-end mb-3">
+              <AiRequestsNavLink role={user?.role} />
+            </div>
             <div className="flex-1 min-h-0 overflow-y-auto">
               {messages.length === 0 && !messagesLoading ? (
                 <div className="h-full flex flex-col items-center justify-center text-center">

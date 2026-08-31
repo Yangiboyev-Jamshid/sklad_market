@@ -111,7 +111,8 @@
         "emptyFilter": "No AI matches in this result type."
       },
       "firstTimeTitle": "A quick guide to Sklad Market"
-    }
+    },
+    "searchResults": "Search results"
   },
   "catalogModal": {
     "categoriesNotFound": "No categories found",
@@ -620,7 +621,8 @@
     "assignToMe": "Assign to me",
     "supportAssignedToOther": "This chat is already assigned to another admin",
     "confirmCloseSupportChat": "Close this support chat?",
-    "closeSupportChat": "Close chat"
+    "closeSupportChat": "Close chat",
+    "tabAiRequests": "AI requests"
   },
   "account": {
     "title": "My profile",
@@ -757,6 +759,37 @@
     "sellerAssistNotes": "Note",
     "sellerAssistLoading": "Analyzing...",
     "sellerAssistError": "Failed to get a suggestion",
-    "productsLabel": "products"
+    "productsLabel": "products",
+    "rateLimits": {
+      "title": "Manage requests",
+      "open": "Open",
+      "close": "Close",
+      "help": "Adjust the AI request limit (RPM) and daily token budget for individual users here.",
+      "loading": "Loading...",
+      "empty": "No per-user overrides yet.",
+      "error": "Could not load data.",
+      "rpmLabel": "Requests/min",
+      "budgetLabel": "Daily token budget",
+      "usage": "Used: {{used}} / Remaining: {{remaining}}",
+      "save": "Save",
+      "reset": "Reset to default",
+      "invalidRpm": "Requests/min must be an integer between 0 and 10000.",
+      "invalidBudget": "Daily token budget must be an integer between 0 and 100,000,000.",
+      "roles": {
+        "title": "Role quotas",
+        "help": "Set the hourly and daily request limit for each role.",
+        "loading": "Loading...",
+        "error": "Could not load quotas.",
+        "hourly": "Hourly limit",
+        "daily": "Daily limit",
+        "role": "Role name",
+        "add": "Add",
+        "invalidRole": "Role name must be uppercase letters, digits, and underscores.",
+        "invalidLimits": "Limits must be between 0 and 1,000,000, and the daily limit cannot be lower than the hourly one."
+      },
+      "userColumn": "User",
+      "searchPlaceholder": "Search by user...",
+      "searchEmpty": "No users match this search."
+    }
   }
 }
