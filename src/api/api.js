@@ -217,14 +217,6 @@ export async function createCompanyReview(companyId, { rating, comment } = {}) {
   return unwrap(http.post(`/companies/${companyId}/reviews`, { rating, comment }));
 }
 
-export async function updateCompanyReview(companyId, reviewId, { rating, comment } = {}) {
-  return unwrap(http.put(`/companies/${companyId}/reviews/${reviewId}`, { rating, comment }));
-}
-
-export async function deleteCompanyReview(companyId, reviewId) {
-  return unwrap(http.delete(`/companies/${companyId}/reviews/${reviewId}`));
-}
-
 export async function getCompaniesMap({ page = 1, per_page = 20, q } = {}) {
   return unwrap(http.get("/companies/map", { params: { page, per_page, q } }));
 }
@@ -631,8 +623,6 @@ export async function uploadBannerImage(id, file) {
   return unwrap(http.post(`/admin/banners/${id}/image`, toSingleFileForm(file)));
 }
 
-// AI service
-
 export async function createAiConversation({ title } = {}) {
   return unwrap(http.post("/ai/conversations", title ? { title } : {}));
 }
@@ -649,10 +639,6 @@ export async function getAiConversationMessages(id, { page = 1, per_page = 20 } 
   return unwrap(http.get(`/ai/conversations/${id}/messages`, { params: { page, per_page } }));
 }
 
-export async function aiSemanticSearch(q, { limit } = {}) {
-  return unwrap(http.get("/ai/search", { params: { q, limit } }));
-}
-
 export async function aiBusinessSearch({ q, types, categorySlug, regionId, minPrice, maxPrice, currency, limit = 10 } = {}, { signal } = {}) {
   return unwrap(http.get("/ai/business-search", { params: { q, types, categorySlug, regionId, minPrice, maxPrice, currency, limit }, signal }));
 }
@@ -665,10 +651,6 @@ export async function suggestListing({ description, imageIds } = {}) {
   return unwrap(http.post("/ai/seller/suggest-listing", { description, imageIds }));
 }
 
-export async function getAiDraft(id) {
-  return unwrap(http.get(`/ai/drafts/${id}`));
-}
-
 export async function confirmAiDraft(id, data) {
   return unwrap(http.post(`/ai/drafts/${id}/confirm`, data));
 }
@@ -676,8 +658,6 @@ export async function confirmAiDraft(id, data) {
 export async function cancelAiDraft(id) {
   return unwrap(http.post(`/ai/drafts/${id}/cancel`));
 }
-
-// AI admin: per-user rate-limit overrides and per-role request quotas (ADMIN / SUPER_ADMIN only)
 
 export async function getAiRateLimits({ signal } = {}) {
   return unwrap(http.get("/ai/admin/rate-limits", { signal }));

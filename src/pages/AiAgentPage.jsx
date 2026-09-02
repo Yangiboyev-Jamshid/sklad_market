@@ -29,13 +29,6 @@ function aiErrorMessage(err, t) {
   return err?.message || t("ai.errorGeneric");
 }
 
-// History messages (MessageDto from GET .../messages) carry tool output — including result_set
-// product/company cards and draft references — on separate role:"TOOL" rows, not on the assistant's
-// own text row. The live SSE session renders these as they stream in; re-opening a past conversation
-// has to walk the TOOL rows and re-attach their payload to the assistant row that follows them.
-//
-// The persisted toolPayload is not the raw live-stream event shape — the backend wraps it in a
-// canonical envelope: { "resultSet": { items: [...] }, "draftRef": { "draftId": "...", "type": "LEAD" } }.
 function parseToolPayload(message) {
   if (!message?.toolPayload) return null;
   try {
@@ -56,9 +49,6 @@ function resultItemsFromToolPayload(message) {
   return fromEnvelope.length > 0 ? fromEnvelope : normalizeResultItems(parsed);
 }
 
-// result_set payloads are free-form (AI_API.md §4) — only render entries that look like a
-// product or supplier-company reference (matches SearchResultItem / BusinessSearchItem shape).
-// Anything else (including buying-intent related shapes) is silently skipped, not rendered.
 function normalizeResultItems(payload) {
   const raw = Array.isArray(payload) ? payload : payload?.items;
   if (!Array.isArray(raw)) return [];

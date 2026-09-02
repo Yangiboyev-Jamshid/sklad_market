@@ -31,6 +31,31 @@ function hasSeenOnboarding(key) {
   }
 }
 
+function ChatIllustration() {
+  return (
+    <svg viewBox="0 0 260 200" className="h-full w-full" aria-hidden="true">
+      <rect x="14" y="10" width="180" height="152" rx="20" className="fill-brand-50 dark:fill-white/[0.04]" />
+      <rect x="14" y="10" width="180" height="152" rx="20" fill="none" strokeWidth="2" className="stroke-brand-100 dark:stroke-white/10" />
+
+      <rect x="32" y="34" width="118" height="16" rx="8" className="fill-white dark:fill-white/10" />
+      <rect x="32" y="58" width="86" height="16" rx="8" className="fill-white dark:fill-white/10" />
+
+      <rect x="66" y="90" width="110" height="16" rx="8" className="fill-brand-600" />
+
+      <circle cx="36" cy="124" r="4" className="fill-brand-200 dark:fill-white/20" />
+      <circle cx="49" cy="124" r="4" className="fill-brand-200 dark:fill-white/20" />
+      <circle cx="62" cy="124" r="4" className="fill-brand-200 dark:fill-white/20" />
+
+      <rect x="152" y="122" width="94" height="62" rx="14" className="fill-brand-900/10 dark:fill-black/30" />
+      <rect x="146" y="114" width="94" height="62" rx="14" strokeWidth="2" className="fill-white stroke-ink-200 dark:fill-[#0D0D0D] dark:stroke-white/10" />
+      <rect x="158" y="126" width="24" height="24" rx="6" className="fill-brand-100 dark:fill-brand-500/20" />
+      <rect x="190" y="130" width="38" height="8" rx="4" className="fill-ink-800 dark:fill-white/70" />
+      <rect x="190" y="142" width="26" height="7" rx="3.5" className="fill-ink-300 dark:fill-white/30" />
+      <rect x="158" y="160" width="56" height="7" rx="3.5" className="fill-brand-400" />
+    </svg>
+  );
+}
+
 export default function DashboardAiAssistant({ user, isLoggedIn }) {
   const { t } = useTranslation();
   const key = onboardingKey(user);
@@ -39,7 +64,6 @@ export default function DashboardAiAssistant({ user, isLoggedIn }) {
   const visible = isLoggedIn && showOnboarding;
 
   const role = normalizeRole(user?.role);
-  const instructions = t("home.aiAssistant.instructions", { returnObjects: true });
   const roleGuideKey = role === "SELLER"
     ? "home.aiAssistant.sellerGuide"
     : role === "BUYER"
@@ -51,7 +75,7 @@ export default function DashboardAiAssistant({ user, isLoggedIn }) {
       try {
         window.localStorage.setItem(key, "seen");
       } catch {
-        // Storage can be unavailable in private/restricted browser modes; the guide still works.
+        
       }
     }
     setDismissedKey(key);
@@ -67,66 +91,53 @@ export default function DashboardAiAssistant({ user, isLoggedIn }) {
           exit={{ opacity: 0, y: -8, scale: 0.98 }}
           transition={{ duration: 0.25 }}
           aria-label={t("home.aiAssistant.badge")}
-          className="relative mb-6 sm:mb-8 overflow-hidden rounded-2xl border border-brand-200/80 bg-gradient-to-br from-white via-brand-50/70 to-[#EEF3FF] p-4 shadow-card dark:border-brand-500/20 dark:from-[#0D0D0D] dark:via-[#10172A] dark:to-[#111827] sm:p-5"
+          className="relative mb-6 overflow-hidden rounded-2xl border border-ink-100 bg-white p-5 shadow-card dark:border-[#1C1C1C] dark:bg-[#0D0D0D] sm:mb-8 sm:p-6"
         >
           <button
             type="button"
             onClick={markOnboardingSeen}
             aria-label={t("home.aiAssistant.dismiss")}
             title={t("home.aiAssistant.dismiss")}
-            className="absolute right-1 top-1 z-10 rounded-full p-1 text-ink-400 transition-colors hover:bg-white/70 hover:text-ink-700 dark:text-ink-500 dark:hover:bg-white/10 dark:hover:text-white"
+            className="absolute right-3 top-3 z-20 rounded-full p-1.5 text-ink-400 transition-colors hover:bg-ink-50 hover:text-ink-700 dark:text-ink-500 dark:hover:bg-white/5 dark:hover:text-white"
           >
             <CloseCircle size={20} variant="Linear" />
           </button>
-          <div className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-brand-300/20 blur-3xl dark:bg-brand-500/10" />
-          <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(330px,0.72fr)] lg:items-center">
-            <div className="min-w-0 pr-8">
-              <div className="mb-2 flex items-center gap-2">
-                <AiAgentLogo size={36} className="shadow-sm" />
-                <span className="rounded-full border border-brand-200 bg-white/80 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-700 dark:border-brand-500/25 dark:bg-white/5 dark:text-brand-300">
+
+          <div className="grid gap-6 sm:grid-cols-[minmax(0,1fr)_200px] sm:items-center lg:grid-cols-[minmax(0,1fr)_240px]">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-500/10">
+                  <AiAgentLogo size={24} />
+                </span>
+                <span className="text-[11px] font-bold uppercase tracking-wide text-brand-700 dark:text-brand-300">
                   {t("home.aiAssistant.badge")}
                 </span>
               </div>
-              <h2 className="font-display text-lg font-bold text-ink-900 dark:text-white sm:text-xl">
+
+              <h2 className="mt-4 max-w-lg font-display text-2xl font-extrabold leading-tight tracking-tight text-ink-900 dark:text-white sm:text-[1.75rem]">
                 {preferredName(user)
                   ? t("home.aiAssistant.greeting", { name: preferredName(user) })
                   : t("home.aiAssistant.title")}
               </h2>
-              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-ink-500 dark:text-ink-400">
+              <p className="mt-2.5 max-w-lg text-sm leading-relaxed text-ink-500 dark:text-ink-400">
                 {t("home.aiAssistant.subtitle")}
               </p>
-              <div className="mt-4 rounded-xl border border-brand-200/80 bg-white/80 p-3 dark:border-brand-500/20 dark:bg-white/5">
-                <p className="text-sm font-semibold text-ink-900 dark:text-white">
-                  {t("home.aiAssistant.firstTimeTitle")}
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-ink-500 dark:text-ink-400">
-                  {t(roleGuideKey)}
-                </p>
-              </div>
-            </div>
-
-            <div className="min-w-0 rounded-xl border border-brand-100 bg-white/65 p-3 dark:border-brand-500/15 dark:bg-white/[0.035]">
-              <p className="mb-2 text-xs font-bold text-ink-800 dark:text-ink-100">
-                {t("home.aiAssistant.howToTitle")}
+              <p className="mt-2 max-w-lg text-xs leading-relaxed text-ink-400 dark:text-ink-500">
+                {t(roleGuideKey)}
               </p>
-              <ol className="space-y-2">
-                {(Array.isArray(instructions) ? instructions : []).map((instruction, index) => (
-                  <li key={instruction} className="flex gap-2 text-xs leading-relaxed text-ink-500 dark:text-ink-400">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">
-                      {index + 1}
-                    </span>
-                    <span>{instruction}</span>
-                  </li>
-                ))}
-              </ol>
+
               <Link
                 to="/ai-agent"
                 onClick={markOnboardingSeen}
-                className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#111827]"
+                className="mt-5 inline-flex items-center gap-2 rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-md active:translate-y-0"
               >
                 {t("home.aiAssistant.open")}
-                <ArrowRight2 size={14} />
+                <ArrowRight2 size={15} />
               </Link>
+            </div>
+
+            <div className="hidden sm:block">
+              <ChatIllustration />
             </div>
           </div>
         </motion.section>

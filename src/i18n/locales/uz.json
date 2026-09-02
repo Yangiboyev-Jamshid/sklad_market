@@ -75,12 +75,6 @@
       "title": "Nimani topishga yordam beray?",
       "subtitle": "AI mahsulotlar va kompaniyalarni mazmuni bo'yicha qidiradi, taqqoslaydi va mos yetkazib beruvchilarni tavsiya qiladi.",
       "open": "AI yordamchisini ochish",
-      "howToTitle": "AI yordamchidan foydalanish",
-      "instructions": [
-        "Mahsulot, miqdor, budjet va kerakli hududni yozing.",
-        "Mahsulot va kompaniya kartalarini ko'rib, joriy ma'lumotni tekshirish uchun ularni oching.",
-        "AI tavsiya va qoralama tayyorlaydi, ammo o'zi buyurtma bermaydi yoki hech kim bilan bog'lanmaydi."
-      ],
       "buyerGuide": "Xaridor mahsulot yoki yetkazib beruvchini qidiradi va taqqoslaydi, natija kartasini ochadi, so'ng sotuvchiga yuborishdan oldin so'rovni tekshiradi.",
       "sellerGuide": "Sotuvchi kompaniya katalogini yuritadi, xaridor so'rovlari va xabarlarini ko'radi hamda AI tayyorlagan qoralamani yuborish yoki e'lon qilishdan oldin tasdiqlaydi.",
       "generalGuide": "Katalog orqali mahsulot va kompaniyalarni toping, keyin kerakli sotuvchi bilan so'rov yoki chat orqali ishlashni davom ettiring.",
@@ -110,7 +104,16 @@
         "empty": "AI bu qidiruv uchun qo'shimcha moslik topmadi.",
         "emptyFilter": "Bu turdagi AI natijalari topilmadi."
       },
-      "firstTimeTitle": "Sklad Market bo'yicha qisqa yo'riqnoma"
+      "capabilities": [
+        "Qidiruv",
+        "Taqqoslash",
+        "Tavsiya"
+      ],
+      "capabilityDescriptions": [
+        "Mahsulot va yetkazib beruvchini toping",
+        "Narx va shartlarni solishtiring",
+        "Mos takliflarni oling"
+      ]
     },
     "searchResults": "Qidiruv natijalari"
   },

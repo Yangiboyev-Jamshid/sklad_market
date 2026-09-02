@@ -20,10 +20,6 @@ export default function SearchSuggestions({ products, loading, onSelect, aiItems
   };
 
   const showAiColumn = aiLoading || aiItems.length > 0;
-  // A narrow trigger (e.g. the compact hero search box) can't host a wide two-column
-  // panel without overflowing — anchor it to the right and let it grow leftward instead
-  // of stretching past the viewport edge. A wide trigger (the main search bar) already
-  // has room, so it keeps spanning its own full width in both layouts.
   const anchorClass = align === "right" && showAiColumn
     ? "right-0 w-[min(640px,calc(100vw-2rem))]"
     : "left-0 right-0";

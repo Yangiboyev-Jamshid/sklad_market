@@ -45,10 +45,6 @@ export function subscribeSupportThread(threadId) {
   send({ event: "subscribe", thread_id: threadId });
 }
 
-export function unsubscribeSupportThread(threadId) {
-  subscribedThreads.delete(threadId);
-}
-
 function flushQueue() {
   const queued = messageQueue.splice(0, messageQueue.length);
   queued.forEach(({ payload, timeoutId }) => {

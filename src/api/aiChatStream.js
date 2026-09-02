@@ -1,6 +1,6 @@
 import { getAccessToken } from "./api";
 
-const STREAM_INACTIVITY_MS = 120000; // backend resets its own 120s inactivity timeout on every chunk
+const STREAM_INACTIVITY_MS = 120000;
 
 function parseSseBuffer(buffer) {
   const events = [];
@@ -28,18 +28,6 @@ function parsePayload(raw) {
   }
 }
 
-// Real backend SSE protocol (AI_API.md §4, confirmed against production):
-//   :keep-alive                                   (comment line, ignored, proves the connection is alive)
-//   event:token       data:{"text":"..."}          (incremental text chunk, append)
-//   event:tool_start  data:{"tool":"...","summary":"..."}
-//   event:tool_end    data:{"tool":"...","status":"ok"}
-//   event:result_set  data:{...}                   (free-form structured results to render as cards)
-//   event:draft       data:{"draftId":"...","type":"LEAD","payload":{}}
-//   event:usage       data:{"tokensIn":.,"tokensOut":.,"budgetRemaining":.}
-//   event:done        data:{"messageId":"...","conversationId":"..."}   -- terminal, success
-//   event:error       data:{"code":"...","message":"..."}               -- terminal, failure
-// A stream that closes without a "done" or "error" event is itself a failure (§4) — the frontend
-// must not treat that as a successful turn.
 export async function streamAiMessage(conversationId, content, {
   onToken, onToolStart, onToolEnd, onResultSet, onDraft, onUsage, onDone, onError, signal, lang,
 } = {}) {
@@ -117,7 +105,6 @@ export async function streamAiMessage(conversationId, content, {
         }
       }
     }
-    // Stream closed by the server with neither "done" nor "error" — per AI_API.md §4 this is a failure.
     fail(new Error("AI stream ended unexpectedly"));
   } catch (err) {
     if (err.name === "AbortError") {
