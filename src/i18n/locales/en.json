@@ -160,6 +160,7 @@
     "deliveryEta": "Lead time: 3-5 days",
     "pickupTitle": "Warehouse / pickup",
     "pickupDesc": "Uzbekistan",
+    "viewOnMap": "View on map",
     "termsTitle": "Terms",
     "termsDesc": "Delivery terms are agreed with the seller. Documents and invoices are provided.",
     "reviewsCount": "{{count}} reviews",

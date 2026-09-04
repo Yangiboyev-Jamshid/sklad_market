@@ -17,12 +17,15 @@ import {
   Box,
   Message,
   Flag,
+  GlobalSearch,
+  ArrowDown2,
 } from "iconsax-reactjs";
 import AppShell from "../components/layout/AppShell";
 import ProductThumb from "../components/ui/ProductThumb";
 import ProductCard from "../components/ui/ProductCard";
 import RatingStars from "../components/ui/RatingStars";
 import AddToCartButton from "../components/ui/AddToCartButton";
+import MapView from "../components/ui/MapView";
 import ReportModal from "../components/modal/ReportModal";
 import ReviewModal from "../components/modal/ReviewModal";
 import { useCart } from "../context/CartContext";
@@ -66,6 +69,7 @@ export default function ProductPage() {
   const [reviewSummary, setReviewSummary] = useState({ rating: 0, count: 0 });
   const [companyRating, setCompanyRating] = useState(null);
   const [branches, setBranches] = useState([]);
+  const [showBranchMap, setShowBranchMap] = useState(false);
   const { favorites, toggleFavorite } = useCart();
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
@@ -408,19 +412,53 @@ export default function ProductPage() {
                   <motion.div key="del" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-5">
                     <InfoBlock icon={Truck} color="brand" title={t("product.deliveryTitle")} desc={t("product.deliveryDesc")} sub={t("product.deliveryEta")} />
                     {branches.length > 0 ? (
-                      <div className="flex gap-3 rounded-xl p-4 bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400">
-                        <Location size={20} variant="Outline" className="shrink-0 mt-0.5" />
-                        <div className="flex min-w-0 flex-1 flex-col gap-2.5">
-                          <p className="text-[14px] font-semibold text-ink-900 dark:text-white">{t("product.pickupTitle")}</p>
-                          {branches.map((b) => (
-                            <div key={b.id}>
-                              <p className="text-[12px] font-medium text-ink-700 dark:text-ink-200">{b.name}</p>
-                              <p className="text-[12px] text-ink-500 dark:text-ink-400">
-                                {b.address}{b.phone ? ` · ${b.phone}` : ""}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
+                      <div className="rounded-xl bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setShowBranchMap((v) => !v)}
+                          className="flex w-full items-start gap-3 p-4 text-left"
+                        >
+                          <Location size={20} variant="Outline" className="shrink-0 mt-0.5" />
+                          <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+                            <p className="text-[14px] font-semibold text-ink-900 dark:text-white">{t("product.pickupTitle")}</p>
+                            {branches.map((b) => (
+                              <div key={b.id}>
+                                <p className="text-[12px] font-medium text-ink-700 dark:text-ink-200">{b.name}</p>
+                                <p className="text-[12px] text-ink-500 dark:text-ink-400">
+                                  {b.address}{b.phone ? ` · ${b.phone}` : ""}
+                                </p>
+                              </div>
+                            ))}
+                            {branches.some((b) => b.lat != null && b.lng != null) && (
+                              <span className="flex items-center gap-1 text-[12px] font-medium text-success-700 dark:text-success-400">
+                                <GlobalSearch size={14} /> {t("product.viewOnMap")}
+                                <ArrowDown2 size={14} className={`transition-transform ${showBranchMap ? "rotate-180" : ""}`} />
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                        <AnimatePresence>
+                          {showBranchMap && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="px-4 pb-4"
+                            >
+                              <MapView
+                                height="h-[260px]"
+                                pins={branches
+                                  .filter((b) => b.lat != null && b.lng != null)
+                                  .map((b) => ({
+                                    id: b.id,
+                                    lat: Number(b.lat),
+                                    lng: Number(b.lng),
+                                    popover: [{ name: b.name, company: b.address ?? "" }],
+                                  }))}
+                              />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     ) : (
                       <InfoBlock icon={Location} color="success" title={t("product.pickupTitle")} desc={t("product.pickupDesc")} />

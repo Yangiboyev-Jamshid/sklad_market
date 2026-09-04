@@ -160,6 +160,7 @@
     "deliveryEta": "Muddati: 3-5 kun",
     "pickupTitle": "Ombor / o'zi olib ketish",
     "pickupDesc": "O'zbekiston",
+    "viewOnMap": "Xaritada ko'rish",
     "termsTitle": "Shartlar",
     "termsDesc": "Yetkazib berish shartlari sotuvchi bilan kelishiladi. Hujjatlar va hisob-fakturalar taqdim etiladi.",
     "reviewsCount": "{{count}} ta sharh",
