@@ -33,7 +33,7 @@ function useIsDesktop() {
   return isDesktop;
 }
 
-export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[410px]", perView = 1, allowSellerDownloadRequest = false }) {
+export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[18rem]", perView = 1, allowSellerDownloadRequest = false }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -127,9 +127,10 @@ export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[
                   target={banner.href ? "_blank" : undefined}
                   rel={banner.href ? "noopener noreferrer" : undefined}
                   onClick={(e) => { if (wasDragged.current) e.preventDefault(); }}
-                  className={`block h-full rounded-2xl overflow-hidden ${banner.href ? "cursor-pointer" : "cursor-default"}`}
+                  className={`relative block h-full rounded-2xl overflow-hidden bg-ink-100 dark:bg-[#1C1C1C] ${banner.href ? "cursor-pointer" : "cursor-default"}`}
                 >
-                  <img src={banner.img} alt="banner" className="w-full h-full object-cover pointer-events-none" draggable={false} />
+                  <img src={banner.img} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover object-center blur-xl opacity-60 pointer-events-none" draggable={false} />
+                  <img src={banner.img} alt="banner" className="relative h-full w-full object-contain pointer-events-none" draggable={false} />
                 </a>
                 {showDownloadRequest && (
                   <button

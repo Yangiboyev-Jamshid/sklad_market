@@ -207,7 +207,10 @@
     "commentPlaceholder": "Comment on the request",
     "sending": "Sending...",
     "submit": "Confirm and send",
-    "multiSellerContactHint": "Your cart has products from multiple sellers — this only messages the first one. Message the others from their product pages."
+    "multiSellerContactHint": "Your cart has products from multiple sellers — this only messages the first one. Message the others from their product pages.",
+    "deliveryMethodLabel": "Delivery method",
+    "deliveryMethodDelivery": "Delivery",
+    "deliveryMethodPickup": "Self pickup"
   },
   "profile": {
     "verifiedStatus": "Verified",
@@ -444,7 +447,10 @@
     "unitSet": "Set",
     "unitRunningMeter": "Running meter",
     "unitKwh": "kWh",
-    "unitOther": "Other"
+    "unitOther": "Other",
+    "message": "Message",
+    "delivery": "Delivery",
+    "pickup": "Self pickup"
   },
   "chat": {
     "messages": "Messages",

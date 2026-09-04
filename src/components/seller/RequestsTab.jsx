@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Call, Box } from "iconsax-reactjs";
+import { Link } from "react-router-dom";
+import { Call, Box, Message, Truck, Shop, Clock } from "iconsax-reactjs";
 import { BsCheck } from "react-icons/bs";
 import { IoIosClose } from "react-icons/io";
 import { getSellerLeads, updateLeadStatus } from "../../api/api";
@@ -23,6 +24,15 @@ function badge(status, t) {
 function initials(name = "") {
   return name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "?";
 }
+
+function formatDateTime(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString("ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+const DELIVERY_METHOD_ICONS = { DELIVERY: Truck, PICKUP: Shop };
 
 export default function RequestsTab() {
   const { t } = useTranslation();
@@ -74,6 +84,8 @@ export default function RequestsTab() {
             const firstItem = items[0];
             const total = items.reduce((sum, it) => sum + (it.priceSnapshot ?? 0) * (it.quantity ?? 0), 0);
             const canAct = lead.status === "NEW";
+            const DeliveryIcon = DELIVERY_METHOD_ICONS[lead.deliveryMethod];
+            const sentAt = formatDateTime(lead.createdAt ?? lead.created_at);
             return (
               <div
                 key={lead.id}
@@ -93,10 +105,22 @@ export default function RequestsTab() {
                         {firstItem.productNameSnapshot} × {firstItem.quantity}
                       </p>
                     )}
-                    <div className="flex items-center gap-3 mt-1 text-[10px] text-ink-400">
+                    <div className="flex flex-wrap items-center gap-3 mt-1 text-[10px] text-ink-400">
+                      {sentAt && (
+                        <span className="flex items-center gap-1">
+                          <Clock size={12} /> {sentAt}
+                        </span>
+                      )}
                       {lead.contactPhone && <span>{lead.contactPhone}</span>}
                       {total > 0 && <span>{t("seller.sum", { amount: total.toLocaleString() })}</span>}
                       {lead.neededDate && <span>{t("seller.until", { date: lead.neededDate })}</span>}
+                      {DeliveryIcon && (
+                        <span className="flex items-center gap-1">
+                          <DeliveryIcon size={12} />
+                          {t(lead.deliveryMethod === "PICKUP" ? "seller.pickup" : "seller.delivery")}
+                          {lead.deliveryMethod === "DELIVERY" && lead.deliveryAddress ? ` · ${lead.deliveryAddress}` : ""}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -128,6 +152,12 @@ export default function RequestsTab() {
                       <Call size={14} /> {t("seller.call")}
                     </a>
                   )}
+                  <Link
+                    to="/seller?tab=messages"
+                    className="flex w-full sm:w-auto justify-center items-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 text-xs font-medium px-3 py-3 sm:py-2 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap"
+                  >
+                    <Message size={14} /> {t("seller.message")}
+                  </Link>
                 </div>
               </div>
             );

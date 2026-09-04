@@ -27,7 +27,7 @@ import ReportModal from "../components/modal/ReportModal";
 import ReviewModal from "../components/modal/ReviewModal";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import { getProductBySlug, getProductReviews, createProductReview, createChat, getSimilarProducts } from "../api/api";
+import { getProductBySlug, getProductReviews, createProductReview, createChat, getSimilarProducts, getCompanyRating } from "../api/api";
 import { CHAT_ENABLED } from "../config/chatConfig";
 
 const TABS = [
@@ -64,6 +64,7 @@ export default function ProductPage() {
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewSummary, setReviewSummary] = useState({ rating: 0, count: 0 });
+  const [companyRating, setCompanyRating] = useState(null);
   const { favorites, toggleFavorite } = useCart();
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
@@ -141,6 +142,16 @@ export default function ProductPage() {
     reloadReviews();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id]);
+
+  useEffect(() => {
+    const companyId = product?.company?.id;
+    if (!companyId) return;
+    let ignore = false;
+    getCompanyRating(companyId)
+      .then((data) => { if (!ignore) setCompanyRating({ rating: data.averageRating, count: data.reviewCount }); })
+      .catch(() => { if (!ignore) setCompanyRating(null); });
+    return () => { ignore = true; };
+  }, [product?.company?.id]);
 
   useEffect(() => {
     if (!product) return;
@@ -450,8 +461,8 @@ export default function ProductPage() {
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 text-center mb-4">
-                <Stat value={company?.rating ?? "—"} label={t("common.rating")} />
-                <Stat value={company?.reviews ?? 0} label={t("common.reviews")} />
+                <Stat value={companyRating && companyRating.count > 0 ? companyRating.rating.toFixed(1) : (company?.rating ?? "—")} label={t("common.rating")} />
+                <Stat value={companyRating ? companyRating.count : (company?.reviews ?? 0)} label={t("common.reviews")} />
                 <Stat value={company?.productsCount ?? 0} label={t("common.productsCount")} />
               </div>
               {company?.slug && (

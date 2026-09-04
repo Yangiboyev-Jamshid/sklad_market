@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Minus, Add, Trash, ShoppingCart, Message, ShieldTick } from "iconsax-reactjs";
+import { Minus, Add, Trash, ShoppingCart, Message, ShieldTick, Truck, Shop } from "iconsax-reactjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import AppShell from "../components/layout/AppShell";
@@ -18,6 +18,7 @@ export default function CartPage() {
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [deliveryMethod, setDeliveryMethod] = useState("DELIVERY");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [comment, setComment] = useState("");
   const [sending, setSending] = useState(false);
@@ -50,12 +51,13 @@ export default function CartPage() {
         contactName: contactName.trim(),
         contactPhone: contactPhone.trim(),
         contactEmail: contactEmail.trim() || undefined,
-        deliveryAddress: deliveryAddress.trim() || undefined,
+        deliveryMethod,
+        deliveryAddress: deliveryMethod === "DELIVERY" ? deliveryAddress.trim() || undefined : undefined,
         comment: comment.trim() || undefined,
       });
       setSuccess(true);
       setShowForm(false);
-      setContactName(""); setContactPhone(""); setContactEmail(""); setDeliveryAddress(""); setComment("");
+      setContactName(""); setContactPhone(""); setContactEmail(""); setDeliveryMethod("DELIVERY"); setDeliveryAddress(""); setComment("");
       await emptyCart();
       setTimeout(() => setSuccess(false), 5000);
     } catch (err) {
@@ -314,12 +316,39 @@ export default function CartPage() {
                   placeholder={t("cart.phonePlaceholder")}
                 />
                 <Field label={t("cart.emailLabel")} type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="you@mail.com" />
-                <Field
-                  label={t("cart.addressLabel")}
-                  value={deliveryAddress}
-                  onChange={(e) => setDeliveryAddress(e.target.value)}
-                  placeholder={t("cart.addressPlaceholder")}
-                />
+                <div>
+                  <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">{t("cart.deliveryMethodLabel")}</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryMethod("DELIVERY")}
+                      className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold transition-colors ${deliveryMethod === "DELIVERY"
+                        ? "bg-brand-600 text-white"
+                        : "bg-ink-50 text-ink-600 dark:bg-[#171717] dark:text-ink-300"
+                        }`}
+                    >
+                      <Truck size={16} /> {t("cart.deliveryMethodDelivery")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryMethod("PICKUP")}
+                      className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold transition-colors ${deliveryMethod === "PICKUP"
+                        ? "bg-brand-600 text-white"
+                        : "bg-ink-50 text-ink-600 dark:bg-[#171717] dark:text-ink-300"
+                        }`}
+                    >
+                      <Shop size={16} /> {t("cart.deliveryMethodPickup")}
+                    </button>
+                  </div>
+                </div>
+                {deliveryMethod === "DELIVERY" && (
+                  <Field
+                    label={t("cart.addressLabel")}
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    placeholder={t("cart.addressPlaceholder")}
+                  />
+                )}
                 <div>
                   <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-1.5 block">{t("cart.commentLabel")}</label>
                   <textarea

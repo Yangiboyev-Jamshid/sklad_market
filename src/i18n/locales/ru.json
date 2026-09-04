@@ -207,7 +207,10 @@
     "commentPlaceholder": "Комментарий к запросу",
     "sending": "Отправка...",
     "submit": "Подтвердить и отправить",
-    "multiSellerContactHint": "В корзине товары от нескольких продавцов — сообщение уйдёт только первому. Остальным можно написать со страницы товара."
+    "multiSellerContactHint": "В корзине товары от нескольких продавцов — сообщение уйдёт только первому. Остальным можно написать со страницы товара.",
+    "deliveryMethodLabel": "Способ получения",
+    "deliveryMethodDelivery": "Доставка",
+    "deliveryMethodPickup": "Самовывоз"
   },
   "profile": {
     "verifiedStatus": "Верифицирован",
@@ -444,7 +447,10 @@
     "unitSet": "Комплект",
     "unitRunningMeter": "Погонный метр",
     "unitKwh": "кВт·ч",
-    "unitOther": "Другое"
+    "unitOther": "Другое",
+    "message": "Написать",
+    "delivery": "Доставка",
+    "pickup": "Самовывоз"
   },
   "chat": {
     "messages": "Сообщения",

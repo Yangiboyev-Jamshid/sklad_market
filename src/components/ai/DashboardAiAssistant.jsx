@@ -4,8 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import AiAgentLogo from "./AiAgentLogo";
-
-const ONBOARDING_VERSION = "v1";
+import { onboardingKey, hasSeenOnboarding } from "../../utils/aiOnboarding";
 
 function preferredName(user) {
   const value = user?.firstName || user?.name || user?.username;
@@ -16,24 +15,9 @@ function normalizeRole(role) {
   return String(role || "").trim().toUpperCase();
 }
 
-function onboardingKey(user) {
-  const identity = user?.username || (user?.id != null ? `id-${user.id}` : null);
-  if (!identity) return null;
-  return `skladx_ai_onboarding_${ONBOARDING_VERSION}:${identity}:${normalizeRole(user?.role) || "USER"}`;
-}
-
-function hasSeenOnboarding(key) {
-  if (!key) return true;
-  try {
-    return window.localStorage.getItem(key) === "seen";
-  } catch {
-    return false;
-  }
-}
-
-function ChatIllustration() {
+function ChatIllustration({ className }) {
   return (
-    <svg viewBox="0 0 260 200" className="h-full w-full" aria-hidden="true">
+    <svg viewBox="0 0 260 200" className={className} aria-hidden="true">
       <rect x="14" y="10" width="180" height="152" rx="20" className="fill-brand-50 dark:fill-white/[0.04]" />
       <rect x="14" y="10" width="180" height="152" rx="20" fill="none" strokeWidth="2" className="stroke-brand-100 dark:stroke-white/10" />
 
@@ -56,7 +40,7 @@ function ChatIllustration() {
   );
 }
 
-export default function DashboardAiAssistant({ user, isLoggedIn }) {
+export default function DashboardAiAssistant({ user, isLoggedIn, onDismiss, compact = false }) {
   const { t } = useTranslation();
   const key = onboardingKey(user);
   const [dismissedKey, setDismissedKey] = useState(null);
@@ -75,10 +59,11 @@ export default function DashboardAiAssistant({ user, isLoggedIn }) {
       try {
         window.localStorage.setItem(key, "seen");
       } catch {
-        
+
       }
     }
     setDismissedKey(key);
+    onDismiss?.();
   };
 
   return (
@@ -91,8 +76,13 @@ export default function DashboardAiAssistant({ user, isLoggedIn }) {
           exit={{ opacity: 0, y: -8, scale: 0.98 }}
           transition={{ duration: 0.25 }}
           aria-label={t("home.aiAssistant.badge")}
-          className="relative mb-6 overflow-hidden rounded-2xl border border-ink-100 bg-white p-5 shadow-card dark:border-[#1C1C1C] dark:bg-[#0D0D0D] sm:mb-8 sm:p-6"
+          className={`relative overflow-hidden rounded-2xl border border-ink-100 bg-white shadow-card dark:border-[#1C1C1C] dark:bg-[#0D0D0D] ${compact ? "flex h-44 flex-col justify-center p-4 sm:h-[18rem]" : "p-5 sm:p-6"
+            }`}
         >
+          {compact && (
+            <ChatIllustration className="pointer-events-none absolute -right-6 top-1/2 hidden h-[140%] w-auto -translate-y-1/2 opacity-[0.14] sm:block" />
+          )}
+
           <button
             type="button"
             onClick={markOnboardingSeen}
@@ -100,45 +90,43 @@ export default function DashboardAiAssistant({ user, isLoggedIn }) {
             title={t("home.aiAssistant.dismiss")}
             className="absolute right-3 top-3 z-20 rounded-full p-1.5 text-ink-400 transition-colors hover:bg-ink-50 hover:text-ink-700 dark:text-ink-500 dark:hover:bg-white/5 dark:hover:text-white"
           >
-            <CloseCircle size={20} variant="Linear" />
+            <CloseCircle size={compact ? 16 : 20} variant="Linear" />
           </button>
 
-          <div className="grid gap-6 sm:grid-cols-[minmax(0,1fr)_200px] sm:items-center lg:grid-cols-[minmax(0,1fr)_240px]">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-500/10">
-                  <AiAgentLogo size={24} />
-                </span>
-                <span className="text-[11px] font-bold uppercase tracking-wide text-brand-700 dark:text-brand-300">
-                  {t("home.aiAssistant.badge")}
-                </span>
-              </div>
+          <div className="relative z-10 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className={`flex shrink-0 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-500/10 ${compact ? "h-8 w-8" : "h-11 w-11"}`}>
+                <AiAgentLogo size={compact ? 18 : 24} />
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-brand-700 dark:text-brand-300">
+                {t("home.aiAssistant.badge")}
+              </span>
+            </div>
 
-              <h2 className="mt-4 max-w-lg font-display text-2xl font-extrabold leading-tight tracking-tight text-ink-900 dark:text-white sm:text-[1.75rem]">
-                {preferredName(user)
-                  ? t("home.aiAssistant.greeting", { name: preferredName(user) })
-                  : t("home.aiAssistant.title")}
-              </h2>
-              <p className="mt-2.5 max-w-lg text-sm leading-relaxed text-ink-500 dark:text-ink-400">
-                {t("home.aiAssistant.subtitle")}
-              </p>
+            <h2 className={`mt-3 max-w-lg font-display font-extrabold leading-tight tracking-tight text-ink-900 dark:text-white ${compact ? "text-lg" : "text-2xl sm:text-[1.75rem]"
+              }`}>
+              {preferredName(user)
+                ? t("home.aiAssistant.greeting", { name: preferredName(user) })
+                : t("home.aiAssistant.title")}
+            </h2>
+            <p className={`mt-2 max-w-lg leading-relaxed text-ink-500 dark:text-ink-400 ${compact ? "text-xs line-clamp-2" : "text-sm"}`}>
+              {t("home.aiAssistant.subtitle")}
+            </p>
+            {!compact && (
               <p className="mt-2 max-w-lg text-xs leading-relaxed text-ink-400 dark:text-ink-500">
                 {t(roleGuideKey)}
               </p>
+            )}
 
-              <Link
-                to="/ai-agent"
-                onClick={markOnboardingSeen}
-                className="mt-5 inline-flex items-center gap-2 rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-md active:translate-y-0"
-              >
-                {t("home.aiAssistant.open")}
-                <ArrowRight2 size={15} />
-              </Link>
-            </div>
-
-            <div className="hidden sm:block">
-              <ChatIllustration />
-            </div>
+            <Link
+              to="/ai-agent"
+              onClick={markOnboardingSeen}
+              className={`inline-flex items-center gap-2 rounded-full bg-brand-600 font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-brand-700 hover:shadow-md active:translate-y-0 ${compact ? "mt-3 px-4 py-2 text-xs" : "mt-5 px-5 py-2.5 text-sm"
+                }`}
+            >
+              {t("home.aiAssistant.open")}
+              <ArrowRight2 size={compact ? 13 : 15} />
+            </Link>
           </div>
         </motion.section>
       )}

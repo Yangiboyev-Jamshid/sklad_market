@@ -207,7 +207,10 @@
     "commentPlaceholder": "So'rovga izoh",
     "sending": "Yuborilmoqda...",
     "submit": "Tasdiqlash va yuborish",
-    "multiSellerContactHint": "Savatda bir nechta sotuvchining mahsulotlari bor — xabar faqat birinchisiga yuboriladi. Qolganlariga mahsulot sahifasidan yozing."
+    "multiSellerContactHint": "Savatda bir nechta sotuvchining mahsulotlari bor — xabar faqat birinchisiga yuboriladi. Qolganlariga mahsulot sahifasidan yozing.",
+    "deliveryMethodLabel": "Yetkazib berish usuli",
+    "deliveryMethodDelivery": "Yetkazib berish",
+    "deliveryMethodPickup": "O'zi olib ketish"
   },
   "profile": {
     "verifiedStatus": "Tasdiqlangan",
@@ -444,7 +447,10 @@
     "unitSet": "Komplekt",
     "unitRunningMeter": "Pogonaj metr",
     "unitKwh": "kVt·soat",
-    "unitOther": "Boshqa"
+    "unitOther": "Boshqa",
+    "message": "Yozish",
+    "delivery": "Yetkazib berish",
+    "pickup": "O'zi olib ketish"
   },
   "chat": {
     "messages": "Xabarlar",
