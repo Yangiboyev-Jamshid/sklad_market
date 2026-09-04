@@ -145,6 +145,7 @@ export default function MapView({ pins = [], height = "h-[460px]", center, onPic
       attribution: TILE_ATTRIBUTION,
       maxZoom: 19,
       subdomains: "abcd",
+      detectRetina: true,
     });
 
     layer.on("tileerror", (e) => {

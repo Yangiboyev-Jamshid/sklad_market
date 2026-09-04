@@ -80,7 +80,7 @@ export default function DashboardAiAssistant({ user, isLoggedIn, onDismiss, comp
             }`}
         >
           {compact && (
-            <ChatIllustration className="pointer-events-none absolute -right-6 top-1/2 hidden h-[140%] w-auto -translate-y-1/2 opacity-[0.14] sm:block" />
+            <ChatIllustration className="pointer-events-none absolute -right-6 top-1/2 block h-[125%] w-auto -translate-y-1/2 opacity-[0.14] sm:h-[140%]" />
           )}
 
           <button

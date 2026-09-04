@@ -104,6 +104,25 @@ export default function RequestsPage() {
     }
   };
 
+  const messageBuyer = async (lead) => {
+    if (submittingIdsRef.current.has(lead.id)) return;
+    submittingIdsRef.current.add(lead.id);
+    setActionId(lead.id);
+    try {
+      const result = await createChat({
+        seller_company_id: lead.companyId,
+        product_id: lead.items?.[0]?.productId,
+        buyer_id: lead.buyerId,
+      });
+      navigate(`/chat?thread=${result.thread_id}`);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      submittingIdsRef.current.delete(lead.id);
+      setActionId(null);
+    }
+  };
+
   const visibleLeads = isSeller ? leads.filter((l) => l.direction === tab) : leads;
 
   return (
@@ -203,21 +222,32 @@ export default function RequestsPage() {
                       </div>
                     </div>
 
-                    {lead.status === "NEW" && lead.direction === "incoming" && (
+                    {lead.direction === "incoming" && (
                       <div className="flex items-center gap-2 shrink-0">
+                        {lead.status === "NEW" && (
+                          <>
+                            <button
+                              disabled={busy}
+                              onClick={() => changeStatus(lead.id, "CONTACTED")}
+                              className="flex items-center justify-center gap-1.5 bg-success-500 hover:bg-success-600 text-white text-xs font-medium px-3 py-2.5 rounded-xl transition-colors whitespace-nowrap"
+                            >
+                              <BsCheck className="text-[18px]" /> {t("seller.accept")}
+                            </button>
+                            <button
+                              disabled={busy}
+                              onClick={() => changeStatus(lead.id, "CANCELED", t("seller.rejectedBySeller"))}
+                              className="flex items-center justify-center gap-1.5 bg-danger-500 hover:bg-danger-600 text-white text-xs font-medium px-3 py-2.5 rounded-xl transition-colors whitespace-nowrap"
+                            >
+                              <IoIosClose className="text-[18px]" /> {t("seller.reject")}
+                            </button>
+                          </>
+                        )}
                         <button
                           disabled={busy}
-                          onClick={() => changeStatus(lead.id, "CONTACTED")}
-                          className="flex items-center justify-center gap-1.5 bg-success-500 hover:bg-success-600 text-white text-xs font-medium px-3 py-2.5 rounded-xl transition-colors whitespace-nowrap"
+                          onClick={() => messageBuyer(lead)}
+                          className="flex items-center justify-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 text-xs font-medium px-3 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap"
                         >
-                          <BsCheck className="text-[18px]" /> {t("seller.accept")}
-                        </button>
-                        <button
-                          disabled={busy}
-                          onClick={() => changeStatus(lead.id, "CANCELED", t("seller.rejectedBySeller"))}
-                          className="flex items-center justify-center gap-1.5 bg-danger-500 hover:bg-danger-600 text-white text-xs font-medium px-3 py-2.5 rounded-xl transition-colors whitespace-nowrap"
-                        >
-                          <IoIosClose className="text-[18px]" /> {t("seller.reject")}
+                          <Message size={14} /> {t("seller.message")}
                         </button>
                       </div>
                     )}
