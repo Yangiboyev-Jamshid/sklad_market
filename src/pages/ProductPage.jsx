@@ -27,7 +27,7 @@ import ReportModal from "../components/modal/ReportModal";
 import ReviewModal from "../components/modal/ReviewModal";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import { getProductBySlug, getProductReviews, createProductReview, createChat, getSimilarProducts, getCompanyRating } from "../api/api";
+import { getProductBySlug, getProductReviews, createProductReview, createChat, getSimilarProducts, getCompanyRating, getCompanyBranches } from "../api/api";
 import { CHAT_ENABLED } from "../config/chatConfig";
 
 const TABS = [
@@ -65,6 +65,7 @@ export default function ProductPage() {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewSummary, setReviewSummary] = useState({ rating: 0, count: 0 });
   const [companyRating, setCompanyRating] = useState(null);
+  const [branches, setBranches] = useState([]);
   const { favorites, toggleFavorite } = useCart();
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
@@ -150,6 +151,16 @@ export default function ProductPage() {
     getCompanyRating(companyId)
       .then((data) => { if (!ignore) setCompanyRating({ rating: data.averageRating, count: data.reviewCount }); })
       .catch(() => { if (!ignore) setCompanyRating(null); });
+    return () => { ignore = true; };
+  }, [product?.company?.id]);
+
+  useEffect(() => {
+    const companyId = product?.company?.id;
+    if (!companyId) return;
+    let ignore = false;
+    getCompanyBranches(companyId)
+      .then((data) => { if (!ignore) setBranches(Array.isArray(data) ? data : []); })
+      .catch(() => { if (!ignore) setBranches([]); });
     return () => { ignore = true; };
   }, [product?.company?.id]);
 
@@ -396,7 +407,24 @@ export default function ProductPage() {
                 {activeTab === "delivery" && (
                   <motion.div key="del" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-5">
                     <InfoBlock icon={Truck} color="brand" title={t("product.deliveryTitle")} desc={t("product.deliveryDesc")} sub={t("product.deliveryEta")} />
-                    <InfoBlock icon={Location} color="success" title={t("product.pickupTitle")} desc={t("product.pickupDesc")} />
+                    {branches.length > 0 ? (
+                      <div className="flex gap-3 rounded-xl p-4 bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400">
+                        <Location size={20} variant="Outline" className="shrink-0 mt-0.5" />
+                        <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+                          <p className="text-[14px] font-semibold text-ink-900 dark:text-white">{t("product.pickupTitle")}</p>
+                          {branches.map((b) => (
+                            <div key={b.id}>
+                              <p className="text-[12px] font-medium text-ink-700 dark:text-ink-200">{b.name}</p>
+                              <p className="text-[12px] text-ink-500 dark:text-ink-400">
+                                {b.address}{b.phone ? ` · ${b.phone}` : ""}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <InfoBlock icon={Location} color="success" title={t("product.pickupTitle")} desc={t("product.pickupDesc")} />
+                    )}
                     <InfoBlock icon={Shield} color="ink" title={t("product.termsTitle")} desc={t("product.termsDesc")} />
                   </motion.div>
                 )}

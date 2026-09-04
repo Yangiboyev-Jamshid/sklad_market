@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Call, Box, Message, Truck, Shop, Clock } from "iconsax-reactjs";
 import { BsCheck } from "react-icons/bs";
 import { IoIosClose } from "react-icons/io";
-import { getSellerLeads, updateLeadStatus } from "../../api/api";
+import { getSellerLeads, updateLeadStatus, createChat } from "../../api/api";
 
 const STATUS_KEYS = {
   NEW:       { labelKey: "seller.statusNew",       cls: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-400" },
@@ -36,9 +36,11 @@ const DELIVERY_METHOD_ICONS = { DELIVERY: Truck, PICKUP: Shop };
 
 export default function RequestsTab() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState(null);
+  const [messagingId, setMessagingId] = useState(null);
 
   useEffect(() => {
     getSellerLeads({ page: 1, perPage: 50 })
@@ -56,6 +58,22 @@ export default function RequestsTab() {
       alert(err.message);
     } finally {
       setActionId(null);
+    }
+  };
+
+  const messageBuyer = async (lead) => {
+    setMessagingId(lead.id);
+    try {
+      const result = await createChat({
+        seller_company_id: lead.companyId,
+        product_id: lead.items?.[0]?.productId,
+        buyer_id: lead.buyerId,
+      });
+      navigate(`/chat?thread=${result.thread_id}`);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setMessagingId(null);
     }
   };
 
@@ -85,7 +103,8 @@ export default function RequestsTab() {
             const total = items.reduce((sum, it) => sum + (it.priceSnapshot ?? 0) * (it.quantity ?? 0), 0);
             const canAct = lead.status === "NEW";
             const DeliveryIcon = DELIVERY_METHOD_ICONS[lead.deliveryMethod];
-            const sentAt = formatDateTime(lead.createdAt ?? lead.created_at);
+            const sentAt = formatDateTime(lead.createdDate ?? lead.createdAt ?? lead.created_at);
+            const sendingMessage = messagingId === lead.id;
             return (
               <div
                 key={lead.id}
@@ -152,12 +171,14 @@ export default function RequestsTab() {
                       <Call size={14} /> {t("seller.call")}
                     </a>
                   )}
-                  <Link
-                    to="/seller?tab=messages"
-                    className="flex w-full sm:w-auto justify-center items-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 text-xs font-medium px-3 py-3 sm:py-2 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap"
+                  <button
+                    type="button"
+                    disabled={sendingMessage}
+                    onClick={() => messageBuyer(lead)}
+                    className="flex w-full sm:w-auto justify-center items-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 text-xs font-medium px-3 py-3 sm:py-2 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap disabled:opacity-50"
                   >
                     <Message size={14} /> {t("seller.message")}
-                  </Link>
+                  </button>
                 </div>
               </div>
             );

@@ -475,8 +475,8 @@ export async function markNotificationsRead({ notification_ids = [], mark_all = 
   return unwrap(http.post("/notifications/mark-read", { notification_ids, mark_all }));
 }
 
-export async function createChat({ seller_company_id, product_id } = {}) {
-  return unwrap(http.post("/chats/create", { seller_company_id, product_id }));
+export async function createChat({ seller_company_id, product_id, buyer_id } = {}) {
+  return unwrap(http.post("/chats/create", { seller_company_id, product_id, buyer_id }));
 }
 
 export async function getChats({ page = 1, per_page = 20 } = {}) {

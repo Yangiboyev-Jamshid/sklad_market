@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Box, Calendar, Moneys, Call } from "iconsax-reactjs";
+import { useNavigate } from "react-router-dom";
+import { Box, Calendar, Moneys, Call, Message } from "iconsax-reactjs";
 import { IoIosClose } from "react-icons/io";
 import { BsCheck } from "react-icons/bs";
 import AppShell from "../components/layout/AppShell";
 import PillToggle from "../components/ui/PillToggle";
 import { useAuth } from "../context/AuthContext";
-import { getLeads, cancelLead, getSellerLeads, updateLeadStatus } from "../api/api";
+import { getLeads, cancelLead, getSellerLeads, updateLeadStatus, createChat } from "../api/api";
 
 const STATUS_KEYS = {
   NEW:       { labelKey: "seller.statusNew",       cls: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-400" },
@@ -33,6 +34,7 @@ function badge(status, t) {
 
 export default function RequestsPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const isSeller = user?.accountType === "seller";
   const [leads, setLeads] = useState([]);
@@ -83,6 +85,21 @@ export default function RequestsPage() {
       alert(err.message);
     } finally {
       submittingIdsRef.current.delete(id);
+      setActionId(null);
+    }
+  };
+
+  const contactSeller = async (lead) => {
+    if (submittingIdsRef.current.has(lead.id)) return;
+    submittingIdsRef.current.add(lead.id);
+    setActionId(lead.id);
+    try {
+      const result = await createChat({ seller_company_id: lead.companyId, product_id: lead.items?.[0]?.productId });
+      navigate(`/chat?thread=${result.thread_id}`);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      submittingIdsRef.current.delete(lead.id);
       setActionId(null);
     }
   };
@@ -204,14 +221,25 @@ export default function RequestsPage() {
                         </button>
                       </div>
                     )}
-                    {lead.status === "NEW" && lead.direction !== "incoming" && (
-                      <button
-                        disabled={busy}
-                        onClick={() => cancelRequest(lead.id)}
-                        className="shrink-0 flex items-center justify-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-danger-300 hover:bg-danger-50 dark:hover:bg-danger-500/10 hover:text-danger-600 dark:hover:text-danger-400 text-xs font-medium px-3 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap"
-                      >
-                        <IoIosClose className="text-[18px]" /> {t("requests.cancel")}
-                      </button>
+                    {lead.direction !== "incoming" && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        {lead.status === "NEW" && (
+                          <button
+                            disabled={busy}
+                            onClick={() => cancelRequest(lead.id)}
+                            className="flex items-center justify-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-danger-300 hover:bg-danger-50 dark:hover:bg-danger-500/10 hover:text-danger-600 dark:hover:text-danger-400 text-xs font-medium px-3 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap"
+                          >
+                            <IoIosClose className="text-[18px]" /> {t("requests.cancel")}
+                          </button>
+                        )}
+                        <button
+                          disabled={busy}
+                          onClick={() => contactSeller(lead)}
+                          className="flex items-center justify-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 text-xs font-medium px-3 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap"
+                        >
+                          <Message size={14} /> {t("requests.contactSeller")}
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
