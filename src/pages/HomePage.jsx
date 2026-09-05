@@ -219,14 +219,18 @@ export default function HomePage() {
         <div className={`mb-6 sm:mb-8 relative z-1 grid gap-4 ${aiBannerVisible ? "lg:grid-cols-[2fr_1fr]" : ""}`}>
           <div>
             {bannersLoading ? (
-              <div className="h-44 sm:h-56 rounded-2xl bg-ink-100 dark:bg-[#1C1C1C] animate-pulse" />
+              <div className={`rounded-2xl bg-ink-100 dark:bg-[#1C1C1C] animate-pulse h-44 ${aiBannerVisible ? "sm:h-[18rem]" : "sm:h-[410px]"}`} />
             ) : banners.length === 0 ? (
-              < div className="flex flex-col items-center justify-center h-44 sm:h-56 rounded-2xl border border-dashed border-ink-200 dark:border-[#2A2A2A] gap-2 text-ink-400 dark:text-ink-600">
+              < div className={`flex flex-col items-center justify-center rounded-2xl border border-dashed border-ink-200 dark:border-[#2A2A2A] gap-2 text-ink-400 dark:text-ink-600 h-44 ${aiBannerVisible ? "sm:h-[18rem]" : "sm:h-[410px]"}`}>
                 <Image size={32} />
                 <p className="text-sm">{t("home.bannersEmpty")}</p>
               </div>
             ) : (
-              <BannerCarousel banners={banners} allowSellerDownloadRequest />
+              <BannerCarousel
+                banners={banners}
+                allowSellerDownloadRequest
+                heightClass={`h-44 ${aiBannerVisible ? "sm:h-[18rem]" : "sm:h-[410px]"}`}
+              />
             )}
           </div>
 

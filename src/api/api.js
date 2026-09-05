@@ -357,8 +357,8 @@ export async function clearCart() {
   return unwrap(http.delete("/cart"));
 }
 
-export async function checkoutRfq({ contactName, contactPhone, contactEmail, deliveryMethod, deliveryAddress, neededDate, comment } = {}) {
-  return unwrap(http.post("/cart/checkout-rfq", { contactName, contactPhone, contactEmail, deliveryMethod, deliveryAddress, neededDate, comment }));
+export async function checkoutRfq({ contactName, contactPhone, contactEmail, deliveryMethod, deliveryAddress, neededDate, comment, cartItemIds } = {}) {
+  return unwrap(http.post("/cart/checkout-rfq", { contactName, contactPhone, contactEmail, deliveryMethod, deliveryAddress, neededDate, comment, cartItemIds }));
 }
 
 export async function getLeads({ page = 1, perPage = 20, status } = {}) {
