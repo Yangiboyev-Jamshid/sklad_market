@@ -63,29 +63,28 @@ export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[
   const isDesktop = useIsDesktop();
   const effectivePerView = isDesktop ? perView : 1;
 
-  const groups = [];
-  for (let i = 0; i < banners.length; i += effectivePerView) {
-    groups.push(banners.slice(i, i + effectivePerView));
-  }
+  const count = banners.length;
+  const canSlide = count > effectivePerView;
 
   const [[index, direction], setSlide] = useState([0, 0]);
   const [paused, setPaused] = useState(false);
   const wasDragged = useRef(false);
-  const count = groups.length;
 
   const paginate = useCallback((dir) => {
     setSlide(([current]) => [(current + dir + count) % count, dir]);
   }, [count]);
 
   useEffect(() => {
-    if (count < 2 || paused) return;
+    if (!canSlide || paused) return;
     const id = setInterval(() => paginate(1), AUTOPLAY_MS);
     return () => clearInterval(id);
-  }, [count, paused, paginate]);
+  }, [canSlide, paused, paginate]);
 
   if (count === 0) return null;
   const safeIndex = ((index % count) + count) % count;
-  const group = groups[safeIndex];
+  const group = canSlide
+    ? Array.from({ length: effectivePerView }, (_, i) => banners[(safeIndex + i) % count])
+    : banners;
 
   return (
     <div
@@ -103,7 +102,7 @@ export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[
             animate="center"
             exit="exit"
             transition={{ x: { type: "spring", stiffness: 320, damping: 34 }, opacity: { duration: 0.15 } }}
-            drag={count > 1 ? "x" : false}
+            drag={canSlide ? "x" : false}
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.65}
             onDragStart={() => { wasDragged.current = false; }}
@@ -152,7 +151,7 @@ export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[
         )}
       </div>
 
-      {count > 1 && (
+      {canSlide && (
         <>
           <button
             onClick={() => paginate(-1)}
@@ -170,9 +169,9 @@ export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[
           </button>
 
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
-            {groups.map((g, i) => (
+            {banners.map((b, i) => (
               <button
-                key={g.map((b) => b.id).join("-")}
+                key={b.id}
                 onClick={() => setSlide([i, i > safeIndex ? 1 : -1])}
                 aria-label={`Banner slide ${i + 1}`}
                 className="p-1 -m-1"

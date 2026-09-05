@@ -479,6 +479,10 @@ export async function createChat({ seller_company_id, product_id, buyer_id } = {
   return unwrap(http.post("/chats/create", { seller_company_id, product_id, buyer_id }));
 }
 
+export async function createSellerChat({ seller_company_id, product_id, buyer_id } = {}) {
+  return unwrap(http.post("/chat/seller/create", { seller_company_id, product_id, buyer_id }));
+}
+
 export async function getChats({ page = 1, per_page = 20 } = {}) {
   return unwrap(http.get("/chats", { params: { page, per_page } }));
 }

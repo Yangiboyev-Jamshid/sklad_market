@@ -7,7 +7,7 @@ import { BsCheck } from "react-icons/bs";
 import AppShell from "../components/layout/AppShell";
 import PillToggle from "../components/ui/PillToggle";
 import { useAuth } from "../context/AuthContext";
-import { getLeads, cancelLead, getSellerLeads, updateLeadStatus, createChat } from "../api/api";
+import { getLeads, cancelLead, getSellerLeads, updateLeadStatus, createChat, createSellerChat } from "../api/api";
 
 const STATUS_KEYS = {
   NEW:       { labelKey: "seller.statusNew",       cls: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-400" },
@@ -109,7 +109,7 @@ export default function RequestsPage() {
     submittingIdsRef.current.add(lead.id);
     setActionId(lead.id);
     try {
-      const result = await createChat({
+      const result = await createSellerChat({
         seller_company_id: lead.companyId,
         product_id: lead.items?.[0]?.productId,
         buyer_id: lead.buyerId,

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Call, Box, Message, Truck, Shop, Clock } from "iconsax-reactjs";
 import { BsCheck } from "react-icons/bs";
 import { IoIosClose } from "react-icons/io";
-import { getSellerLeads, updateLeadStatus, createChat } from "../../api/api";
+import { getSellerLeads, updateLeadStatus, createSellerChat } from "../../api/api";
 
 const STATUS_KEYS = {
   NEW:       { labelKey: "seller.statusNew",       cls: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-400" },
@@ -64,7 +64,7 @@ export default function RequestsTab() {
   const messageBuyer = async (lead) => {
     setMessagingId(lead.id);
     try {
-      const result = await createChat({
+      const result = await createSellerChat({
         seller_company_id: lead.companyId,
         product_id: lead.items?.[0]?.productId,
         buyer_id: lead.buyerId,
