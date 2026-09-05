@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Box, Calendar, Moneys, Call, Message } from "iconsax-reactjs";
+import { Box, Calendar, Moneys, Call, Message, Clock } from "iconsax-reactjs";
 import { IoIosClose } from "react-icons/io";
 import { BsCheck } from "react-icons/bs";
 import AppShell from "../components/layout/AppShell";
@@ -25,11 +25,18 @@ const ACCENT_CLS = {
   CANCELED: "bg-danger-500",
 };
 
+function formatDateTime(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString("ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
 function badge(status, t) {
   const s = STATUS_KEYS[status];
   const label = s ? t(s.labelKey) : status;
   const cls = s?.cls ?? "bg-ink-100 text-ink-500";
-  return <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${cls}`}>{label}</span>;
+  return <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm ${cls}`}>{label}</span>;
 }
 
 export default function RequestsPage() {
@@ -133,7 +140,9 @@ export default function RequestsPage() {
             {t("requests.title")}
           </h1>
           {!loading && visibleLeads.length > 0 && (
-            <span className="text-sm font-medium text-ink-400 dark:text-ink-500">{visibleLeads.length}</span>
+            <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-ink-100 dark:bg-[#1C1C1C] px-2 text-xs font-semibold text-ink-500 dark:text-ink-400">
+              {visibleLeads.length}
+            </span>
           )}
         </div>
 
@@ -158,13 +167,13 @@ export default function RequestsPage() {
         )}
 
         {loading ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 sm:gap-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-28 rounded-2xl bg-ink-100 dark:bg-[#171717] animate-pulse" />
             ))}
           </div>
         ) : visibleLeads.length === 0 ? (
-          <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] flex flex-col items-center justify-center py-20 text-ink-400 gap-3 transition-colors">
+          <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-dashed border-ink-200 dark:border-[#2A2A2A] flex flex-col items-center justify-center py-20 text-ink-400 gap-3 transition-colors">
             <div className="w-16 h-16 rounded-2xl bg-ink-50 dark:bg-[#171717] flex items-center justify-center">
               <Box size={28} />
             </div>
@@ -178,17 +187,18 @@ export default function RequestsPage() {
               const busy = actionId === lead.id;
               const items = lead.items ?? [];
               const total = items.reduce((sum, it) => sum + (it.priceSnapshot ?? 0) * (it.quantity ?? 0), 0);
+              const sentAt = formatDateTime(lead.createdDate ?? lead.createdAt ?? lead.created_at);
               return (
                 <div
                   key={lead.id}
-                  className={`relative overflow-hidden bg-white dark:bg-[#0D0D0D] border border-ink-100 dark:border-[#1C1C1C] rounded-2xl p-4 sm:p-5 transition-opacity ${busy ? "opacity-50" : ""}`}
+                  className={`cursor-pointer relative overflow-hidden bg-white dark:bg-[#0D0D0D] border border-ink-100 dark:border-[#1C1C1C] rounded-xl p-4 sm:p-5 shadow-sm transition-all hover:shadow-md hover:border-ink-200 dark:hover:border-[#2A2A2A] ${busy ? "opacity-50" : ""}`}
                 >
-                  <span className={`absolute left-0 top-0 bottom-0 w-1 ${ACCENT_CLS[lead.status] ?? "bg-ink-200"}`} />
+                  <span className={`absolute left-0 top-0 bottom-0 w-1 rounded-full ${ACCENT_CLS[lead.status] ?? "bg-ink-200"}`} />
 
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 pl-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                        <p className="text-sm font-semibold text-ink-900 dark:text-white">
+                        <p className="text-[15px] font-bold text-ink-900 dark:text-white">
                           {lead.direction === "incoming"
                             ? lead.contactName || t("requests.requestNumber", { id: lead.id })
                             : t("requests.requestNumber", { id: lead.id })}
@@ -196,13 +206,22 @@ export default function RequestsPage() {
                         {badge(lead.status, t)}
                       </div>
                       {items.length > 0 && (
-                        <p className="text-xs text-ink-500 dark:text-ink-400 truncate mb-2">
-                          {items.map((it) => `${it.productNameSnapshot} × ${it.quantity}`).join(", ")}
-                        </p>
+                        <div className="flex items-center gap-1.5 mb-2.5 min-w-0">
+                          <Box size={13} className="text-ink-300 dark:text-ink-600 shrink-0" />
+                          <p className="text-xs text-ink-500 dark:text-ink-400 truncate">
+                            {items.map((it) => `${it.productNameSnapshot} × ${it.quantity}`).join(", ")}
+                          </p>
+                        </div>
                       )}
-                      <div className="flex items-center gap-4 text-xs text-ink-400 dark:text-ink-500">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-ink-400 dark:text-ink-500">
+                        {sentAt && (
+                          <span className="flex items-center gap-1.5">
+                            <Clock size={14} className="shrink-0" />
+                            {sentAt}
+                          </span>
+                        )}
                         {total > 0 && (
-                          <span className="flex items-center gap-1.5 font-medium text-ink-700 dark:text-ink-200">
+                          <span className="flex items-center gap-1.5 font-semibold text-ink-700 dark:text-ink-200">
                             <Moneys size={14} className="text-brand-500 shrink-0" />
                             {t("seller.sum", { amount: total.toLocaleString() })}
                           </span>
@@ -223,20 +242,20 @@ export default function RequestsPage() {
                     </div>
 
                     {lead.direction === "incoming" && (
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:shrink-0">
                         {lead.status === "NEW" && (
                           <>
                             <button
                               disabled={busy}
                               onClick={() => changeStatus(lead.id, "CONTACTED")}
-                              className="flex items-center justify-center gap-1.5 bg-success-500 hover:bg-success-600 text-white text-xs font-medium px-3 py-2.5 rounded-xl transition-colors whitespace-nowrap"
+                              className="flex w-full items-center justify-center gap-1.5 bg-success-500 hover:bg-success-600 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl shadow-sm transition-all active:scale-95 whitespace-nowrap sm:w-auto"
                             >
                               <BsCheck className="text-[18px]" /> {t("seller.accept")}
                             </button>
                             <button
                               disabled={busy}
                               onClick={() => changeStatus(lead.id, "CANCELED", t("seller.rejectedBySeller"))}
-                              className="flex items-center justify-center gap-1.5 bg-danger-500 hover:bg-danger-600 text-white text-xs font-medium px-3 py-2.5 rounded-xl transition-colors whitespace-nowrap"
+                              className="flex w-full items-center justify-center gap-1.5 bg-danger-500 hover:bg-danger-600 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl shadow-sm transition-all active:scale-95 whitespace-nowrap sm:w-auto"
                             >
                               <IoIosClose className="text-[18px]" /> {t("seller.reject")}
                             </button>
@@ -245,19 +264,19 @@ export default function RequestsPage() {
                         <button
                           disabled={busy}
                           onClick={() => messageBuyer(lead)}
-                          className="flex items-center justify-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 text-xs font-medium px-3 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap"
+                          className="flex w-full items-center justify-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-brand-300 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-600 dark:hover:text-brand-400 text-xs font-semibold px-3.5 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-all active:scale-95 whitespace-nowrap sm:w-auto"
                         >
                           <Message size={14} /> {t("seller.message")}
                         </button>
                       </div>
                     )}
                     {lead.direction !== "incoming" && (
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:shrink-0">
                         {lead.status === "NEW" && (
                           <button
                             disabled={busy}
                             onClick={() => cancelRequest(lead.id)}
-                            className="flex items-center justify-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-danger-300 hover:bg-danger-50 dark:hover:bg-danger-500/10 hover:text-danger-600 dark:hover:text-danger-400 text-xs font-medium px-3 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap"
+                            className="flex w-full items-center justify-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-danger-300 hover:bg-danger-50 dark:hover:bg-danger-500/10 hover:text-danger-600 dark:hover:text-danger-400 text-xs font-semibold px-3.5 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-all active:scale-95 whitespace-nowrap sm:w-auto"
                           >
                             <IoIosClose className="text-[18px]" /> {t("requests.cancel")}
                           </button>
@@ -265,7 +284,7 @@ export default function RequestsPage() {
                         <button
                           disabled={busy}
                           onClick={() => contactSeller(lead)}
-                          className="flex items-center justify-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 text-xs font-medium px-3 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors whitespace-nowrap"
+                          className="flex w-full items-center justify-center gap-1.5 border border-ink-200 dark:border-[#1C1C1C] hover:border-brand-300 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-600 dark:hover:text-brand-400 text-xs font-semibold px-3.5 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-all active:scale-95 whitespace-nowrap sm:w-auto"
                         >
                           <Message size={14} /> {t("requests.contactSeller")}
                         </button>

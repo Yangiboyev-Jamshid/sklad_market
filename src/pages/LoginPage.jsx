@@ -267,17 +267,6 @@ export default function LoginPage() {
                 )}
               </button>
 
-              <div className="relative flex items-center justify-center my-1">
-                <div className="absolute inset-x-0 h-px bg-ink-200 dark:bg-ink-700" />
-                <span className="relative bg-white dark:bg-[#0D0D0D] px-3 text-xs text-ink-400">{t("auth.or")}</span>
-              </div>
-
-              <button
-                type="button"
-                className="w-full border border-ink-200 dark:border-[#1C1C1C] hover:border-ink-300 dark:hover:border-ink-600 font-semibold py-3.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors"
-              >
-                {t("auth.loginViaErp")}
-              </button>
               <p className="text-center text-[11px] text-ink-400 mt-1 sm:hidden">
                 {t("auth.noAccount")}{" "}
                 <button type="button" onClick={() => setMode("register")} className="font-medium text-black dark:text-white">
