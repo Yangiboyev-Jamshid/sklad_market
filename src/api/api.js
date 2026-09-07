@@ -104,7 +104,17 @@ export async function getPopularProducts({ page = 1, size = 8 } = {}) {
 }
 
 export async function getCatalogBySaleType(saleType, { page = 1, perPage = 20 } = {}) {
-  return unwrap(http.get("/catalog/saleType/product", { params: { saleType, page, perPage } }));
+  const type = String(saleType || "").toUpperCase();
+  const list = await getAllProducts({ page, perPage: Math.max(perPage, 200) });
+  const items = list?.items ?? list?.content ?? [];
+  const filtered = items.filter((product) => {
+    const { wholeSale, retail } = normalizeSaleFlags(product);
+    if (type === "WHOLESALE") return wholeSale;
+    if (type === "RETAIL") return retail;
+    if (type === "BOTH") return wholeSale && retail;
+    return true;
+  });
+  return { content: filtered.slice(0, perPage), items: filtered.slice(0, perPage), page, perPage, totalPages: 1, totalElements: filtered.length };
 }
 
 export async function getHomepageData() {
@@ -402,34 +412,38 @@ export async function createProductReview(productId, { rating, comment } = {}) {
 }
 
 export async function createProduct(data) {
-  return unwrap(http.post("/products", data));
+  const normalized = {
+    ...data,
+    wholeSale: toBooleanLike(data.wholeSale ?? data.wholesaleEnabled ?? (data.saleType === "WHOLESALE" || data.saleType === "BOTH"), false),
+    retail: toBooleanLike(data.retail ?? data.retailEnabled ?? (data.saleType === "RETAIL" || data.saleType === "BOTH"), false),
+  };
+  return unwrap(http.post("/products", normalized));
 }
 
 export async function updateProduct(id, data) {
+  const normalized = {
+    ...data,
+    wholeSale: toBooleanLike(data.wholeSale ?? data.wholesaleEnabled ?? (data.saleType === "WHOLESALE" || data.saleType === "BOTH"), false),
+    retail: toBooleanLike(data.retail ?? data.retailEnabled ?? (data.saleType === "RETAIL" || data.saleType === "BOTH"), false),
+  };
   const body = {
-    name: data.name,
-    description: data.description,
-    price: data.price,
-    currency: data.currency,
-    attributes: data.attributes,
-    company_id: data.companyId,
-    category_id: data.categoryId,
-    short_description: data.shortDescription,
-    price_type: data.priceType,
-    region_id: data.regionId,
-    district_id: data.districtId,
-    min_product: data.minProduct,
-    unit: data.unit,
-    sale_type: data.saleType,
-    wholesale_enabled: data.wholesaleEnabled,
-    wholesale_price: data.wholesalePrice,
-    wholesale_unit: data.wholesaleUnit,
-    wholesale_min_qty: data.wholesaleMinQty,
-    wholesale_volume: data.wholesaleVolume,
-    retail_enabled: data.retailEnabled,
-    retail_price: data.retailPrice,
-    retail_unit: data.retailUnit,
-    retail_quantity: data.retailQuantity,
+    name: normalized.name,
+    description: normalized.description,
+    wholeSale: normalized.wholeSale,
+    retail: normalized.retail,
+    price: normalized.price,
+    currency: normalized.currency,
+    attributes: normalized.attributes,
+    company_id: normalized.company_id ?? normalized.companyId,
+    category_id: normalized.category_id ?? normalized.categoryId,
+    short_description: normalized.short_description ?? normalized.shortDescription,
+    price_type: normalized.price_type ?? normalized.priceType,
+    region_id: normalized.region_id ?? normalized.regionId,
+    district_id: normalized.district_id ?? normalized.districtId,
+    min_product: normalized.min_product ?? normalized.minProduct,
+    unit: normalized.unit,
+    pickup_available: normalized.pickup_available ?? normalized.pickupAvailable,
+    pickup_branch_id: normalized.pickup_branch_id ?? normalized.pickupBranchId,
   };
   return unwrap(http.put(`/products/${id}`, body));
 }
@@ -681,4 +695,27 @@ export async function getAiRoleQuotas({ signal } = {}) {
 
 export async function updateAiRoleQuota(roleName, { hourlyRequestLimit, dailyRequestLimit } = {}) {
   return unwrap(http.put(`/ai/admin/role-quotas/${encodeURIComponent(roleName)}`, { hourlyRequestLimit, dailyRequestLimit }));
+}
+
+function toBooleanLike(value, fallback = false) {
+  if (value === null || value === undefined || value === "null" || value === "undefined") return fallback;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "yes", "y"].includes(normalized)) return true;
+    if (["false", "0", "no", "n"].includes(normalized)) return false;
+    return fallback;
+  }
+  return Boolean(value);
+}
+
+function normalizeSaleFlags(product = {}) {
+  const wholeSale = toBooleanLike(
+    product.wholeSale ?? product.wholesaleEnabled ?? product.wholesale ?? (product.saleType === "WHOLESALE" || product.saleType === "BOTH"),
+    false
+  );
+  const retail = toBooleanLike(
+    product.retail ?? product.retailEnabled ?? product.retailSale ?? (product.saleType === "RETAIL" || product.saleType === "BOTH"),
+    false
+  );
+  return { wholeSale, retail };
 }

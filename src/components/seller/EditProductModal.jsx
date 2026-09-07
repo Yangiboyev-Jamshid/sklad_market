@@ -13,21 +13,19 @@ import { flattenCategoryTree } from "../../utils/categories";
 import { UNIT_OPTIONS } from "../../data/units";
 
 function initSaleTypeState(product) {
-  console.log(product);
-  
-  const saleType = product?.saleType ?? "WHOLESALE";
-  const wholesaleEnabled = product?.wholesaleEnabled ?? (saleType === "WHOLESALE" || saleType === "BOTH");
-  const retailEnabled = product?.retailEnabled ?? (saleType === "RETAIL" || saleType === "BOTH");
+  const { wholeSale, retail } = resolveSaleFlags(product);
   return {
-    wholesaleEnabled,
-    retailEnabled,
-    wholesalePrice: product?.wholesalePrice ?? (wholesaleEnabled ? product?.price ?? "" : ""),
+    wholeSale,
+    retail,
+    wholesaleEnabled: wholeSale,
+    retailEnabled: retail,
+    wholesalePrice: product?.wholesalePrice ?? (wholeSale ? product?.price ?? "" : ""),
     wholesaleMinQty: product?.wholesaleMinQty ?? product?.minProduct ?? "",
-    wholesaleUnit: product?.wholesaleUnit ?? (wholesaleEnabled ? product?.unit : null) ?? UNIT_OPTIONS[0].value,
+    wholesaleUnit: product?.wholesaleUnit ?? (wholeSale ? product?.unit : null) ?? UNIT_OPTIONS[0].value,
     wholesaleVolume: product?.wholesaleVolume ?? "",
-    retailPrice: product?.retailPrice ?? (retailEnabled && !wholesaleEnabled ? product?.price ?? "" : ""),
+    retailPrice: product?.retailPrice ?? (retail && !wholeSale ? product?.price ?? "" : ""),
     retailQuantity: product?.retailQuantity ?? "",
-    retailUnit: product?.retailUnit ?? (retailEnabled && !wholesaleEnabled ? product?.unit : null) ?? UNIT_OPTIONS[0].value,
+    retailUnit: product?.retailUnit ?? (retail && !wholeSale ? product?.unit : null) ?? UNIT_OPTIONS[0].value,
   };
 }
 
@@ -62,29 +60,17 @@ export default function EditProductModal({ product, onClose, onSaved }) {
   const submittingRef = useRef(false);
 
   const handleSetWholesale = (value) => {
-    if (value) {
-      setWholesaleEnabled(true);
-      setRetailEnabled(false);
-    } else {
-      if (!retailEnabled) return;
-      setWholesaleEnabled(false);
-    }
+    setWholesaleEnabled(value);
   };
 
   const handleSetRetail = (value) => {
-    if (value) {
-      setRetailEnabled(true);
-      setWholesaleEnabled(false);
-    } else {
-      if (!wholesaleEnabled) return;
-      setRetailEnabled(false);
-    }
+    setRetailEnabled(value);
   };
 
   useEffect(() => {
     getCategoryTree()
       .then((data) => setCategoriesList(flattenCategoryTree(data)))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -177,37 +163,49 @@ export default function EditProductModal({ product, onClose, onSaved }) {
     submittingRef.current = true;
     setLoading(true);
     try {
-      const saleType = wholesaleEnabled ? "WHOLESALE" : "RETAIL";
       const price = Number(wholesaleEnabled ? wholesalePrice : retailPrice);
-      const unit = wholesaleEnabled ? wholesaleUnit : retailUnit;
-      const updated = await updateProduct(product.id, {
+      const payload = {
         name: name.trim(),
         description: description.trim(),
-        priceType: "FIXED",
+        wholeSale: wholesaleEnabled,
+        retail: retailEnabled,
         price,
         currency: "UZS",
-        minProduct: wholesaleEnabled ? Number(wholesaleMinQty || 1) : 1,
-        unit,
+        companyId: product.companyId ?? product.company_id,
         categoryId: categoryId ? Number(categoryId) : undefined,
-        companyId: product.companyId,
-        regionId: product.regionId,
-        districtId: product.districtId,
-        saleType,
-        wholesaleEnabled,
-        retailEnabled,
-        wholesalePrice: wholesaleEnabled ? Number(wholesalePrice) : undefined,
-        wholesaleUnit: wholesaleEnabled ? wholesaleUnit : undefined,
-        wholesaleMinQty: wholesaleEnabled && wholesaleMinQty ? Number(wholesaleMinQty) : undefined,
-        wholesaleVolume: wholesaleEnabled && wholesaleVolume ? Number(wholesaleVolume) : undefined,
-        retailPrice: retailEnabled ? Number(retailPrice) : undefined,
-        retailUnit: retailEnabled ? retailUnit : undefined,
-        retailQuantity: retailEnabled && retailQuantity ? Number(retailQuantity) : undefined,
-      });
+        shortDescription: description.trim().slice(0, 255),
+        priceType: "FIXED",
+        regionId: product.regionId ?? product.region_id,
+        districtId: product.districtId ?? product.district_id,
+        minProduct: wholesaleEnabled ? Number(wholesaleMinQty || 1) : 1,
+        unit: wholesaleEnabled ? wholesaleUnit : retailUnit,
+        pickupAvailable: false,
+        pickupBranchId: 0,
+      };
+      console.log(payload);
+
+      const updated = await updateProduct(product.id, payload);
+      const normalizedUpdated = {
+        ...(updated ?? product),
+        wholeSale: resolveBooleanFlag(updated?.wholeSale ?? updated?.wholesaleEnabled ?? wholesaleEnabled, false),
+        retail: resolveBooleanFlag(updated?.retail ?? updated?.retailEnabled ?? retailEnabled, false),
+        wholesaleEnabled: resolveBooleanFlag(updated?.wholeSale ?? updated?.wholesaleEnabled ?? wholesaleEnabled, false),
+        retailEnabled: resolveBooleanFlag(updated?.retail ?? updated?.retailEnabled ?? retailEnabled, false),
+      };
       setSuccess(t("seller.productUpdated"));
       setTimeout(() => {
-        onSaved?.(updated ?? {
-          ...product, name, description, price, currency: "UZS", unit, saleType,
-          wholesaleEnabled, retailEnabled, images,
+        onSaved?.(normalizedUpdated ?? {
+          ...product,
+          name,
+          description,
+          price,
+          currency: "UZS",
+          unit: wholesaleEnabled ? wholesaleUnit : retailUnit,
+          wholeSale: wholesaleEnabled,
+          retail: retailEnabled,
+          wholesaleEnabled,
+          retailEnabled,
+          images,
         });
       }, 900);
     } catch (err) {
@@ -440,11 +438,10 @@ function UnitSelect({ label, value, onChange }) {
 function SaleTypeCheckbox({ label, checked, onChange }) {
   return (
     <label
-      className={`flex items-center gap-2.5 rounded-xl px-4 py-3 border cursor-pointer select-none transition-colors ${
-        checked
-          ? "border-brand-400 dark:border-brand-500 bg-brand-50/60 dark:bg-brand-500/10"
-          : "border-ink-200 dark:border-[#1C1C1C] bg-ink-50 dark:bg-[#171717]"
-      }`}
+      className={`flex items-center gap-2.5 rounded-xl px-4 py-3 border cursor-pointer select-none transition-colors ${checked
+        ? "border-brand-400 dark:border-brand-500 bg-brand-50/60 dark:bg-brand-500/10"
+        : "border-ink-200 dark:border-[#1C1C1C] bg-ink-50 dark:bg-[#171717]"
+        }`}
     >
       <input
         type="checkbox"
@@ -464,4 +461,27 @@ function SaleTypeFields({ title, children }) {
       {children}
     </div>
   );
+}
+
+function resolveBooleanFlag(value, fallback = false) {
+  if (value === null || value === undefined || value === "null" || value === "undefined") return fallback;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "yes", "y"].includes(normalized)) return true;
+    if (["false", "0", "no", "n"].includes(normalized)) return false;
+    return fallback;
+  }
+  return Boolean(value);
+}
+
+function resolveSaleFlags(product = {}) {
+  const wholeSale = resolveBooleanFlag(
+    product.wholeSale ?? product.wholesaleEnabled ?? product.wholesale ?? (product.saleType === "WHOLESALE" || product.saleType === "BOTH"),
+    false
+  );
+  const retail = resolveBooleanFlag(
+    product.retail ?? product.retailEnabled ?? product.retailSale ?? (product.saleType === "RETAIL" || product.saleType === "BOTH"),
+    false
+  );
+  return { wholeSale, retail };
 }

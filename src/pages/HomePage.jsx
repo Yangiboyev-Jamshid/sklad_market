@@ -138,7 +138,8 @@ export default function HomePage() {
         } else {
           const data = await getCatalogBySaleType(saleType.toUpperCase(), { page: 1, perPage: 20 });
           if (ignore) return;
-          setProducts((data?.content ?? []).map((p) => normalizeProduct(p, imageMap, companyMap, t)));
+          const items = data?.content ?? data?.items ?? [];
+          setProducts(items.map((p) => normalizeProduct(p, imageMap, companyMap, t)));
         }
       } catch {
         try {

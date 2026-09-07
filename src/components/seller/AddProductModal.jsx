@@ -56,23 +56,11 @@ export default function AddProductModal({ open, onClose, companyId }) {
   const fileInputRef = useRef(null);
 
   const handleSetWholesale = (value) => {
-    if (value) {
-      setWholesaleEnabled(true);
-      setRetailEnabled(false);
-    } else {
-      if (!retailEnabled) return;
-      setWholesaleEnabled(false);
-    }
+    setWholesaleEnabled(value);
   };
 
   const handleSetRetail = (value) => {
-    if (value) {
-      setRetailEnabled(true);
-      setWholesaleEnabled(false);
-    } else {
-      if (!wholesaleEnabled) return;
-      setRetailEnabled(false);
-    }
+    setRetailEnabled(value);
   };
 
   const reset = () => {
@@ -143,7 +131,6 @@ export default function AddProductModal({ open, onClose, companyId }) {
     submittingRef.current = true;
     setLoading(true);
     try {
-      const saleType = wholesaleEnabled ? "WHOLESALE" : "RETAIL";
       const payload = {
         companyId: resolvedCompanyId ? Number(resolvedCompanyId) : undefined,
         categoryId: categoryId ? Number(categoryId) : undefined,
@@ -154,12 +141,11 @@ export default function AddProductModal({ open, onClose, companyId }) {
         priceType: "FIXED",
         currency: "UZS",
         phone: phone.trim(),
-        saleType,
+        wholeSale: wholesaleEnabled,
+        retail: retailEnabled,
         price: Number(wholesaleEnabled ? wholesalePrice : retailPrice),
         unit: wholesaleEnabled ? wholesaleUnit : retailUnit,
         minProduct: wholesaleEnabled ? Number(wholesaleMinQty || 1) : 1,
-        wholesaleEnabled,
-        retailEnabled,
         wholesalePrice: wholesaleEnabled ? Number(wholesalePrice) : undefined,
         wholesaleUnit: wholesaleEnabled ? wholesaleUnit : undefined,
         wholesaleMinQty: wholesaleEnabled && wholesaleMinQty ? Number(wholesaleMinQty) : undefined,

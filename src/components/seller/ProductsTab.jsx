@@ -98,16 +98,16 @@ export default function ProductsTab() {
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="text-sm font-semibold text-ink-900 dark:text-white">{p.name}</p>
                       {statusBadge(p.status)}
-                      {(p.wholesaleEnabled ?? (p.saleType === "WHOLESALE" || p.saleType === "BOTH")) && (
+                      {((p.wholeSale ?? p.wholesaleEnabled ?? (p.saleType === "WHOLESALE" || p.saleType === "BOTH")) && (
                         <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400">
                           {t("home.wholesale")}
                         </span>
-                      )}
-                      {(p.retailEnabled ?? (p.saleType === "RETAIL" || p.saleType === "BOTH")) && (
+                      ))}
+                      {((p.retail ?? p.retailEnabled ?? (p.saleType === "RETAIL" || p.saleType === "BOTH")) && (
                         <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
                           {t("home.retail")}
                         </span>
-                      )}
+                      ))}
                     </div>
                     <p className="text-[8.25px] mt-3 text-ink-400">
                       {p.price} {p.currency} · {p.priceType === "NEGOTIABLE" ? t("seller.priceNegotiable") : t("seller.priceFixed")}
