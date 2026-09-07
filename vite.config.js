@@ -11,10 +11,6 @@ export default defineConfig({
         target: BACKEND_ORIGIN,
         changeOrigin: true,
         secure: true,
-        // The backend's CORS filter only accepts Origin: https://skladmarket.uz and
-        // rejects everything else with 403 "Invalid CORS request" — mirror the same
-        // Origin/Referer rewrite the Netlify edge function (api-proxy.js) does in prod,
-        // so the dev server doesn't forward the browser's real localhost Origin.
         configure: (proxy) => {
           proxy.on("proxyReq", (proxyReq) => {
             proxyReq.setHeader("Origin", BACKEND_ORIGIN);

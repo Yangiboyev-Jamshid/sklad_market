@@ -13,6 +13,8 @@ import { flattenCategoryTree } from "../../utils/categories";
 import { UNIT_OPTIONS } from "../../data/units";
 
 function initSaleTypeState(product) {
+  console.log(product);
+  
   const saleType = product?.saleType ?? "WHOLESALE";
   const wholesaleEnabled = product?.wholesaleEnabled ?? (saleType === "WHOLESALE" || saleType === "BOTH");
   const retailEnabled = product?.retailEnabled ?? (saleType === "RETAIL" || saleType === "BOTH");
@@ -59,11 +61,49 @@ export default function EditProductModal({ product, onClose, onSaved }) {
   const fileInputRef = useRef(null);
   const submittingRef = useRef(false);
 
+  const handleSetWholesale = (value) => {
+    if (value) {
+      setWholesaleEnabled(true);
+      setRetailEnabled(false);
+    } else {
+      if (!retailEnabled) return;
+      setWholesaleEnabled(false);
+    }
+  };
+
+  const handleSetRetail = (value) => {
+    if (value) {
+      setRetailEnabled(true);
+      setWholesaleEnabled(false);
+    } else {
+      if (!wholesaleEnabled) return;
+      setRetailEnabled(false);
+    }
+  };
+
   useEffect(() => {
     getCategoryTree()
       .then((data) => setCategoriesList(flattenCategoryTree(data)))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!product) return;
+    const init = initSaleTypeState(product);
+    setName(product?.name ?? "");
+    setDescription(product?.description ?? "");
+    setCategoryId(product?.categoryId ?? "");
+    setWholesaleEnabled(init.wholesaleEnabled);
+    setRetailEnabled(init.retailEnabled);
+    setWholesalePrice(init.wholesalePrice);
+    setWholesaleMinQty(init.wholesaleMinQty);
+    setWholesaleUnit(init.wholesaleUnit);
+    setWholesaleVolume(init.wholesaleVolume);
+    setRetailPrice(init.retailPrice);
+    setRetailQuantity(init.retailQuantity);
+    setRetailUnit(init.retailUnit);
+    setImages(product?.images ?? []);
+  }, [product]);
 
   const handleFiles = (files) => {
     const arr = Array.from(files);
@@ -223,8 +263,8 @@ export default function EditProductModal({ product, onClose, onSaved }) {
 
           <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-2 block">{t("seller.saleType")}</label>
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <SaleTypeCheckbox label={t("home.wholesale")} checked={wholesaleEnabled} onChange={setWholesaleEnabled} />
-            <SaleTypeCheckbox label={t("home.retail")} checked={retailEnabled} onChange={setRetailEnabled} />
+            <SaleTypeCheckbox label={t("home.wholesale")} checked={wholesaleEnabled} onChange={handleSetWholesale} />
+            <SaleTypeCheckbox label={t("home.retail")} checked={retailEnabled} onChange={handleSetRetail} />
           </div>
 
           {wholesaleEnabled && (
