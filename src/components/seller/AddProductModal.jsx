@@ -55,6 +55,26 @@ export default function AddProductModal({ open, onClose, companyId }) {
 
   const fileInputRef = useRef(null);
 
+  const handleSetWholesale = (value) => {
+    if (value) {
+      setWholesaleEnabled(true);
+      setRetailEnabled(false);
+    } else {
+      if (!retailEnabled) return;
+      setWholesaleEnabled(false);
+    }
+  };
+
+  const handleSetRetail = (value) => {
+    if (value) {
+      setRetailEnabled(true);
+      setWholesaleEnabled(false);
+    } else {
+      if (!wholesaleEnabled) return;
+      setRetailEnabled(false);
+    }
+  };
+
   const reset = () => {
     setName(""); setDescription(""); setPhone("");
     setCategoryId("");
@@ -233,12 +253,12 @@ export default function AddProductModal({ open, onClose, companyId }) {
               <SaleTypeCheckbox
                 label={t("home.wholesale")}
                 checked={wholesaleEnabled}
-                onChange={setWholesaleEnabled}
+                onChange={handleSetWholesale}
               />
               <SaleTypeCheckbox
                 label={t("home.retail")}
                 checked={retailEnabled}
-                onChange={setRetailEnabled}
+                onChange={handleSetRetail}
               />
             </div>
 
