@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { SearchNormal1, Call, DocumentText1, ArrowLeft2, More, Send, Trash, Paperclip2, MessageQuestion } from "iconsax-reactjs";
 import { HiOutlineEmojiHappy } from "react-icons/hi";
 import { getChats, getChatMessages, deleteChat, uploadChatImage, normalizePhotoUrl, getSupportChatMessages } from "../../api/api";
+import { normalizeChatMessage, normalizeChatThread } from "../../api/api";
 import { subscribeThread, sendChatSocketMessage, sendTyping, sendRead, onChatEvent, confirmChatSend } from "../../api/chatSocket";
 import {
   connectSupportChatSocket,
@@ -24,11 +25,69 @@ const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp
 const TYPING_THROTTLE_MS = 2500;
 const TYPING_EXPIRE_MS = 4000;
 
+function parseChatDate(value) {
+  if (value === null || value === undefined || value === "") return null;
+
+  if (Array.isArray(value)) {
+    const [year, month, day, hour = 0, minute = 0, second = 0, nano = 0] = value;
+    if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+      const ms = Math.floor(Number(nano) / 1_000_000);
+      return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second), ms);
+    }
+    return null;
+  }
+
+  if (typeof value === "number") {
+    const asMs = value > 1e12 ? value : value * 1000;
+    const d = new Date(asMs);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const normalized = trimmed.includes(" ") && !trimmed.includes("T") ? trimmed.replace(" ", "T") : trimmed;
+    const d = new Date(normalized);
+    if (!Number.isNaN(d.getTime())) return d;
+
+    const numeric = Number(trimmed);
+    if (!Number.isNaN(numeric)) {
+      const asMs = Math.abs(numeric) > 1e12 ? numeric : numeric * 1000;
+      const fallback = new Date(asMs);
+      if (!Number.isNaN(fallback.getTime())) return fallback;
+    }
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  return null;
+}
+
 function formatTime(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+  const date = parseChatDate(iso);
+  if (!date) return "";
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${day}.${month}.${year} ${hours}:${minutes}`;
+}
+
+function getMessageSentAt(message) {
+  if (!message) return null;
+  const raw = message.sent_at ?? message.sentAt ?? message.created_at ?? message.createdAt ?? message.last_message_at ?? message.lastMessageAt ?? message.timestamp ?? null;
+  return parseChatDate(raw) ? raw : null;
+}
+
+function sameUserId(a, b) {
+  if (a == null || b == null) return a == null && b == null;
+  return Number(a) === Number(b);
 }
 
 function normalizeOtherParty(otherParty) {
@@ -121,7 +180,11 @@ export default function ChatPanel() {
     }
     try {
       const data = await getChats({ per_page: 50 });
-      const items = (data?.items ?? []).map((th) => ({ ...th, type: "chat", other_party: normalizeOtherParty(th.other_party) }));
+      const items = (data?.items ?? []).map((th) => ({
+        ...normalizeChatThread(th),
+        type: "chat",
+        other_party: normalizeOtherParty(th.other_party),
+      }));
       setChatThreads(items);
       setActiveId((prev) => (prev != null ? prev : items[0]?.thread_id ?? null));
     } catch {
@@ -154,9 +217,12 @@ export default function ChatPanel() {
     setMessagesLoading(true);
     try {
       const data = await getChatMessages(threadId, { per_page: PER_PAGE });
-      const items = (data?.items ?? []).slice().sort((a, b) => new Date(a.sent_at) - new Date(b.sent_at));
-      setChatMessages(items);
-      const unreadIds = items.filter((m) => m.sender_id !== user?.id && m.status !== "read").map((m) => m.id);
+      const items = (data?.items ?? []).slice().sort((a, b) => new Date(a.sent_at ?? a.sentAt ?? 0) - new Date(b.sent_at ?? b.sentAt ?? 0));
+      setChatMessages(items.map(normalizeChatMessage));
+      const unreadIds = items
+        .map(normalizeChatMessage)
+        .filter((m) => !sameUserId(m.sender_id, user?.id) && m.status !== "read")
+        .map((m) => m.id);
       if (unreadIds.length) sendRead(threadId, unreadIds);
     } catch {
       setChatMessages([]);
@@ -170,9 +236,12 @@ export default function ChatPanel() {
     setMessagesLoading(true);
     try {
       const data = await getSupportChatMessages(threadId, { per_page: PER_PAGE });
-      const items = (data?.items ?? []).slice().sort((a, b) => new Date(a.sent_at) - new Date(b.sent_at));
-      setChatMessages(items);
-      const unreadIds = items.filter((m) => m.sender_id !== user?.id && m.status !== "read").map((m) => m.id);
+      const items = (data?.items ?? []).slice().sort((a, b) => new Date(a.sent_at ?? a.sentAt ?? 0) - new Date(b.sent_at ?? b.sentAt ?? 0));
+      setChatMessages(items.map(normalizeChatMessage));
+      const unreadIds = items
+        .map(normalizeChatMessage)
+        .filter((m) => !sameUserId(m.sender_id, user?.id) && m.status !== "read")
+        .map((m) => m.id);
       if (unreadIds.length) sendSupportRead(threadId, unreadIds);
     } catch {
       setChatMessages([]);
@@ -205,23 +274,24 @@ export default function ChatPanel() {
 
     const offMessage = onChatEvent("new_message", ({ thread_id, message }) => {
       if (!message) return;
-      const isMine = message.sender_id === user?.id;
+      const normalizedMessage = normalizeChatMessage(message);
+      const isMine = sameUserId(normalizedMessage.sender_id, user?.id) || normalizedMessage._optimistic;
 
       if (activeTypeRef.current === "chat" && thread_id === activeIdRef.current) {
         setChatMessages((prev) => {
-          if (prev.some((m) => m.id === message.id)) return prev;
+          if (prev.some((m) => m.id === normalizedMessage.id)) return prev;
           if (isMine) {
             const pendingIdx = prev.findIndex((m) => m._optimistic && m.status !== "failed");
             if (pendingIdx !== -1) {
               confirmChatSend(prev[pendingIdx].id);
               const copy = prev.slice();
-              copy[pendingIdx] = message;
+              copy[pendingIdx] = normalizedMessage;
               return copy;
             }
           }
-          return [...prev, message];
+          return [...prev, normalizedMessage];
         });
-        if (!isMine) sendRead(thread_id, [message.id]);
+        if (!isMine) sendRead(thread_id, [normalizedMessage.id]);
         setOtherTyping(false);
       }
 
@@ -234,8 +304,8 @@ export default function ChatPanel() {
         const copy = prev.slice();
         const isActive = activeTypeRef.current === "chat" && thread_id === activeIdRef.current;
         copy[idx] = {
-          ...copy[idx],
-          last_message: message,
+          ...normalizeChatThread(copy[idx]),
+          last_message: normalizedMessage,
           unread_count: isMine || isActive ? 0 : (copy[idx].unread_count ?? 0) + 1,
         };
         return copy;
@@ -244,11 +314,11 @@ export default function ChatPanel() {
 
     const offRead = onChatEvent("read_receipt", ({ thread_id, message_ids }) => {
       if (activeTypeRef.current !== "chat" || thread_id !== activeIdRef.current || !message_ids?.length) return;
-      setChatMessages((prev) => prev.map((m) => (message_ids.includes(m.id) ? { ...m, status: "read" } : m)));
+      setChatMessages((prev) => prev.map((m) => (message_ids.some((id) => sameUserId(id, m.id)) ? { ...m, status: "read" } : m)));
     });
 
     const offTyping = onChatEvent("typing", ({ thread_id, user_id }) => {
-      if (activeTypeRef.current !== "chat" || thread_id !== activeIdRef.current || user_id === user?.id) return;
+      if (activeTypeRef.current !== "chat" || thread_id !== activeIdRef.current || sameUserId(user_id, user?.id)) return;
       setOtherTyping(true);
       clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => setOtherTyping(false), TYPING_EXPIRE_MS);
@@ -281,34 +351,35 @@ export default function ChatPanel() {
 
     const offMessage = onSupportChatEvent("new_message", ({ thread_id, message }) => {
       if (!message) return;
-      const isMine = message.sender_id === user?.id;
+      const normalizedMessage = normalizeChatMessage(message);
+      const isMine = sameUserId(normalizedMessage.sender_id, user?.id) || normalizedMessage._optimistic;
 
       if (activeTypeRef.current === "support" && thread_id === activeIdRef.current) {
         setChatMessages((prev) => {
-          if (prev.some((m) => m.id === message.id)) return prev;
+          if (prev.some((m) => m.id === normalizedMessage.id)) return prev;
           if (isMine) {
             const pendingIdx = prev.findIndex((m) => m._optimistic && m.status !== "failed");
             if (pendingIdx !== -1) {
               confirmSupportChatSend(prev[pendingIdx].id);
               const copy = prev.slice();
-              copy[pendingIdx] = message;
+              copy[pendingIdx] = normalizedMessage;
               return copy;
             }
           }
-          return [...prev, message];
+          return [...prev, normalizedMessage];
         });
-        if (!isMine) sendSupportRead(thread_id, [message.id]);
+        if (!isMine) sendSupportRead(thread_id, [normalizedMessage.id]);
         setOtherTyping(false);
       }
     });
 
     const offRead = onSupportChatEvent("read_receipt", ({ thread_id, message_ids }) => {
       if (activeTypeRef.current !== "support" || thread_id !== activeIdRef.current || !message_ids?.length) return;
-      setChatMessages((prev) => prev.map((m) => (message_ids.includes(m.id) ? { ...m, status: "read" } : m)));
+      setChatMessages((prev) => prev.map((m) => (message_ids.some((id) => sameUserId(id, m.id)) ? { ...m, status: "read" } : m)));
     });
 
     const offTyping = onSupportChatEvent("typing", ({ thread_id, user_id }) => {
-      if (activeTypeRef.current !== "support" || thread_id !== activeIdRef.current || user_id === user?.id) return;
+      if (activeTypeRef.current !== "support" || thread_id !== activeIdRef.current || sameUserId(user_id, user?.id)) return;
       setOtherTyping(true);
       clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => setOtherTyping(false), TYPING_EXPIRE_MS);
@@ -504,7 +575,6 @@ export default function ChatPanel() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-semibold text-ink-900 dark:text-white truncate">{displayName}</p>
-                        <span className="text-[11px] text-ink-300 dark:text-ink-600 shrink-0">{formatTime(thread.last_message?.sent_at)}</span>
                       </div>
                       <p className="text-xs text-[#7F7F7F] truncate">
                         <span>{isSupport ? t("chat.bannerThreadRowHint") : (thread.last_message?.body || "—")}</span><br />
@@ -591,35 +661,38 @@ export default function ChatPanel() {
                 </div>
               ) : (
                 chatMessages.map((m) => {
-                  const isMine = m.sender_id === user?.id || m._optimistic;
+                  const normalizedMessage = normalizeChatMessage(m);
+                  const isMine = sameUserId(normalizedMessage.sender_id, user?.id) || normalizedMessage._optimistic;
                   return (
-                    <div key={m.id} className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}>
-                      {m.attachment_url ? (
+                    <div key={normalizedMessage.id} className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}>
+                      {normalizedMessage.attachment_url ? (
                         <a
-                          href={m.attachment_url}
+                          href={normalizedMessage.attachment_url}
                           target="_blank"
                           rel="noreferrer"
                           className="bg-brand-600 text-white rounded-2xl px-4 py-3 flex items-center gap-2 max-w-[85%] sm:max-w-xs"
                         >
                           <DocumentText1 size={18} className="shrink-0" />
-                          <span className="text-sm truncate">{m.body || t("chat.file")}</span>
+                          <span className="text-sm truncate">{normalizedMessage.body || t("chat.file")}</span>
                         </a>
                       ) : (
                         <div
                           className={`max-w-[85%] sm:max-w-md px-4 py-3 rounded-2xl text-sm leading-relaxed ${isMine ? "bg-brand-600 text-white" : "bg-ink-50 dark:bg-[#171717] text-ink-700 dark:text-ink-200"
                             }`}
                         >
-                          {m.body}
+                          {normalizedMessage.body}
                         </div>
                       )}
-                      <span className="flex items-center gap-1 text-[11px] text-ink-300 dark:text-ink-600 mt-1">
-                        {formatTime(m.sent_at)}
+                      <span className="flex items-center justify-end gap-1.5 text-[11px] text-ink-300 dark:text-ink-600 mt-1">
+                        <span className="whitespace-nowrap">{formatTime(normalizedMessage.sent_at)}</span>
                         {isMine && (
-                          <MessageStatus
-                            status={m.status}
-                            onRetry={() => retryMessage(m.id)}
-                            retryTitle={t("chat.sendFailedRetry")}
-                          />
+                          <span className="inline-flex items-center shrink-0">
+                            <MessageStatus
+                              status={normalizedMessage.status}
+                              onRetry={() => retryMessage(normalizedMessage.id)}
+                              retryTitle={t("chat.sendFailedRetry")}
+                            />
+                          </span>
                         )}
                       </span>
                     </div>

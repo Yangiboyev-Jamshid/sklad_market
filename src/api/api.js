@@ -498,11 +498,13 @@ export async function createSellerChat({ seller_company_id, product_id, buyer_id
 }
 
 export async function getChats({ page = 1, per_page = 20 } = {}) {
-  return unwrap(http.get("/chats", { params: { page, per_page } }));
+  const data = await unwrap(http.get("/chats", { params: { page, per_page } }));
+  return data ? { ...data, items: (data.items ?? []).map(normalizeChatThread) } : data;
 }
 
 export async function getChatMessages(threadId, { page = 1, per_page = 20, before_id } = {}) {
-  return unwrap(http.get(`/chats/${threadId}/messages`, { params: { page, per_page, before_id } }));
+  const data = await unwrap(http.get(`/chats/${threadId}/messages`, { params: { page, per_page, before_id } }));
+  return data ? { ...data, items: (data.items ?? []).map(normalizeChatMessage) } : data;
 }
 
 export async function getChatUnreadCount() {
@@ -531,7 +533,8 @@ export async function createBannerChat({ subject } = {}) {
 }
 
 export async function getSupportChatMessages(threadId, { page = 1, per_page = 30, before_id } = {}) {
-  return unwrap(http.get(`/support/chats/${threadId}/messages`, { params: { page, per_page, before_id } }));
+  const data = await unwrap(http.get(`/support/chats/${threadId}/messages`, { params: { page, per_page, before_id } }));
+  return data ? { ...data, items: (data.items ?? []).map(normalizeChatMessage) } : data;
 }
 
 export async function getSupportChatWsToken() {
@@ -719,3 +722,61 @@ function normalizeSaleFlags(product = {}) {
   );
   return { wholeSale, retail };
 }
+
+function normalizeChatDateValue(value) {
+  if (value === null || value === undefined || value === "") return null;
+
+  if (Array.isArray(value)) {
+    const [year, month, day, hour = 0, minute = 0, second = 0, nano = 0] = value;
+    if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+      const ms = Math.floor(Number(nano) / 1_000_000);
+      const date = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second), ms);
+      const pad = (num) => String(num).padStart(2, "0");
+      const msPart = ms ? `.${String(ms).padStart(3, "0")}` : "";
+      return `${Number(year)}-${pad(Number(month))}-${pad(Number(day))}T${pad(Number(hour))}:${pad(Number(minute))}:${pad(Number(second))}${msPart}`;
+    }
+    return null;
+  }
+
+  if (typeof value === "number") {
+    const date = new Date(Math.abs(value) > 1e12 ? value : value * 1000);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const asDate = new Date(trimmed.includes(" ") && !trimmed.includes("T") ? trimmed.replace(" ", "T") : trimmed);
+    return Number.isNaN(asDate.getTime()) ? trimmed : asDate.toISOString();
+  }
+
+  return value;
+}
+
+function normalizeChatMessage(message) {
+  if (!message) return message;
+  const sentAt = normalizeChatDateValue(message.sent_at ?? message.sentAt ?? message.created_at ?? message.createdAt ?? message.timestamp ?? null);
+  const status = typeof message.status === "string" ? message.status.toLowerCase() : message.status;
+  return {
+    ...message,
+    sent_at: sentAt,
+    sentAt,
+    status,
+  };
+}
+
+function normalizeChatThread(thread) {
+  if (!thread) return thread;
+  const lastMessage = thread.last_message ? normalizeChatMessage(thread.last_message) : thread.last_message;
+  const lastMessageAt = normalizeChatDateValue(lastMessage?.sent_at ?? lastMessage?.sentAt ?? thread.last_message_at ?? thread.lastMessageAt ?? null);
+  const sentAt = normalizeChatDateValue(thread.sent_at ?? thread.sentAt ?? thread.created_at ?? thread.createdAt ?? lastMessageAt ?? null);
+  return {
+    ...thread,
+    sent_at: sentAt,
+    sentAt,
+    last_message: lastMessage,
+    last_message_at: lastMessageAt,
+  };
+}
+
+export { normalizeChatMessage, normalizeChatThread };
