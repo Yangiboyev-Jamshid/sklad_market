@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Add, Trash, MessageQuestion, HamburgerMenu, CloseCircle, TickCircle, Building3, Box1 } from "iconsax-reactjs";
 import { useTranslation } from "react-i18next";
@@ -69,6 +69,7 @@ function normalizeResultItems(payload) {
 export default function AiAgentPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
 
   const [conversations, setConversations] = useState([]);
@@ -87,6 +88,7 @@ export default function AiAgentPage() {
   const abortRef = useRef(null);
   const activeIdRef = useRef(null);
   const localIdRef = useRef(0);
+  const initialMessageHandledRef = useRef(false);
 
   useEffect(() => {
     activeIdRef.current = activeId;
@@ -253,6 +255,26 @@ export default function AiAgentPage() {
       },
     });
   };
+
+  useEffect(() => {
+    if (initialMessageHandledRef.current) return;
+
+    const initialMessage = location.state?.initialMessage;
+    if (initialMessage === undefined) {
+      return;
+    }
+
+    initialMessageHandledRef.current = true;
+
+    // Clear the navigation state immediately so refresh/back navigation
+    // cannot send the same prompt a second time.
+    navigate(location.pathname, { replace: true, state: null });
+
+    const prompt = String(initialMessage).trim();
+    if (prompt) {
+      send(prompt);
+    }
+  }, [location.pathname, location.state, navigate]);
 
   const handleSend = () => send();
 

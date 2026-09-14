@@ -49,8 +49,13 @@ export default function DashboardAiAssistant({ user, isLoggedIn, onDismiss, comp
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    markOnboardingSeen();
-    navigate("/ai-agent");
+    const trimmedQuery = query.trim();
+
+    // Opening the AI chat must not dismiss the onboarding banner.
+    // If there is text, pass it to the AI chat so it can be sent there.
+    navigate("/ai-agent", {
+      state: trimmedQuery ? { initialMessage: trimmedQuery } : undefined,
+    });
   };
 
   return (
@@ -144,7 +149,6 @@ export default function DashboardAiAssistant({ user, isLoggedIn, onDismiss, comp
                   <Link
                     key={titleKey}
                     to="/ai-agent"
-                    onClick={markOnboardingSeen}
                     className={`flex items-center gap-2 rounded-xl border border-ink-100 transition-colors hover:border-brand-300 hover:bg-brand-50 dark:border-white/10 dark:hover:border-brand-500/40 dark:hover:bg-brand-500/10 ${compact ? "p-1.5" : "p-2"}`}
                   >
                     <span className={`flex shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400 ${compact ? "h-6 w-6" : "h-8 w-8"}`}>
