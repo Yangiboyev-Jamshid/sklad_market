@@ -230,7 +230,7 @@ export default function HomePage() {
               <BannerCarousel
                 banners={banners}
                 allowSellerDownloadRequest
-                heightClass={`h-44 ${aiBannerVisible ? "sm:h-[18rem]" : "sm:h-[410px]"}`}
+                heightClass={`h-[130px] ${aiBannerVisible ? "sm:h-[18rem]" : "sm:h-[410px]"}`}
               />
             )}
           </div>

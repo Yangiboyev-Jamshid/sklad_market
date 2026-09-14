@@ -765,6 +765,13 @@
       "userColumn": "Foydalanuvchi",
       "searchPlaceholder": "Foydalanuvchi bo'yicha qidirish...",
       "searchEmpty": "Qidiruvga mos foydalanuvchi topilmadi."
+    },
+    "question": {
+      "question1": "Toshkentda metall yetkazib beruvchilarni toping",
+      "question2": "Toshkentda metall yetkazib beruvchilarni toping",
+      "question3": "Toshkentda metall yetkazib beruvchilarni toping",
+      "question4": "Toshkentda metall yetkazib beruvchilarni toping",
+      "question5": "Toshkentda metall yetkazib beruvchilarni toping"
     }
   }
 }

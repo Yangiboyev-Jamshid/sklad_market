@@ -10,7 +10,6 @@ import ProductThumb from "../components/ui/ProductThumb";
 import { useAuth } from "../context/AuthContext";
 import { createAiConversation, getAiConversations, getAiConversationMessages, deleteAiConversation, cancelAiDraft } from "../api/api";
 import { streamAiMessage } from "../api/aiChatStream";
-import { aiSuggestions } from "../data/mockData";
 
 const MAX_INPUT_LENGTH = 4000;
 
@@ -89,6 +88,14 @@ export default function AiAgentPage() {
   const activeIdRef = useRef(null);
   const localIdRef = useRef(0);
   const initialMessageHandledRef = useRef(false);
+
+  const aiSuggestions = [
+    "ai.question.question1",
+    "ai.question.question2",
+    "ai.question.question3",
+    "ai.question.question4",
+    "ai.question.question5",
+  ]
 
   useEffect(() => {
     activeIdRef.current = activeId;
@@ -266,8 +273,6 @@ export default function AiAgentPage() {
 
     initialMessageHandledRef.current = true;
 
-    // Clear the navigation state immediately so refresh/back navigation
-    // cannot send the same prompt a second time.
     navigate(location.pathname, { replace: true, state: null });
 
     const prompt = String(initialMessage).trim();
@@ -401,7 +406,7 @@ export default function AiAgentPage() {
                         onClick={() => send(s)}
                         className={`bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3.5 sm:px-4 py-5 sm:py-3 text-xs sm:text-sm text-ink-700 dark:text-ink-200 hover:border-brand-300 dark:hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors ${i === 4 ? "sm:col-span-2" : ""}`}
                       >
-                        {s}
+                        {t(`${s}`)}
                       </motion.button>
                     ))}
                   </div>
