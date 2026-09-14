@@ -767,11 +767,11 @@
       "searchEmpty": "No users match this search."
     },
     "question": {
-      "question1": "Find metal suppliers in Tashkent",
-      "question2": "Find metal suppliers in Tashkent",
-      "question3": "Find metal suppliers in Tashkent",
+      "question1": "Show all products",
+      "question2": "Today's metal prices",
+      "question3": "Minimum volume of product purchases",
       "question4": "Find metal suppliers in Tashkent",
-      "question5": "Find metal suppliers in Tashkent"
+      "question5": "What is the delivery and warehouse pickup procedure?"
     }
   }
 }

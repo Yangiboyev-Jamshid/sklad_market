@@ -403,7 +403,7 @@ export default function AiAgentPage() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        onClick={() => send(s)}
+                        onClick={() => send(t(`${s}`))}
                         className={`bg-white dark:bg-[#0D0D0D] border border-ink-200 dark:border-[#1C1C1C] rounded-xl px-3.5 sm:px-4 py-5 sm:py-3 text-xs sm:text-sm text-ink-700 dark:text-ink-200 hover:border-brand-300 dark:hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors ${i === 4 ? "sm:col-span-2" : ""}`}
                       >
                         {t(`${s}`)}
@@ -580,6 +580,6 @@ export default function AiAgentPage() {
         onClose={() => setDraftModal(null)}
         onConfirmed={handleDraftConfirmed}
       />
-    </AppShell>
+    </AppShell >
   );
 }

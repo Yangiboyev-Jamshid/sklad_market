@@ -767,11 +767,11 @@
       "searchEmpty": "Qidiruvga mos foydalanuvchi topilmadi."
     },
     "question": {
-      "question1": "Toshkentda metall yetkazib beruvchilarni toping",
-      "question2": "Toshkentda metall yetkazib beruvchilarni toping",
-      "question3": "Toshkentda metall yetkazib beruvchilarni toping",
+      "question1": "Barcha mahsulotlar katalogi",
+      "question2": "Bugungi metall narxlari",
+      "question3": "Mahsulotlarni minimum xarid qilish hajmi",
       "question4": "Toshkentda metall yetkazib beruvchilarni toping",
-      "question5": "Toshkentda metall yetkazib beruvchilarni toping"
+      "question5": "Mahsulotlarni yetkazib berish va ombordan olib ketish tartibi qanday?"
     }
   }
 }
