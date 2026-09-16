@@ -27,7 +27,6 @@ export default function AddProductModal({ open, onClose, companyId }) {
 
   const [categoriesList, setCategoriesList] = useState([]);
   const [resolvedCompanyId, setResolvedCompanyId] = useState(companyId);
-  const [companyLocation, setCompanyLocation] = useState({ regionId: null, districtId: null });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -46,7 +45,6 @@ export default function AddProductModal({ open, onClose, companyId }) {
     getMyCompany()
       .then((c) => {
         if (!companyId) setResolvedCompanyId(c.id);
-        setCompanyLocation({ regionId: c.regionId ?? null, districtId: c.districtId ?? null });
       })
       .catch(() => {
         if (!companyId) setError(t("seller.companyNotResolved"));
@@ -134,8 +132,6 @@ export default function AddProductModal({ open, onClose, companyId }) {
       const payload = {
         companyId: resolvedCompanyId ? Number(resolvedCompanyId) : undefined,
         categoryId: categoryId ? Number(categoryId) : undefined,
-        regionId: companyLocation.regionId ?? 0,
-        districtId: companyLocation.districtId ?? 0,
         name: name.trim(),
         description: description.trim(),
         priceType: "FIXED",

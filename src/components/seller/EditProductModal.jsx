@@ -175,14 +175,11 @@ export default function EditProductModal({ product, onClose, onSaved }) {
         categoryId: categoryId ? Number(categoryId) : undefined,
         shortDescription: description.trim().slice(0, 255),
         priceType: "FIXED",
-        regionId: product.regionId ?? product.region_id,
-        districtId: product.districtId ?? product.district_id,
         minProduct: wholesaleEnabled ? Number(wholesaleMinQty || 1) : 1,
         unit: wholesaleEnabled ? wholesaleUnit : retailUnit,
         pickupAvailable: false,
         pickupBranchId: 0,
       };
-      console.log(payload);
 
       const updated = await updateProduct(product.id, payload);
       const normalizedUpdated = {

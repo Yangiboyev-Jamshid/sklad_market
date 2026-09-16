@@ -438,8 +438,6 @@ export async function updateProduct(id, data) {
     category_id: normalized.category_id ?? normalized.categoryId,
     short_description: normalized.short_description ?? normalized.shortDescription,
     price_type: normalized.price_type ?? normalized.priceType,
-    region_id: normalized.region_id ?? normalized.regionId,
-    district_id: normalized.district_id ?? normalized.districtId,
     min_product: normalized.min_product ?? normalized.minProduct,
     unit: normalized.unit,
     pickup_available: normalized.pickup_available ?? normalized.pickupAvailable,
