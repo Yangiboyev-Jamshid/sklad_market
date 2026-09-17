@@ -389,6 +389,7 @@
     "requiredFieldLat": "Kenglik (lat)",
     "requiredFieldLng": "Uzunlik (lng)",
     "fieldLegalForm": "Tashkiliy-huquqiy shakl",
+    "fieldRegion": "Hudud",
     "selectLegalForm": "Tashkiliy-huquqiy shaklni tanlang",
     "selectRegion": "Hududni tanlang",
     "legalFormSaveFailed": "Tashkiliy-huquqiy shaklni saqlab bo'lmadi — server o'zgarishni tasdiqlamadi. Yana urinib ko'ring.",

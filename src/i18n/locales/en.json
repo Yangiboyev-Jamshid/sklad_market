@@ -389,6 +389,7 @@
     "requiredFieldLat": "Latitude (lat)",
     "requiredFieldLng": "Longitude (lng)",
     "fieldLegalForm": "Organizational-legal form",
+    "fieldRegion": "Region",
     "selectLegalForm": "Select an organizational-legal form",
     "selectRegion": "Select a region",
     "legalFormSaveFailed": "Couldn't save the organizational-legal form — the server didn't confirm the change. Please try again.",

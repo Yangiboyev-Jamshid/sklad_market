@@ -13,10 +13,12 @@ import {
   createCompanyBranch,
   updateCompanyBranch,
   deleteCompanyBranch,
+  getRegions,
 } from "../../api/api";
 import CreateCompanyForm from "../company/CreateCompanyForm";
 import MapView from "../ui/MapView";
 import LegalFormSelect from "../ui/LegalFormSelect";
+import RegionSelect from "../ui/RegionSelect";
 import { useAuth } from "../../context/AuthContext";
 import { geocodeAddress, reverseGeocode } from "../../utils/geo";
 import { tariffPlans } from "../../data/mockData";
@@ -90,6 +92,7 @@ export default function SettingsTab() {
   const [showBranchMapPicker, setShowBranchMapPicker] = useState(false);
   const [branchPickedCoords, setBranchPickedCoords] = useState(null);
   const [resolvingBranchCity, setResolvingBranchCity] = useState(false);
+  const [regions, setRegions] = useState([]);
 
   useEffect(() => {
     getMyCompany()
@@ -102,6 +105,10 @@ export default function SettingsTab() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
+
+    getRegions()
+      .then((data) => setRegions(data?.content ?? []))
+      .catch(() => setRegions([]));
   }, []);
 
   const toggleBranchMapPicker = () => {
@@ -321,6 +328,7 @@ export default function SettingsTab() {
       website: company?.website ?? "",
       address: company?.address ?? "",
       legalForm: company?.legalForm ?? "",
+      regionId: company?.regionId ?? null,
       annualCapacity: company?.annualCapacity ?? "",
       capacityUnit: company?.capacityUnit ?? UNIT_OPTIONS[0].value,
       actualAnnualOutput: company?.actualAnnualOutput ?? "",
@@ -551,6 +559,20 @@ export default function SettingsTab() {
           ) : (
             <p className="text-sm font-medium text-ink-900 dark:text-white">
               {company?.legalForm ? getLegalFormLabel(company.legalForm, i18n.language) : "—"}
+            </p>
+          )}
+        </div>
+
+        <div className="py-3.5 border-t border-[#F0F0F0] dark:border-[#1C1C1C]">
+          <p className="text-sm sm:text-xs text-ink-400 dark:text-ink-500 mb-2">{t("seller.fieldRegion")}</p>
+          {editingProfile ? (
+            <RegionSelect
+              value={profileDraft.regionId}
+              onChange={(v) => setProfileDraft((prev) => ({ ...prev, regionId: v }))}
+            />
+          ) : (
+            <p className="text-sm font-medium text-ink-900 dark:text-white">
+              {regions.find((r) => r.id === company?.regionId)?.name || "—"}
             </p>
           )}
         </div>

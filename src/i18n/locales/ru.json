@@ -389,6 +389,7 @@
     "requiredFieldLat": "Широта (lat)",
     "requiredFieldLng": "Долгота (lng)",
     "fieldLegalForm": "Организационно-правовая форма",
+    "fieldRegion": "Регион",
     "selectLegalForm": "Выберите организационно-правовую форму",
     "selectRegion": "Выберите регион",
     "legalFormSaveFailed": "Не удалось сохранить организационно-правовую форму — сервер не подтвердил изменение. Попробуйте ещё раз.",
