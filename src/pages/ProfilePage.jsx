@@ -226,7 +226,6 @@ export default function ProfilePage() {
     let ignore = false;
     reloadReviews(ignore);
     return () => { ignore = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [company?.id]);
 
   const handleWriteReview = () => {

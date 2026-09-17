@@ -3,6 +3,7 @@ import { Buildings, TickCircle, Location } from "iconsax-reactjs";
 import { createCompany } from "../../api/api";
 import { geocodeAddress, suggestAddress, reverseGeocode } from "../../utils/geo";
 import LegalFormSelect from "../ui/LegalFormSelect";
+import RegionSelect from "../ui/RegionSelect";
 import MapView from "../ui/MapView";
 
 const LOCATION_ERROR_MESSAGES = {
@@ -19,6 +20,7 @@ export default function CreateCompanyForm({ onCreated }) {
   const [address, setAddress] = useState("");
   const [companyCreatedDate, setCompanyCreatedDate] = useState("");
   const [legalForm, setLegalForm] = useState("");
+  const [regionId, setRegionId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [created, setCreated] = useState(null);
@@ -61,6 +63,10 @@ export default function CreateCompanyForm({ onCreated }) {
       setError("Выберите организационно-правовую форму компании");
       return;
     }
+    if (!regionId) {
+      setError("Выберите регион компании");
+      return;
+    }
     submittingRef.current = true;
     setLoading(true);
     setError("");
@@ -84,6 +90,7 @@ export default function CreateCompanyForm({ onCreated }) {
         address: address.trim(),
         companyCreatedDate,
         legalForm,
+        regionId,
         lat: String(coords.lat),
         lng: String(coords.lng),
       });
@@ -129,6 +136,12 @@ export default function CreateCompanyForm({ onCreated }) {
           </label>
           <LegalFormSelect value={legalForm} onChange={setLegalForm} />
         </div>
+        <div>
+          <label className="text-xs font-medium text-ink-500 dark:text-ink-400 mb-1 block">
+            Регион *
+          </label>
+          <RegionSelect value={regionId} onChange={setRegionId} placeholder="Выберите регион" />
+        </div>
         <Field
           label="Краткое описание"
           value={shortDescription}
@@ -150,7 +163,7 @@ export default function CreateCompanyForm({ onCreated }) {
             <Location size={16} /> {showMapPicker ? "Скрыть карту" : "Указать на карте"}
           </button>
 
-          {showMapPicker && (
+          {!showMapPicker && (
             <div className="mt-3 flex flex-col gap-2">
               <MapView height="h-[240px] sm:h-[320px]" center={pickedCoords} onPick={handleMapPick} />
               {resolvingAddress ? (

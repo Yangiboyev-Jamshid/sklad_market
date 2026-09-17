@@ -335,6 +335,22 @@ export async function deleteCategory(id) {
   return data;
 }
 
+export async function getRegions({ page = 0, size = 100 } = {}) {
+  return unwrap(http.get("/regions", { params: { page, size } }));
+}
+
+export async function createRegion(data) {
+  return unwrap(http.post("/admin/regions", data));
+}
+
+export async function updateRegion(id, data) {
+  return unwrap(http.put(`/admin/regions/${id}`, data));
+}
+
+export async function deleteRegion(id) {
+  return unwrap(http.delete(`/admin/regions/${id}`));
+}
+
 export async function addCompanyFavorite(companyId) {
   return unwrap(http.post(`/company-favorites/create/${companyId}`));
 }

@@ -11,6 +11,7 @@ import ComplaintsTab from "../components/moderator/ComplaintsTab";
 import AccountsTab from "../components/moderator/AccountsTab";
 import BannersTab from "../components/moderator/BannersTab";
 import CategoriesTab from "../components/moderator/CategoriesTab";
+import RegionsTab from "../components/moderator/RegionsTab";
 import SupportChatTab from "../components/moderator/SupportChatTab";
 import AiRateLimitsTab from "../components/moderator/AiRateLimitsTab";
 
@@ -23,6 +24,7 @@ const tabs = [
   { id: "accounts", labelKey: "moderator.tabAccounts", Component: AccountsTab },
   { id: "banners", labelKey: "moderator.tabBanners", Component: BannersTab, adminOnly: true },
   { id: "categories", labelKey: "moderator.tabCategories", Component: CategoriesTab, adminOnly: true },
+  { id: "regions", labelKey: "moderator.tabRegions", Component: RegionsTab, adminOnly: true },
   { id: "ai-requests", labelKey: "moderator.tabAiRequests", Component: AiRateLimitsTab, adminOnly: true },
 ];
 
