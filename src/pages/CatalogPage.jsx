@@ -7,7 +7,7 @@ import AppShell from "../components/layout/AppShell";
 import ProductCard from "../components/ui/ProductCard";
 import MapView from "../components/ui/MapView";
 import BannerCarousel from "../components/ui/BannerCarousel";
-import { getAllProducts, searchProducts, getCategoryTree, getCatalogMap, getSearchSuggestions, getCatalogFilters, getCategoryCounts, getProductsByPriceRange, aiBusinessSearch } from "../api/api";
+import { getAllProducts, searchProducts, getCategoryTree, getCatalogMap, getSearchSuggestions, getCatalogFilters, getCategoryCounts, getProductsByPriceRange, aiBusinessSearch, getRegions } from "../api/api";
 import { buildProductMapPins } from "../utils/mapPins";
 import { usePublicBanners } from "../hooks/usePublicBanners";
 import { getPublicCompanyExtras } from "../utils/companyExtras";
@@ -51,6 +51,8 @@ export default function CatalogPage() {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [regionId, setRegionId] = useState("");
+  const [regions, setRegions] = useState([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [products, setProducts] = useState([]);
@@ -83,7 +85,7 @@ export default function CatalogPage() {
     mapDebounceRef.current = setTimeout(async () => {
       setMapLoading(true);
       try {
-        const foundData = await getCatalogMap({ page: 1, perPage: 200, query: q, category });
+        const foundData = await getCatalogMap({ page: 1, perPage: 200, query: q, category, regionId: regionId || undefined });
         let foundItems = foundData?.items ?? [];
         if (minP != null) foundItems = foundItems.filter((it) => Number(it.price) >= minP);
         if (maxP != null) foundItems = foundItems.filter((it) => Number(it.price) <= maxP);
@@ -95,7 +97,7 @@ export default function CatalogPage() {
         const similarCategory = hasActiveSearch ? (category ?? mostCommonCategoryId(foundCategoryIds)) : null;
         let similarPins = [];
         if (similarCategory != null) {
-          const similarData = await getCatalogMap({ page: 1, perPage: 200, category: similarCategory }).catch(() => null);
+          const similarData = await getCatalogMap({ page: 1, perPage: 200, category: similarCategory, regionId: regionId || undefined }).catch(() => null);
           const similarItems = (similarData?.items ?? []).filter((it) => !foundIds.has(it.productId));
           similarPins = buildProductMapPins(similarItems, navigate, { color: "purple", idPrefix: "s" });
         }
@@ -108,7 +110,7 @@ export default function CatalogPage() {
       }
     }, query ? 400 : 0);
     return () => clearTimeout(mapDebounceRef.current);
-  }, [view, query, activeCategory, minPrice, maxPrice, verifiedOnly, foundCategoryIds, navigate]);
+  }, [view, query, activeCategory, minPrice, maxPrice, verifiedOnly, regionId, foundCategoryIds, navigate]);
 
   useEffect(() => {
     getCategoryTree()
@@ -135,6 +137,10 @@ export default function CatalogPage() {
     getCatalogFilters()
       .then(setFilterMeta)
       .catch(() => { });
+
+    getRegions()
+      .then((data) => setRegions(data?.content ?? []))
+      .catch(() => setRegions([]));
 
     getPublicCompanyExtras()
       .then(setCompanyMap)
@@ -182,6 +188,7 @@ export default function CatalogPage() {
     const filterParams = {
       inStock: inStockOnly || undefined,
       verified: verifiedOnly || undefined,
+      regionId: regionId || undefined,
     };
     let ignore = false;
     debounceRef.current = setTimeout(async () => {
@@ -196,12 +203,13 @@ export default function CatalogPage() {
           });
           if (ignore) return;
           let raw = data?.content ?? [];
-          const hasExtraFilters = !!category || !!query.trim();
+          const hasExtraFilters = !!category || !!query.trim() || !!regionId;
           if (category) raw = raw.filter((p) => String(p.categoryId) === category);
           if (query.trim()) {
             const q = query.trim().toLowerCase();
             raw = raw.filter((p) => p.name?.toLowerCase().includes(q));
           }
+          if (regionId) raw = raw.filter((p) => String(p.regionId ?? p.region_id) === String(regionId));
           setProducts(raw.map((p) => normalizeProduct(p, imageMap, companyMap, t)));
           setTotal(hasExtraFilters ? raw.length : data?.totalElements ?? raw.length);
           setFoundCategoryIds(raw.map((p) => p.categoryId).filter((id) => id != null));
@@ -227,7 +235,7 @@ export default function CatalogPage() {
       }
     }, query.trim() || hasPriceFilter ? 400 : 0);
     return () => { ignore = true; clearTimeout(debounceRef.current); };
-  }, [query, activeCategory, minPrice, maxPrice, inStockOnly, verifiedOnly, imageMap, companyMap, t]);
+  }, [query, activeCategory, minPrice, maxPrice, inStockOnly, verifiedOnly, regionId, imageMap, companyMap, t]);
 
   return (
     <AppShell>
@@ -299,6 +307,9 @@ export default function CatalogPage() {
               setMinPrice={setMinPrice}
               maxPrice={maxPrice}
               setMaxPrice={setMaxPrice}
+              regions={regions}
+              regionId={regionId}
+              setRegionId={setRegionId}
             />
           </aside>
 
@@ -339,6 +350,9 @@ export default function CatalogPage() {
                     setMinPrice={setMinPrice}
                     maxPrice={maxPrice}
                     setMaxPrice={setMaxPrice}
+                    regions={regions}
+                    regionId={regionId}
+                    setRegionId={setRegionId}
                     showHeader={false}
                   />
                   <button
@@ -446,6 +460,9 @@ function FiltersContent({
   setMinPrice,
   maxPrice,
   setMaxPrice,
+  regions = [],
+  regionId,
+  setRegionId,
   showHeader = true,
 }) {
   const { t } = useTranslation();
@@ -455,6 +472,7 @@ function FiltersContent({
     setVerifiedOnly(false);
     setMinPrice("");
     setMaxPrice("");
+    setRegionId("");
   };
   return (
     <>
@@ -512,9 +530,19 @@ function FiltersContent({
       </div>
 
       <p className="text-xs font-medium text-black dark:text-white mb-2">{t("catalogPage.regions")}</p>
-      <button className="w-full flex items-center justify-between bg-ink-50 dark:bg-[#0D0D0D] border dark:border-[#2D2D2D] rounded-xl px-4 py-2.5 text-sm text-ink-400 mb-5">
-        {t("catalogPage.allRegions")} <ArrowDown2 size={16} />
-      </button>
+      <div className="relative mb-5">
+        <select
+          value={regionId}
+          onChange={(e) => setRegionId(e.target.value)}
+          className="w-full appearance-none bg-ink-50 dark:bg-[#0D0D0D] border dark:border-[#2D2D2D] rounded-xl pl-4 pr-9 py-2.5 text-sm text-ink-900 dark:text-white outline-none"
+        >
+          <option value="">{t("catalogPage.allRegions")}</option>
+          {regions.map((r) => (
+            <option key={r.id} value={r.id}>{r.name}</option>
+          ))}
+        </select>
+        <ArrowDown2 size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-400" />
+      </div>
 
       <ToggleRow label={t("catalogPage.inStockOnly")} checked={inStockOnly} onChange={setInStockOnly} />
       <ToggleRow label={t("catalogPage.verifiedOnly")} checked={verifiedOnly} onChange={setVerifiedOnly} />

@@ -95,8 +95,8 @@ export async function getFavorites({ page = 1, perPage = 20 } = {}) {
   return unwrap(http.get("/product-favorites", { params: { page, perPage } }));
 }
 
-export async function getAllProducts({ page = 1, perPage = 20, category, minPrice, maxPrice, inStock, verified } = {}) {
-  return unwrap(http.get("/catalog", { params: { page, perPage, category, minPrice, maxPrice, inStock, verified } }));
+export async function getAllProducts({ page = 1, perPage = 20, category, minPrice, maxPrice, inStock, verified, regionId } = {}) {
+  return unwrap(http.get("/catalog", { params: { page, perPage, category, minPrice, maxPrice, inStock, verified, regionId } }));
 }
 
 export async function getPopularProducts({ page = 1, size = 8 } = {}) {
@@ -121,8 +121,8 @@ export async function getHomepageData() {
   return unwrap(http.get("/catalog/homepage"));
 }
 
-export async function getCatalogMap({ page = 1, perPage = 20, query, category } = {}) {
-  return unwrap(http.get("/catalog/map", { params: { page, per_page: perPage, query, category } }));
+export async function getCatalogMap({ page = 1, perPage = 20, query, category, regionId } = {}) {
+  return unwrap(http.get("/catalog/map", { params: { page, per_page: perPage, query, category, regionId } }));
 }
 
 export async function getCatalogFilters() {
@@ -411,8 +411,8 @@ export async function getMyProducts({ page = 1, per_page = 20, company_id, statu
   return unwrap(http.get("/products/my", { params: { page, per_page, company_id, status } }));
 }
 
-export async function searchProducts({ query, page = 1, perPage = 20, category, minPrice, maxPrice, inStock, verified } = {}) {
-  return unwrap(http.get("/catalog/search", { params: { q: query, page, perPage, category, minPrice, maxPrice, inStock, verified } }));
+export async function searchProducts({ query, page = 1, perPage = 20, category, minPrice, maxPrice, inStock, verified, regionId } = {}) {
+  return unwrap(http.get("/catalog/search", { params: { q: query, page, perPage, category, minPrice, maxPrice, inStock, verified, regionId } }));
 }
 
 export async function getProductBySlug(slug) {
