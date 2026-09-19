@@ -149,12 +149,17 @@ const COMPANY_CACHE_KEY = "sklad_company_detail_cache";
 
 function cacheCompanyDetail(company) {
   if (!company?.id) return company;
+  const normalized = {
+    ...company,
+    logoUrl: company.logoUrl ? normalizePhotoUrl(company.logoUrl) : company.logoUrl,
+    backgroundUrl: company.backgroundUrl ? normalizePhotoUrl(company.backgroundUrl) : company.backgroundUrl,
+  };
   try {
     const all = JSON.parse(localStorage.getItem(COMPANY_CACHE_KEY) || "{}");
-    all[company.id] = { ...all[company.id], ...company };
+    all[normalized.id] = { ...all[normalized.id], ...normalized };
     localStorage.setItem(COMPANY_CACHE_KEY, JSON.stringify(all));
   } catch { }
-  return company;
+  return normalized;
 }
 
 function getCachedCompanyDetail(id) {
@@ -277,13 +282,19 @@ export async function submitCompanyVerification(id) {
 
 export async function uploadCompanyLogo(id, file) {
   const result = await unwrap(http.post(`/companies/${id}/logo`, toSingleFileForm(file)));
-  if (result?.url) cacheCompanyDetail({ id, logoUrl: result.url });
+  if (result?.url) {
+    result.url = normalizePhotoUrl(result.url);
+    cacheCompanyDetail({ id, logoUrl: result.url });
+  }
   return result;
 }
 
 export async function uploadCompanyBackground(id, file) {
   const result = await unwrap(http.post(`/companies/${id}/coverUrl`, toSingleFileForm(file)));
-  if (result?.url) cacheCompanyDetail({ id, backgroundUrl: result.url });
+  if (result?.url) {
+    result.url = normalizePhotoUrl(result.url);
+    cacheCompanyDetail({ id, backgroundUrl: result.url });
+  }
   return result;
 }
 
@@ -475,7 +486,10 @@ export async function archiveProduct(id) {
 }
 
 export async function uploadProductImages(id, files) {
-  return unwrap(http.post(`/products/${id}/images`, toMultiFileForm(files)));
+  const result = await unwrap(http.post(`/products/${id}/images`, toMultiFileForm(files)));
+  return Array.isArray(result)
+    ? result.map((img) => (img?.url ? { ...img, url: normalizePhotoUrl(img.url) } : img))
+    : result;
 }
 
 export async function deleteProductImage(productId, imageId) {
@@ -655,7 +669,9 @@ export async function deleteBanner(id) {
 }
 
 export async function uploadBannerImage(id, file) {
-  return unwrap(http.post(`/admin/banners/${id}/image`, toSingleFileForm(file)));
+  const result = await unwrap(http.post(`/admin/banners/${id}/image`, toSingleFileForm(file)));
+  if (result?.imageUrl) result.imageUrl = normalizePhotoUrl(result.imageUrl);
+  return result;
 }
 
 export async function createAiConversation({ title } = {}) {

@@ -145,7 +145,6 @@ export default function ProductPage() {
 
   useEffect(() => {
     reloadReviews();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id]);
 
   useEffect(() => {
