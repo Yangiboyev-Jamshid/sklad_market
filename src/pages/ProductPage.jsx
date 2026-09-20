@@ -23,6 +23,7 @@ import {
 import AppShell from "../components/layout/AppShell";
 import ProductThumb from "../components/ui/ProductThumb";
 import ProductCard from "../components/ui/ProductCard";
+import SafeImage from "../components/ui/SafeImage";
 import RatingStars from "../components/ui/RatingStars";
 import AddToCartButton from "../components/ui/AddToCartButton";
 import MapView from "../components/ui/MapView";
@@ -227,18 +228,23 @@ export default function ProductPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-3">
           <div className="p-3 sm:p-[18.85px] flex flex-col justify-start gap-3 sm:gap-4 bg-white dark:bg-[#0D0D0D] rounded-[12px] border border-ink-100 dark:border-[#1C1C1C]">
             <div className="relative aspect-[4/3] sm:aspect-[16/10] rounded-xl flex items-center justify-center dark:bg-[#2A2A2A] bg-[#E2E2E2] overflow-hidden border border-ink-100 dark:border-[#1C1C1C]">
-              {primaryImage
-                ? <img src={primaryImage} alt={product.name} className="w-full h-full object-contain" />
-                : <ProductThumb />
-              }
+              <SafeImage
+                src={primaryImage}
+                alt={product.name}
+                className="w-full h-full object-contain"
+                loading="eager"
+                fallback={<ProductThumb />}
+              />
             </div>
             <div className="flex gap-2 overflow-x-auto">
               {(product.images ?? []).slice(0, 4).map((img, i) => (
                 <div key={img.id ?? i} className="aspect-square h-[72px] w-[80px] sm:h-[90px] sm:w-[100px] shrink-0 flex items-center justify-center rounded-lg bg-[#E2E2E2] dark:bg-[#2A2A2A] overflow-hidden border border-ink-100 dark:border-[#1C1C1C]">
-                  {img.url
-                    ? <img src={img.thumbnail_urls?.sm ?? img.url} alt="" className="w-full h-full object-cover" />
-                    : <ProductThumb height="14" width="42" />
-                  }
+                  <SafeImage
+                    src={img.thumbnail_urls?.sm ?? img.url}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    fallback={<ProductThumb height="14" width="42" />}
+                  />
                 </div>
               ))}
             </div>
@@ -511,10 +517,12 @@ export default function ProductPage() {
               <p className="font-semibold text-ink-900 dark:text-white mb-3.5">{t("product.aboutSeller")}</p>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-11 h-11 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden">
-                  {company?.logo_path
-                    ? <img src={company.logo_path} alt="" className="w-full h-full object-cover" />
-                    : (company?.name ?? "?").slice(0, 2).toUpperCase()
-                  }
+                  <SafeImage
+                    src={company?.logo_path}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    fallback={(company?.name ?? "?").slice(0, 2).toUpperCase()}
+                  />
                 </div>
                 <div>
                   <p className="text-[14px] font-semibold text-ink-900 dark:text-white flex items-center gap-1">

@@ -3,6 +3,7 @@ import { Heart } from "iconsax-reactjs";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import ProductThumb from "./ProductThumb";
+import SafeImage from "./SafeImage";
 import AddToCartButton from "./AddToCartButton";
 import { useCart } from "../../context/CartContext";
 
@@ -21,10 +22,12 @@ export default function ProductCard({ product, index = 0 }) {
       onClick={() => navigate(`/product/${product.slug || product.id}`)}
     >
       <div className="relative h-[150px] sm:h-[220px] w-full flex items-center justify-center rounded-xl sm:rounded-2xl overflow-hidden bg-[#EBEBEB] dark:bg-[#2A2A2A]" style={{ aspectRatio: "1 / 1" }}>
-        {product.image
-          ? <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-          : <ProductThumb />
-        }
+        <SafeImage
+          src={product.image}
+          alt={product.name}
+          className="w-full h-full object-cover"
+          fallback={<ProductThumb />}
+        />
 
         <button
           onClick={(e) => {

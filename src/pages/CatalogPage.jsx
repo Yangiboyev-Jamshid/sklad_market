@@ -85,7 +85,7 @@ export default function CatalogPage() {
     mapDebounceRef.current = setTimeout(async () => {
       setMapLoading(true);
       try {
-        const foundData = await getCatalogMap({ page: 1, perPage: 200, query: q, category, regionId: regionId || undefined });
+        const foundData = await getCatalogMap({ page: 1, perPage: 100, query: q, category, regionId: regionId || undefined });
         let foundItems = foundData?.items ?? [];
         if (minP != null) foundItems = foundItems.filter((it) => Number(it.price) >= minP);
         if (maxP != null) foundItems = foundItems.filter((it) => Number(it.price) <= maxP);
@@ -97,7 +97,7 @@ export default function CatalogPage() {
         const similarCategory = hasActiveSearch ? (category ?? mostCommonCategoryId(foundCategoryIds)) : null;
         let similarPins = [];
         if (similarCategory != null) {
-          const similarData = await getCatalogMap({ page: 1, perPage: 200, category: similarCategory, regionId: regionId || undefined }).catch(() => null);
+          const similarData = await getCatalogMap({ page: 1, perPage: 100, category: similarCategory, regionId: regionId || undefined }).catch(() => null);
           const similarItems = (similarData?.items ?? []).filter((it) => !foundIds.has(it.productId));
           similarPins = buildProductMapPins(similarItems, navigate, { color: "purple", idPrefix: "s" });
         }
@@ -146,7 +146,7 @@ export default function CatalogPage() {
       .then(setCompanyMap)
       .catch(() => setCompanyMap(new Map()));
 
-    getAllProducts({ page: 1, perPage: 200 })
+    getAllProducts({ page: 1, perPage: 100 })
       .then((data) => {
         const map = new Map();
         (data?.items ?? []).forEach((p) => {

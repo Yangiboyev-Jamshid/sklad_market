@@ -105,7 +105,7 @@ export async function getPopularProducts({ page = 1, size = 8 } = {}) {
 
 export async function getCatalogBySaleType(saleType, { page = 1, perPage = 20 } = {}) {
   const type = String(saleType || "").toUpperCase();
-  const list = await getAllProducts({ page, perPage: Math.max(perPage, 200) });
+  const list = await getAllProducts({ page, perPage: 100 });
   const items = list?.items ?? list?.content ?? [];
   const filtered = items.filter((product) => {
     const { wholeSale, retail } = normalizeSaleFlags(product);

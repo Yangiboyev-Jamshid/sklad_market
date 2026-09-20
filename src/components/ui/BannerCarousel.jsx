@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft2, ArrowRight2, DocumentUpload } from "iconsax-reactjs";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
-import { createBannerChat } from "../../api/api";
+import { createBannerChat, getMyCompany } from "../../api/api";
 import { connectSupportChatSocket, subscribeSupportThread, sendSupportChatMessage } from "../../api/supportChatSocket";
 import { addBannerThread } from "../../utils/bannerChatStore";
 
@@ -38,9 +38,19 @@ export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[
   const navigate = useNavigate();
   const { user } = useAuth();
   const isSeller = (user?.role || "").toUpperCase() === "SELLER";
-  const showDownloadRequest = allowSellerDownloadRequest && isSeller;
+  const [isPremium, setIsPremium] = useState(false);
+  const showDownloadRequest = allowSellerDownloadRequest && isSeller && isPremium;
   const [hoveredBannerId, setHoveredBannerId] = useState(null);
   const [requesting, setRequesting] = useState(false);
+  const [brokenBannerIds, setBrokenBannerIds] = useState(() => new Set());
+  const markBannerBroken = (id) => setBrokenBannerIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+
+  useEffect(() => {
+    if (!allowSellerDownloadRequest || !isSeller) return;
+    getMyCompany()
+      .then((c) => setIsPremium(Boolean(c?.isPremium)))
+      .catch(() => setIsPremium(false));
+  }, [allowSellerDownloadRequest, isSeller]);
 
   const handleBannerRequest = async () => {
     if (requesting) return;
@@ -128,8 +138,13 @@ export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[
                   onClick={(e) => { if (wasDragged.current) e.preventDefault(); }}
                   className={`relative block h-full rounded-2xl overflow-hidden bg-ink-100 dark:bg-[#1C1C1C] ${banner.href ? "cursor-pointer" : "cursor-default"}`}
                 >
-                  <img src={banner.img} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover object-center blur-xl opacity-60 pointer-events-none" draggable={false} />
-                  <img src={banner.img} alt="banner" className="relative h-full w-full object-contain pointer-events-none" draggable={false} />
+                  {brokenBannerIds.has(banner.id) ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-ink-100 dark:bg-[#1C1C1C] text-ink-400 dark:text-ink-600 text-xs">
+                      {t("common.imageUnavailable")}
+                    </div>
+                  ) : (
+                    <img src={banner.img} alt="banner" loading="lazy" decoding="async" onError={() => markBannerBroken(banner.id)} className="absolute inset-0 h-full w-full object-cover object-center pointer-events-none" draggable={false} />
+                  )}
                 </a>
                 {showDownloadRequest && (
                   <button
@@ -146,8 +161,8 @@ export default function BannerCarousel({ banners, heightClass = "h-[8rem] sm:h-[
             ))}
           </motion.div>
         </AnimatePresence>
-        {effectivePerView === 1 && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent" />
+        {canSlide && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/35 to-transparent" />
         )}
       </div>
 

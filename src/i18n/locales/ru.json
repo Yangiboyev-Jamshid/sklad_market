@@ -1,6 +1,7 @@
 {
   "common": {
     "brand": "Sklad Market",
+    "imageUnavailable": "Изображение недоступно",
     "loading": "Загрузка...",
     "searchProduct": "Поиск товара",
     "searchCompany": "Поиск компании",
@@ -230,6 +231,11 @@
     "companyNotFound": "Компания не найдена",
     "write": "Написать",
     "call": "Позвонить",
+    "advertisingTitle": "Рекламный баннер",
+    "advertisingDesc": "Для размещения рекламного баннера обратитесь к администратору.",
+    "advertisingLockedDesc": "Размещение рекламного баннера доступно на тарифе Premium.",
+    "advertisingContactAdmin": "Обратиться к администратору",
+    "advertisingUpgrade": "Перейти на Premium",
     "map": "Карта",
     "mapWithShops": "Карта с магазинами",
     "allRegions": "Все регионы",

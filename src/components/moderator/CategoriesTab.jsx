@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Add, CloudAdd, Edit2, Trash } from "iconsax-reactjs";
+import SafeImage from "../ui/SafeImage";
 import {
   getAdminCategories,
   getCategoryTree,
@@ -59,15 +60,14 @@ function StatusBadge({ isActive }) {
 }
 
 function CategoryThumb({ iconUrl, className }) {
-  const [broken, setBroken] = useState(false);
-  const showImage = iconUrl && !broken;
   return (
     <div className={`rounded-xl overflow-hidden bg-ink-50 dark:bg-[#171717] shrink-0 flex items-center justify-center ${className}`}>
-      {showImage ? (
-        <img src={iconUrl} alt="" onError={() => setBroken(true)} className="w-full h-full object-cover" />
-      ) : (
-        <span className="text-ink-300">—</span>
-      )}
+      <SafeImage
+        src={iconUrl}
+        alt=""
+        className="w-full h-full object-cover"
+        fallback={<span className="text-ink-300">—</span>}
+      />
     </div>
   );
 }

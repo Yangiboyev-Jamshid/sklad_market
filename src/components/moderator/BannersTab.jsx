@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Add, CloudAdd, Edit2, Trash } from "iconsax-reactjs";
 import PillToggle from "../ui/PillToggle";
+import SafeImage from "../ui/SafeImage";
 import { getAdminBanners, createBanner, updateBanner, deleteBanner, uploadBannerImage } from "../../api/api";
 
 const PLACEMENTS = [
@@ -49,11 +50,12 @@ function BannerThumb({ imageUrl, className }) {
   const { t } = useTranslation();
   return (
     <div className={`rounded-xl overflow-hidden bg-ink-50 dark:bg-[#171717] shrink-0 flex items-center justify-center ${className}`}>
-      {imageUrl ? (
-        <img src={imageUrl} alt="" className="w-full h-full object-cover" />
-      ) : (
-        <span className="text-[10px] text-ink-400 px-2 text-center">{t("moderator.noImage")}</span>
-      )}
+      <SafeImage
+        src={imageUrl}
+        alt=""
+        className="w-full h-full object-cover"
+        fallback={<span className="text-[10px] text-ink-400 px-2 text-center">{t("moderator.noImage")}</span>}
+      />
     </div>
   );
 }

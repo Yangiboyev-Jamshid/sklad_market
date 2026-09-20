@@ -16,7 +16,7 @@ import { getPublicCompanyExtras } from "../utils/companyExtras";
 const MAP_PAGE_CAP = 10;
 
 async function fetchAllCatalogMapItems() {
-  const perPage = 200;
+  const perPage = 100;
   const first = await getCatalogMap({ page: 1, perPage });
   const items = [...(first?.items ?? [])];
   const totalPages = Math.min(first?.meta?.totalPages ?? 1, MAP_PAGE_CAP);

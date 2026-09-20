@@ -1,6 +1,7 @@
 {
   "common": {
     "brand": "Sklad Market",
+    "imageUnavailable": "Rasm mavjud emas",
     "loading": "Yuklanmoqda...",
     "searchProduct": "Mahsulot qidirish",
     "searchCompany": "Kompaniya qidirish",
@@ -230,6 +231,11 @@
     "companyNotFound": "Kompaniya topilmadi",
     "write": "Yozish",
     "call": "Qo'ng'iroq qilish",
+    "advertisingTitle": "Reklama banneri",
+    "advertisingDesc": "Reklama banner joylashtirish uchun administratorga murojaat qiling.",
+    "advertisingLockedDesc": "Reklama banner joylashtirish Premium tarif rejasida mavjud.",
+    "advertisingContactAdmin": "Administratorga murojaat qilish",
+    "advertisingUpgrade": "Premium tarifga o'tish",
     "map": "Xarita",
     "mapWithShops": "Do'konlar xaritasi",
     "allRegions": "Barcha hududlar",

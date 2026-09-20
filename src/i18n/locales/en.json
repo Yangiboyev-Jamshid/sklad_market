@@ -1,6 +1,7 @@
 {
   "common": {
     "brand": "Sklad Market",
+    "imageUnavailable": "Image unavailable",
     "loading": "Loading...",
     "searchProduct": "Search products",
     "searchCompany": "Search companies",
@@ -230,6 +231,11 @@
     "companyNotFound": "Company not found",
     "write": "Message",
     "call": "Call",
+    "advertisingTitle": "Advertising banner",
+    "advertisingDesc": "To place an advertising banner, contact the administrator.",
+    "advertisingLockedDesc": "Placing an advertising banner is available on the Premium plan.",
+    "advertisingContactAdmin": "Contact administrator",
+    "advertisingUpgrade": "Upgrade to Premium",
     "map": "Map",
     "mapWithShops": "Map of shops",
     "allRegions": "All regions",

@@ -19,6 +19,8 @@ import {
   SearchNormal1,
   Filter,
   Flag,
+  DocumentUpload,
+  Crown1,
 } from "iconsax-reactjs";
 import ReportModal from "../components/modal/ReportModal";
 import ReviewModal from "../components/modal/ReviewModal";
@@ -28,9 +30,12 @@ import MapView from "../components/ui/MapView";
 import PillToggle from "../components/ui/PillToggle";
 import RatingStars from "../components/ui/RatingStars";
 import { useAuth } from "../context/AuthContext";
-import { getCompanyBySlug, getMyCompany, getMyProducts, getCompanyProductsByCategory, getCompanyReviews, getCompanyRating, createCompanyReview, createChat, getCategoryTree, getCompanyBranches } from "../api/api";
+import { getCompanyBySlug, getMyCompany, getMyProducts, getCompanyProductsByCategory, getCompanyReviews, getCompanyRating, createCompanyReview, createChat, createBannerChat, getCategoryTree, getCompanyBranches } from "../api/api";
+import { connectSupportChatSocket, subscribeSupportThread, sendSupportChatMessage } from "../api/supportChatSocket";
+import { addBannerThread } from "../utils/bannerChatStore";
 import { CHAT_ENABLED } from "../config/chatConfig";
 import ProductCard from "../components/ui/ProductCard";
+import SafeImage from "../components/ui/SafeImage";
 import { getPublicCompanyExtras } from "../utils/companyExtras";
 import { flattenCategoryTree } from "../utils/categories";
 import { getLegalFormLabel } from "../data/legalForms";
@@ -62,7 +67,7 @@ const VERIFY_BADGE_KEYS = {
 };
 
 export default function ProfilePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const isOwnProfile = !id;
@@ -82,6 +87,7 @@ export default function ProfilePage() {
   const [showReport, setShowReport] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
   const chatSubmittingRef = useRef(false);
+  const [requestingBanner, setRequestingBanner] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewSummary, setReviewSummary] = useState({ rating: 0, count: 0 });
@@ -252,6 +258,24 @@ export default function ProfilePage() {
     }
   };
 
+  const handleBannerAdRequest = async () => {
+    if (requestingBanner) return;
+    setRequestingBanner(true);
+    try {
+      const subject = t("chat.bannerRequestTitle");
+      const data = await createBannerChat({ subject });
+      addBannerThread(user?.id, { thread_id: data.thread_id, subject });
+      connectSupportChatSocket(i18n.language || "uz");
+      subscribeSupportThread(data.thread_id);
+      sendSupportChatMessage(data.thread_id, t("chat.bannerRequestAutoMessage"), `opt-${Date.now()}`);
+      navigate(`/seller?tab=messages&thread=${data.thread_id}&type=support`);
+    } catch (err) {
+      alert(err.message || t("chat.temporarilyUnavailable"));
+    } finally {
+      setRequestingBanner(false);
+    }
+  };
+
   if (loading) {
     return (
       <AppShell>
@@ -361,23 +385,21 @@ export default function ProfilePage() {
 
         <div className="relative bg-white sm:pb-8 pt-20 dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] overflow-hidden mb-5 sm:mb-6 transition-colors">
           <div className="absolute top-0 left-0 right-0 bottom-[80%] sm:bottom-[50%] rounded-2xl -z-1 overflow-hidden bg-[#DEECFF] dark:bg-[#00183A]">
-            {backgroundUrl && (
-              <img src={backgroundUrl} alt="" className="w-full h-full object-cover" />
-            )}
+            <SafeImage src={backgroundUrl} alt="" className="w-full h-full object-cover" loading="eager" />
           </div>
           <div className="px-4 sm:px-6 pb-5 sm:pb-6 relative z-1">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-12 sm:-mt-10">
               <div className="flex items-start sm:items-end gap-3 sm:gap-4">
                 <div className="p-5 sm:p-10 rounded-full bg-white dark:bg-[#0D0D0D] text-white flex items-center justify-center font-bold text-lg sm:text-2xl shadow-card shrink-0 overflow-hidden">
-                  {logoUrl ? (
-                    <img
-                      src={logoUrl}
-                      alt={company.name}
-                      className="w-[48px] h-[48px] sm:w-[130px] sm:h-[130px] rounded-3xl object-cover"
-                    />
-                  ) : (
-                    <span className="bg-brand-600 w-[48px] h-[48px] sm:w-[130px] sm:h-[130px] rounded-3xl flex items-center justify-center text-[17px] sm:text-[46px]">{initials}</span>
-                  )}
+                  <SafeImage
+                    src={logoUrl}
+                    alt={company.name}
+                    className="w-[48px] h-[48px] sm:w-[130px] sm:h-[130px] rounded-3xl object-cover"
+                    loading="eager"
+                    fallback={
+                      <span className="bg-brand-600 w-[48px] h-[48px] sm:w-[130px] sm:h-[130px] rounded-3xl flex items-center justify-center text-[17px] sm:text-[46px]">{initials}</span>
+                    }
+                  />
                 </div>
                 <div className="pb-1 mt-8 sm:mb-0">
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -446,6 +468,40 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {isOwnProfile && (
+          <div className="bg-white dark:bg-[#0D0D0D] rounded-2xl border border-ink-100 dark:border-[#1C1C1C] p-4 sm:p-5 mb-5 sm:mb-6 transition-colors">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
+                  <Crown1 size={20} variant="Bold" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-ink-900 dark:text-white">{t("profile.advertisingTitle")}</p>
+                  <p className="text-xs text-ink-400 dark:text-ink-500 mt-0.5">
+                    {company.isPremium ? t("profile.advertisingDesc") : t("profile.advertisingLockedDesc")}
+                  </p>
+                </div>
+              </div>
+              {company.isPremium ? (
+                <button
+                  onClick={handleBannerAdRequest}
+                  disabled={requestingBanner}
+                  className="flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shrink-0"
+                >
+                  <DocumentUpload size={18} /> {requestingBanner ? "..." : t("profile.advertisingContactAdmin")}
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate("/tariffs")}
+                  className="flex items-center justify-center gap-2 border border-ink-200 dark:border-[#1C1C1C] hover:border-amber-300 dark:hover:border-amber-500 text-sm font-medium px-4 py-2.5 rounded-xl text-ink-700 dark:text-ink-200 transition-colors shrink-0"
+                >
+                  <Crown1 size={18} /> {t("profile.advertisingUpgrade")}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {showReview && (
           <ReviewModal
