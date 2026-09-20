@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import AppShell from "../components/layout/AppShell";
 import ProductThumb from "../components/ui/ProductThumb";
+import HelpHint from "../components/ui/HelpHint";
 import { useCart } from "../context/CartContext";
 import { Link, useNavigate } from "react-router-dom";
 import { checkoutRfq, createChat } from "../api/api";
@@ -141,6 +142,13 @@ export default function CartPage() {
                 <span className="text-xs text-ink-400 dark:text-ink-500">
                   {t("cart.selectedCount", { selected: selectedItems.length, total: items.length })}
                 </span>
+                <HelpHint
+                  id="cart-select-items"
+                  title={t("cart.selectHintTitle")}
+                  purpose={t("cart.selectHintPurpose")}
+                  steps={[t("cart.selectHintStep1"), t("cart.selectHintStep2")]}
+                  pitfalls={[t("cart.selectHintPitfall1")]}
+                />
               </div>
               <div className="sm:dark:bg-[#0D0D0D] sm:bg-white border-[#F0F0F0] sm:p-4 rounded-xl sm:border dark:border-[#1C1C1C] flex flex-col gap-3 sm:gap-4 mb-3">
                 {items.map((item, i) => {

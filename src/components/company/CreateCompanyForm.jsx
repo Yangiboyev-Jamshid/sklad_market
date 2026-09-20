@@ -5,6 +5,7 @@ import { geocodeAddress, suggestAddress, reverseGeocode } from "../../utils/geo"
 import LegalFormSelect from "../ui/LegalFormSelect";
 import RegionSelect from "../ui/RegionSelect";
 import MapView from "../ui/MapView";
+import HelpHint from "../ui/HelpHint";
 
 const LOCATION_ERROR_MESSAGES = {
   empty: "Введите адрес компании, чтобы определить координаты.",
@@ -137,8 +138,15 @@ export default function CreateCompanyForm({ onCreated }) {
           <LegalFormSelect value={legalForm} onChange={setLegalForm} />
         </div>
         <div>
-          <label className="text-xs font-medium text-ink-500 dark:text-ink-400 mb-1 block">
+          <label className="flex items-center gap-1.5 text-xs font-medium text-ink-500 dark:text-ink-400 mb-1">
             Регион *
+            <HelpHint
+              id="create-company-region"
+              title="Зачем указывать регион?"
+              purpose="Регион компании используется для фильтрации товаров по регионам в каталоге — покупатели смогут находить вас по местоположению."
+              steps={["Выберите регион из списка, ближайший к фактическому адресу компании."]}
+              pitfalls={["Регион нельзя оставить пустым — без него компанию не удастся создать."]}
+            />
           </label>
           <RegionSelect value={regionId} onChange={setRegionId} placeholder="Выберите регион" />
         </div>

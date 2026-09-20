@@ -20,6 +20,14 @@
     "close": "Close",
     "companyFallback": "Company #{{id}}"
   },
+  "helpHint": {
+    "open": "Help",
+    "close": "Close",
+    "howToUse": "How to use",
+    "requiredData": "Required data",
+    "pitfalls": "Watch out for",
+    "moreDetails": "Learn more"
+  },
   "nav": {
     "home": "Home",
     "catalog": "Catalog",
@@ -216,7 +224,12 @@
     "deliveryMethodPickup": "Self pickup",
     "selectAll": "Select all",
     "selectedCount": "{{selected}}/{{total}} selected",
-    "noneSelected": "Select at least one product to order"
+    "noneSelected": "Select at least one product to order",
+    "selectHintTitle": "Why select products?",
+    "selectHintPurpose": "Only the checked products will be sent in the request — the rest stay in your cart.",
+    "selectHintStep1": "Keep checked the products you want to order right now.",
+    "selectHintStep2": "The \"Send request\" button only applies to checked products.",
+    "selectHintPitfall1": "If nothing is checked, you won't be able to place an order."
   },
   "profile": {
     "verifiedStatus": "Verified",
@@ -415,6 +428,13 @@
     "unit": "Unit",
     "minOrder": "Min. order",
     "saleType": "Sale type",
+    "saleTypeHintTitle": "Why does sale type matter?",
+    "saleTypeHintPurpose": "Sets the terms for selling wholesale and/or retail. Each type has its own price and conditions.",
+    "saleTypeHintStep1": "Pick the type(s) you need (Wholesale and/or Retail) — you can select both.",
+    "saleTypeHintStep2": "Fill in the price, unit, and minimum quantity for each selected type.",
+    "saleTypeHintData1": "Price and unit of measure",
+    "saleTypeHintData2": "Minimum order quantity (for wholesale)",
+    "saleTypeHintPitfall1": "If no type is selected, the product won't be saved.",
     "selectSaleTypeRequired": "Select at least one sale type: wholesale or retail",
     "wholesaleFields": "Wholesale",
     "retailFields": "Retail",

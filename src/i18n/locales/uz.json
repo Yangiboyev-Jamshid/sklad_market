@@ -20,6 +20,14 @@
     "close": "Yopish",
     "companyFallback": "Kompaniya #{{id}}"
   },
+  "helpHint": {
+    "open": "Yordam",
+    "close": "Yopish",
+    "howToUse": "Qanday foydalanish",
+    "requiredData": "Kerakli ma'lumotlar",
+    "pitfalls": "Diqqat qiling",
+    "moreDetails": "Batafsil ko'rish"
+  },
   "nav": {
     "home": "Bosh sahifa",
     "catalog": "Katalog",
@@ -216,7 +224,12 @@
     "deliveryMethodPickup": "O'zi olib ketish",
     "selectAll": "Barchasini tanlash",
     "selectedCount": "{{selected}}/{{total}} tanlangan",
-    "noneSelected": "Buyurtma berish uchun mahsulot tanlang"
+    "noneSelected": "Buyurtma berish uchun mahsulot tanlang",
+    "selectHintTitle": "Nima uchun mahsulot tanlanadi?",
+    "selectHintPurpose": "Faqat belgilangan mahsulotlar bo'yicha so'rov yuboriladi — qolganlari savatda saqlanib qoladi.",
+    "selectHintStep1": "Hozir buyurtma bermoqchi bo'lgan mahsulotlar belgisini qoldiring.",
+    "selectHintStep2": "\"So'rov yuborish\" tugmasi faqat belgilangan mahsulotlar bo'yicha ishlaydi.",
+    "selectHintPitfall1": "Hech narsa belgilanmasa, buyurtma berib bo'lmaydi."
   },
   "profile": {
     "verifiedStatus": "Tasdiqlangan",
@@ -415,6 +428,13 @@
     "unit": "O'lchov birligi",
     "minOrder": "Min. buyurtma",
     "saleType": "Sotish turi",
+    "saleTypeHintTitle": "Sotish turi nima uchun kerak?",
+    "saleTypeHintPurpose": "Mahsulotni ulgurji va/yoki donalab sotish shartlarini belgilaydi. Har bir tur uchun alohida narx va shartlar ko'rsatiladi.",
+    "saleTypeHintStep1": "Kerakli turni (Optom va/yoki Donalab) tanlang — ikkalasini birga tanlash ham mumkin.",
+    "saleTypeHintStep2": "Har bir tanlangan tur uchun narx, birlik va minimal miqdorni to'ldiring.",
+    "saleTypeHintData1": "Narx va o'lchov birligi",
+    "saleTypeHintData2": "Minimal buyurtma miqdori (optom uchun)",
+    "saleTypeHintPitfall1": "Kamida bitta tur tanlanmasa, mahsulot saqlanmaydi.",
     "selectSaleTypeRequired": "Kamida bitta sotish turini tanlang: optom yoki donalab",
     "wholesaleFields": "Optom sotish",
     "retailFields": "Donalab sotish",

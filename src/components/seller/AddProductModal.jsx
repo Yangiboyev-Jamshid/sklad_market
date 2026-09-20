@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { ArrowDown2, CloudAdd, Trash } from "iconsax-reactjs";
+import HelpHint from "../ui/HelpHint";
 import { createProduct, publishProduct, uploadProductImages, getCategoryTree, getMyCompany, suggestListing } from "../../api/api";
 import { flattenCategoryTree } from "../../utils/categories";
 import { UNIT_OPTIONS } from "../../data/units";
@@ -228,8 +229,16 @@ export default function AddProductModal({ open, onClose, companyId }) {
               </div>
             </div>
 
-            <label className="text-sm font-medium text-ink-700 dark:text-ink-200 mb-2 block">
+            <label className="flex items-center gap-1.5 text-sm font-medium text-ink-700 dark:text-ink-200 mb-2">
               {t("seller.saleType")}
+              <HelpHint
+                id="add-product-sale-type"
+                title={t("seller.saleTypeHintTitle")}
+                purpose={t("seller.saleTypeHintPurpose")}
+                steps={[t("seller.saleTypeHintStep1"), t("seller.saleTypeHintStep2")]}
+                requiredData={[t("seller.saleTypeHintData1"), t("seller.saleTypeHintData2")]}
+                pitfalls={[t("seller.saleTypeHintPitfall1")]}
+              />
             </label>
             <div className="grid grid-cols-2 gap-3 mb-4">
               <SaleTypeCheckbox

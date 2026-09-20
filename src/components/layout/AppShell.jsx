@@ -1,5 +1,6 @@
 import SidebarRail from "./SidebarRail";
 import Header from "./Header";
+import PromoInterstitialManager from "./PromoInterstitialManager";
 
 export default function AppShell({ children }) {
   return (
@@ -9,6 +10,7 @@ export default function AppShell({ children }) {
         <Header />
         <main className="pb-3 sm:pb-16 md:pb-0">{children}</main>
       </div>
+      <PromoInterstitialManager />
     </div>
   );
 }
