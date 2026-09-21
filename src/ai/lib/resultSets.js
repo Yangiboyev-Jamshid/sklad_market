@@ -81,6 +81,79 @@ export function normalizeResultSets(value) {
   return value.slice(0, 20).map(normalizeResultSet);
 }
 
+export const RESULTS_PAGE_SIZE = 6;
+const DISCOVERY_KINDS = new Set([
+  "business_search", "supplier_recommendations", "buyer_recommendations", "buying_intent_matches",
+]);
+
+export function isDiscoveryResultSet(resultSet) {
+  return isRecord(resultSet) && DISCOVERY_KINDS.has(inferKind(resultSet));
+}
+
+function resultIdentityKeys(item, kind) {
+  const type = kind === "supplier_recommendations" ? "COMPANY" : item.type;
+  const entity = type === "PRODUCT" || type === "COMPANY";
+  const scope = entity ? type : kind;
+  const id = entity
+    ? item.id ?? (type === "PRODUCT" ? item.productId : item.companyId)
+    : item.leadId ?? item.intentId ?? item.id;
+  return [
+    id !== undefined && id !== null ? `${scope}:id:${id}` : null,
+    entity && item.slug ? `${scope}:slug:${item.slug}` : null,
+  ].filter(Boolean);
+}
+
+// A single answer may contain overlapping search/recommendation batches. Keep the server's
+// order and metadata, but display each discovery item once across the entire answer. Original
+// indices are retained so hiding cards cannot redirect a publish/close action to another set.
+export function prepareResultSections(resultSets) {
+  const seen = new Map();
+  const emptyKinds = new Set();
+  const sections = [];
+  let totalCount = 0;
+  const normalized = Array.isArray(resultSets) ? resultSets.map(normalizeResultSet) : [];
+  for (const [index, resultSet] of normalized.entries()) {
+    const paginated = DISCOVERY_KINDS.has(resultSet.kind) && !resultSet.invalid;
+    if (!paginated) {
+      sections.push({ index, resultSet, paginated });
+      continue;
+    }
+    const items = [];
+    for (const item of resultSet.items) {
+      const keys = resultIdentityKeys(item, resultSet.kind);
+      const existing = keys.map((key) => seen.get(key)).find(Boolean);
+      if (existing) {
+        // Keep the first result's ranking/snapshot. A later detail or recommendation lookup
+        // may supply missing media or an explicit public-contact status for this same entity.
+        for (const field of ["slug", "name", "imageUrl", "logoUrl", "thumbnailUrl", "images"]) {
+          if (existing[field] == null || existing[field] === "") existing[field] = item[field];
+        }
+        if (item.contactStatus && item.contactStatus !== "NOT_CHECKED") {
+          existing.contactStatus = item.contactStatus;
+          existing.contact = item.contact;
+        }
+        keys.forEach((key) => seen.set(key, existing));
+        continue;
+      }
+      const copy = { ...item };
+      keys.forEach((key) => seen.set(key, copy));
+      items.push(copy);
+    }
+    if (resultSet.items.length > 0 && items.length === 0) continue;
+    if (items.length === 0 && emptyKinds.has(resultSet.kind)) continue;
+    if (items.length === 0) emptyKinds.add(resultSet.kind);
+    totalCount += items.length;
+    sections.push({ index, resultSet: { ...resultSet, items }, paginated });
+  }
+  const populatedKinds = new Set(sections.filter(({ resultSet }) => resultSet.items.length > 0)
+    .map(({ resultSet }) => resultSet.kind));
+  return {
+    sections: sections.filter(({ resultSet, paginated }) =>
+      !paginated || resultSet.items.length > 0 || !populatedKinds.has(resultSet.kind)),
+    totalCount,
+  };
+}
+
 export function updateIntentInResultSet(resultSet, intentId, update) {
   if (!resultSet || !intentId) return resultSet;
   const expected = String(intentId);

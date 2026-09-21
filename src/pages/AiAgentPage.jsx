@@ -262,9 +262,12 @@ function RealAiAgentPage() {
   const initialPrompt = String(searchParams.get("prompt") || "").trim().slice(0, 4000);
   const startNewChat = searchParams.get("new") === "1";
   useEffect(() => {
+    if (!startNewChat && !initialPrompt) {
+      consumedPromptRef.current = null;
+      return;
+    }
     const promptKey = `${startNewChat ? "new" : "continue"}:${initialPrompt}`;
     if (
-      (!startNewChat && !initialPrompt) ||
       !accountKey ||
       (!startNewChat && initialPrompt && interactionDisabled) ||
       consumedPromptRef.current === promptKey

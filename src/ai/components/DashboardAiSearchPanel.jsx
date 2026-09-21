@@ -21,6 +21,7 @@ function resultPath(item) {
 }
 
 function formatScore(value) {
+  if (value === null || value === undefined || asText(value) === "") return null;
   const score = Number(value);
   if (!Number.isFinite(score)) return null;
   return Math.round(Math.max(0, Math.min(1, score)) * 100);
@@ -40,7 +41,7 @@ function ResultRow({ item, locale, t }) {
   const score = formatScore(item.relevance);
   const reasons = Array.isArray(item.reasons) ? item.reasons.slice(0, 2) : [];
   const price = Number(item.price);
-  const priceLabel = Number.isFinite(price)
+  const priceLabel = type === "PRODUCT" && asText(item.price) !== "" && Number.isFinite(price)
     ? `${new Intl.NumberFormat(locale).format(price)} ${asText(item.currency)}`.trim()
     : null;
   const content = (
@@ -63,7 +64,7 @@ function ResultRow({ item, locale, t }) {
 
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-500 dark:text-ink-400">
         {priceLabel && <span>{priceLabel}</span>}
-        {Number.isFinite(Number(item.productCount)) && (
+        {type === "COMPANY" && asText(item.productCount) !== "" && Number.isFinite(Number(item.productCount)) && (
           <span>{t("home.aiAssistant.panel.productCount", { count: Number(item.productCount) })}</span>
         )}
         {asText(item.verificationStatus).toUpperCase() === "VERIFIED" && (

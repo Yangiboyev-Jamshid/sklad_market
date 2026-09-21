@@ -5,6 +5,7 @@ import DraftLeadCard from "./DraftLeadCard";
 import StructuredResults from "./StructuredResults";
 import AiAgentLogo from "./AiAgentLogo";
 import { t, useAiLocale } from "../i18n";
+import { isDiscoveryResultSet } from "../lib/resultSets";
 
 function formatMessageTime(value, locale) {
   if (!value) return null;
@@ -28,8 +29,8 @@ export default function MessageBubble({
   const isUser = message.role === "user";
   // The user's own prompt is the authority for suppressing cards. A model-selected tool
   // argument must never hide grounded results when the user did not request plain text.
-  const visibleResultSets = plainTextOnly ? [] : (message.resultSets ?? []);
-  const hasResults = !isUser && visibleResultSets.length > 0;
+  const resultSets = message.resultSets ?? [];
+  const hasResults = !isUser && resultSets.some((set) => !plainTextOnly || !isDiscoveryResultSet(set));
   const messageTime = formatMessageTime(message.createdAt, locale);
 
   return (
@@ -70,7 +71,8 @@ export default function MessageBubble({
 
         {hasResults && (
           <StructuredResults
-            resultSets={visibleResultSets}
+            resultSets={resultSets}
+            plainTextOnly={plainTextOnly}
             onPublishIntent={(resultSetIndex, intentId) =>
               onPublishIntent?.(message.id, resultSetIndex, intentId)
             }

@@ -356,6 +356,7 @@ export async function streamAiMessage({ conversationId, content, onEvent, signal
     const decoder = new TextDecoder();
     let terminalEventSeen = false;
     const parser = createSseParser((event) => {
+      if (terminalEventSeen) return;
       if (event.event === "done" || event.event === "error") terminalEventSeen = true;
       onEvent?.(event);
     });

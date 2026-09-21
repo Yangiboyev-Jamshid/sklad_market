@@ -1,10 +1,33 @@
-import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import MessageBubble from "../MessageBubble";
+import ChatMessages from "../ChatMessages";
 import { setAiLocale } from "../../i18n";
 
 describe("MessageBubble timestamps", () => {
   beforeEach(() => setAiLocale("en"));
+
+  it("keeps plain-text preferences across an assistant turn without hiding confirmation controls", () => {
+    const publish = vi.fn();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(
+      <MemoryRouter>
+        <ChatMessages onPublishIntent={publish} messages={[
+          { id: "u1", role: "user", text: "Find steel, plain text only, and draft a buying request" },
+          { id: "a1", role: "assistant", text: "Searching." },
+          { id: "a2", role: "assistant", text: "Please confirm before publishing.", resultSets: [
+            { kind: "business_search", items: [{ type: "PRODUCT", id: 1, slug: "steel", name: "Steel card" }] },
+            { kind: "buying_intent_draft", items: [{ intentId: "intent-1", status: "DRAFT", category: "Steel" }] },
+          ] },
+        ]} />
+      </MemoryRouter>
+    );
+    expect(screen.queryByRole("link", { name: "Steel card" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Publish for matching" }));
+    expect(publish).toHaveBeenCalledWith("a2", 1, "intent-1");
+    confirm.mockRestore();
+  });
 
   it("shows the saved prompt and output times with machine-readable timestamps", () => {
     const { rerender } = render(

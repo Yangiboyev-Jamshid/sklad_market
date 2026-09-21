@@ -277,6 +277,50 @@ describe("StructuredResults", () => {
     expect(screen.getByText(/cannot be displayed safely/i)).toBeInTheDocument();
   });
 
+  it("deduplicates overlapping tool results and reveals only six cards at a time", () => {
+    const products = Array.from({ length: 12 }, (_, id) => ({
+      type: "PRODUCT", id, slug: `steel-${id}`, name: `Steel ${id}`, imageUrl: "/steel.jpg",
+    }));
+    renderResults([
+      { kind: "business_search", items: products },
+      { kind: "business_search", items: products },
+      { kind: "business_search", items: products },
+    ]);
+
+    expect(screen.getAllByRole("link")).toHaveLength(6);
+    expect(screen.getByText("Showing 6 of 12 results")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show more" }));
+    expect(screen.getAllByRole("link")).toHaveLength(12);
+    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show less" }));
+    expect(screen.getAllByRole("link")).toHaveLength(6);
+  });
+
+  it("shares the card limit across searches and recommendations without hiding draft actions", () => {
+    const publish = vi.fn();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const companies = Array.from({ length: 5 }, (_, id) => ({
+      type: "COMPANY", id, companyId: id, slug: `supplier-${id}`, name: `Supplier ${id}`, logoUrl: "/logo.jpg",
+    }));
+    renderResults([
+      { kind: "business_search", items: companies },
+      { kind: "supplier_recommendations", items: companies.map((company) => ({
+        ...company,
+        contactStatus: "AVAILABLE",
+        contact: { phonePrimary: `+99890123456${company.id}` },
+      })) },
+      { kind: "business_search", items: [{ type: "PRODUCT", id: 0, slug: "steel", name: "Steel", imageUrl: "/steel.jpg" }] },
+      { kind: "buying_intent_draft", items: [{ intentId: "draft-1", status: "DRAFT", category: "Steel" }] },
+    ], { onPublishIntent: publish });
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(7); // Six entities plus the actionable draft.
+    expect(screen.getAllByRole("link", { name: "Supplier 0" })).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "+998901234560" })).toHaveAttribute("href", "tel:+998901234560");
+    expect(screen.getByRole("link", { name: "Steel" })).toHaveAttribute("href", "/product/steel");
+    fireEvent.click(screen.getByRole("button", { name: "Publish for matching" }));
+    expect(publish).toHaveBeenCalledWith(3, "draft-1");
+  });
+
   it("makes owner-list pagination explicit", () => {
     renderResults([
       {

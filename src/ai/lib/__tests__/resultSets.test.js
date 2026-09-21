@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeResultSet, normalizeResultSets, updateIntentInResultSet } from "../resultSets";
+import { normalizeResultSet, normalizeResultSets, prepareResultSections, updateIntentInResultSet } from "../resultSets";
 
 describe("structured result normalization", () => {
   it("keeps a canonical business result and bounds its item collection", () => {
@@ -31,6 +31,15 @@ describe("structured result normalization", () => {
   it("turns malformed payloads into an inert unavailable state", () => {
     expect(normalizeResultSet(null)).toEqual({ kind: "unknown", items: [], invalid: true });
     expect(normalizeResultSets("not-an-array")).toEqual([]);
+  });
+
+  it("removes an intermediate empty search notice once another search finds matches", () => {
+    const { sections, totalCount } = prepareResultSections([
+      { kind: "business_search", items: [] },
+      { kind: "business_search", items: [{ type: "PRODUCT", id: 1, slug: "steel" }] },
+    ]);
+    expect(totalCount).toBe(1);
+    expect(sections.map(({ index }) => index)).toEqual([1]);
   });
 
   it("updates only the selected intent without mutating the original result", () => {

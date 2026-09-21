@@ -10,8 +10,12 @@ import {
 import { t } from "../i18n";
 
 function isAdmin(role) {
-  const normalized = String(role ?? "").toUpperCase();
-  return normalized.includes("SUPER_ADMIN") || normalized.includes("ADMIN");
+  const normalized = String(role ?? "").trim().toUpperCase().replace(/^ROLE_/, "");
+  return normalized === "SUPER_ADMIN" || normalized === "ADMIN";
+}
+
+function quotaNumber(value) {
+  return String(value ?? "").trim() === "" ? NaN : Number(value);
 }
 
 function withDraft(item) {
@@ -82,8 +86,8 @@ function RoleQuotaControls() {
 
   const persist = async (roleName, hourlyValue, dailyValue) => {
     const normalizedRole = String(roleName ?? "").trim().toUpperCase();
-    const hourlyRequestLimit = Number(hourlyValue);
-    const dailyRequestLimit = Number(dailyValue);
+    const hourlyRequestLimit = quotaNumber(hourlyValue);
+    const dailyRequestLimit = quotaNumber(dailyValue);
     if (!validRoleName(normalizedRole)) {
       setError(t("admin.rateLimits.roles.invalidRole"));
       return false;
@@ -288,8 +292,8 @@ export default function AiRateLimitAdminPanel({ role }) {
   };
 
   const save = async (row) => {
-    const requestsPerMinute = Number(row.rpmDraft);
-    const dailyTokenBudget = Number(row.budgetDraft);
+    const requestsPerMinute = quotaNumber(row.rpmDraft);
+    const dailyTokenBudget = quotaNumber(row.budgetDraft);
     if (!Number.isInteger(requestsPerMinute) || requestsPerMinute < 0 || requestsPerMinute > 10000) {
       setError(t("admin.rateLimits.invalidRpm"));
       return;

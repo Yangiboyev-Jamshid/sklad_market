@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { Link, MemoryRouter } from "react-router-dom";
 import AiAgentPage from "../../pages/AiAgentPage";
 import { AiStreamError } from "../api/aiClient";
 import { setAiLocale } from "../i18n";
@@ -136,6 +136,30 @@ describe("AiAgentPage — flag on, logged in (streaming happy path)", () => {
     expect(screen.getByPlaceholderText("Спросите что-нибудь...")).toHaveValue("");
     expect(streamAiMessageMock).not.toHaveBeenCalled();
     expect(createConversationMock).not.toHaveBeenCalled();
+  });
+
+  it("can open the same dashboard prompt again as a distinct new chat", async () => {
+    createConversationMock
+      .mockResolvedValueOnce({ id: "first-chat" })
+      .mockResolvedValueOnce({ id: "second-chat" });
+    streamAiMessageMock.mockImplementation(async ({ onEvent }) => {
+      onEvent({ event: "token", data: { text: "Found suppliers." } });
+      onEvent({ event: "done", data: {} });
+    });
+    const path = "/ai-agent?new=1&prompt=Find%20steel";
+    render(
+      <MemoryRouter initialEntries={[path]}>
+        <Link to={path}>Open prompt again</Link>
+        <AiAgentPage />
+      </MemoryRouter>
+    );
+    await screen.findByText("Found suppliers.");
+    expect(streamAiMessageMock).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("link", { name: "Open prompt again" }));
+    await waitFor(() => expect(streamAiMessageMock).toHaveBeenCalledTimes(2));
+    expect(streamAiMessageMock).toHaveBeenLastCalledWith(expect.objectContaining({
+      conversationId: "second-chat", content: "Find steel",
+    }));
   });
 
   it("shows tool status chips while a tool is running, then resolves", async () => {

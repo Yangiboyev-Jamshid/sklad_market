@@ -22,23 +22,26 @@ export default function ChatMessages({
     bottomRef.current?.scrollIntoView?.({ behavior: "smooth", block: "end" });
   }, [messages]);
 
+  let plainTextOnly = false;
+  const bubbles = [];
+  for (const message of messages) {
+    if (message.role === "user") plainTextOnly = wantsPlainEntityList(message.text);
+    bubbles.push(
+      <MessageBubble
+        key={message.id}
+        message={message}
+        plainTextOnly={message.role !== "user" && plainTextOnly}
+        onConfirmDraft={onConfirmDraft}
+        onCancelDraft={onCancelDraft}
+        onPublishIntent={onPublishIntent}
+        onCloseIntent={onCloseIntent}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3 py-4">
-      <AnimatePresence>
-        {messages.map((m, index) => (
-          <MessageBubble
-            key={m.id}
-            message={m}
-            plainTextOnly={
-              m.role !== "user" && wantsPlainEntityList(messages[index - 1]?.text)
-            }
-            onConfirmDraft={onConfirmDraft}
-            onCancelDraft={onCancelDraft}
-            onPublishIntent={onPublishIntent}
-            onCloseIntent={onCloseIntent}
-          />
-        ))}
-      </AnimatePresence>
+      <AnimatePresence>{bubbles}</AnimatePresence>
       <div ref={bottomRef} />
     </div>
   );

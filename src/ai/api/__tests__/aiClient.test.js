@@ -91,6 +91,18 @@ describe("streamAiMessage", () => {
     ).rejects.toMatchObject({ code: "network" });
   });
 
+  it.each(["done", "error"])("ignores trailing frames after %s in the same network chunk", async (terminal) => {
+    fetch.mockResolvedValue(streamingResponse([
+      'event: token\ndata: {"text":"Answer"}\n\n' +
+      `event: ${terminal}\ndata: {}\n\n` +
+      'event: token\ndata: {"text":"unexpected duplicate"}\n\n' +
+      'event: result_set\ndata: {"items":[]}\n\n',
+    ]));
+    const onEvent = vi.fn();
+    await streamAiMessage({ conversationId: "c1", content: "hello", onEvent });
+    expect(onEvent.mock.calls.map(([frame]) => frame.event)).toEqual(["token", terminal]);
+  });
+
   it("reports external abort as cancellation, not timeout", async () => {
     fetch.mockResolvedValue(streamingResponse([], { neverFinish: true }));
     const controller = new AbortController();

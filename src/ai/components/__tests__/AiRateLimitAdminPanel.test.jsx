@@ -30,10 +30,28 @@ describe("AiRateLimitAdminPanel", () => {
     listRoleQuotasMock.mockResolvedValue([]);
   });
 
-  it("is isolated from non-admin chat users", () => {
-    render(<AiRateLimitAdminPanel role="BUYER" />);
+  it.each(["BUYER", "SELLER", "ADMIN_ASSISTANT"])("is isolated from non-admin role %s", (role) => {
+    render(<AiRateLimitAdminPanel role={role} />);
     expect(screen.queryByText("AI usage controls")).not.toBeInTheDocument();
     expect(listMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects blank user and role quotas instead of saving zero", async () => {
+    listMock.mockResolvedValue([{
+      userSub: "buyer-1", effectiveRequestsPerMinute: 10, effectiveDailyTokenBudget: 1000,
+    }]);
+    render(<AiRateLimitAdminPanel role="ROLE_ADMIN" />);
+    fireEvent.click(screen.getByRole("button", { name: /AI usage controls/i }));
+    const rpm = await screen.findByRole("spinbutton", { name: "Requests per minute for buyer-1" });
+    fireEvent.change(rpm, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(updateMock).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "New AI quota role" }), { target: { value: "PREMIUM" } });
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Hourly request limit for the new role" }), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add role" }));
+    expect(updateRoleQuotaMock).not.toHaveBeenCalled();
+    expect(screen.getAllByRole("alert")).toHaveLength(2);
   });
 
   it("lets an admin change one user's chat-only RPM", async () => {

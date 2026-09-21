@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAllProducts, getPublicCompanies } from "../../api/api";
 import { getAiLocale, t } from "../i18n";
+import { prepareResultSections, RESULTS_PAGE_SIZE } from "../lib/resultSets";
 
 const LOCALE_TAGS = { ru: "ru-RU", uz: "uz-UZ", en: "en-US" };
 const ENTITY_IMAGE_CATALOG_CACHE = new Map();
@@ -19,6 +20,7 @@ function localizedValue(group, value) {
 }
 
 function formatNumber(value, options) {
+  if (value === null || value === undefined || asText(value) === "") return "";
   const number = Number(value);
   if (!Number.isFinite(number)) return "";
   return new Intl.NumberFormat(LOCALE_TAGS[getAiLocale()] ?? "ru-RU", options).format(number);
@@ -58,11 +60,13 @@ function formatDateTime(value) {
 }
 
 function countValue(value) {
+  if (value === null || value === undefined || asText(value) === "") return null;
   const number = Number(value);
   return Number.isSafeInteger(number) && number >= 0 ? number : null;
 }
 
 function percent(value, scale) {
+  if (value === null || value === undefined || asText(value) === "") return null;
   const number = Number(value);
   if (!Number.isFinite(number)) return null;
   const normalized = scale === "fraction" ? number * 100 : number;
@@ -314,7 +318,7 @@ function BusinessCard({ item, supplier = false, indexFreshness }) {
         </div>
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-500 dark:text-ink-400">
           {price && <span>{t(type === "PRODUCT" ? "results.price" : "results.priceRange")}: {price}</span>}
-          {Number.isFinite(Number(item.productCount)) && (
+          {type === "COMPANY" && countValue(item.productCount) !== null && (
             <span>{t("results.productCount", { count: Number(item.productCount) })}</span>
           )}
         </div>
@@ -582,7 +586,7 @@ function ResultMetadata({ resultSet, business, buyer, intentMatch, ownIntents })
   );
 }
 
-function ResultSet({ resultSet, index, onPublishIntent, onCloseIntent }) {
+function ResultSet({ resultSet, index, totalCount, onPublishIntent, onCloseIntent }) {
   const { kind, items = [] } = resultSet;
   const isSupplier = kind === "supplier_recommendations";
   const isBuyer = kind === "buyer_recommendations";
@@ -595,7 +599,7 @@ function ResultSet({ resultSet, index, onPublishIntent, onCloseIntent }) {
     <section aria-label={titleFor(kind)} className="mt-3 rounded-2xl bg-ink-50/80 p-3 dark:bg-[#0A0A0A]">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-ink-900 dark:text-white">{titleFor(kind)}</h3>
-        {!invalid && <span className="text-xs text-ink-400">{t("results.found", { count: items.length })}</span>}
+        {!invalid && <span className="text-xs text-ink-400">{t("results.found", { count: totalCount ?? items.length })}</span>}
       </div>
       {!invalid && (
         <ResultMetadata
@@ -653,19 +657,57 @@ function ResultSet({ resultSet, index, onPublishIntent, onCloseIntent }) {
   );
 }
 
-export default function StructuredResults({ resultSets, onPublishIntent, onCloseIntent }) {
-  if (!Array.isArray(resultSets) || resultSets.length === 0) return null;
+export default function StructuredResults({ resultSets, onPublishIntent, onCloseIntent, plainTextOnly = false }) {
+  const [visibleCount, setVisibleCount] = useState(RESULTS_PAGE_SIZE);
+  const { sections, totalCount } = useMemo(() => prepareResultSections(resultSets), [resultSets]);
+  if (sections.length === 0) return null;
+  let remaining = visibleCount;
+  const visibleSections = [];
+  for (const section of sections) {
+    if (plainTextOnly && section.paginated) continue;
+    if (!section.paginated || section.resultSet.items.length === 0) {
+      visibleSections.push(section);
+      continue;
+    }
+    const items = section.resultSet.items.slice(0, remaining);
+    remaining -= items.length;
+    if (items.length) visibleSections.push({
+      ...section,
+      totalCount: section.resultSet.items.length,
+      resultSet: { ...section.resultSet, items },
+    });
+  }
   return (
     <div className="space-y-3">
-      {resultSets.map((resultSet, index) => (
+      {visibleSections.map(({ resultSet, index, totalCount: sectionCount }) => (
         <ResultSet
           key={`${resultSet.kind}-${index}`}
           resultSet={resultSet}
           index={index}
+          totalCount={sectionCount}
           onPublishIntent={onPublishIntent}
           onCloseIntent={onCloseIntent}
         />
       ))}
+      {!plainTextOnly && totalCount > RESULTS_PAGE_SIZE && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+          <span className="text-ink-500 dark:text-ink-400" role="status">
+            {t("results.visibleCount", { shown: Math.min(visibleCount, totalCount), total: totalCount })}
+          </span>
+          <div className="flex gap-3">
+            {visibleCount > RESULTS_PAGE_SIZE && (
+              <button type="button" onClick={() => setVisibleCount(RESULTS_PAGE_SIZE)} className="rounded px-2 py-1 font-semibold text-brand-600 focus-visible:outline focus-visible:outline-2 dark:text-brand-400">
+                {t("results.showLess")}
+              </button>
+            )}
+            {visibleCount < totalCount && (
+              <button type="button" onClick={() => setVisibleCount((count) => count + RESULTS_PAGE_SIZE)} className="rounded px-2 py-1 font-semibold text-brand-600 focus-visible:outline focus-visible:outline-2 dark:text-brand-400">
+                {t("results.showMore")}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

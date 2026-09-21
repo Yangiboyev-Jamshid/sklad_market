@@ -708,6 +708,22 @@ describe("useAiChat", () => {
     expect(logout).toHaveBeenCalledTimes(1);
   });
 
+  it.each([false, true])("aborts the active stream on unmount (new chat: %s)", async (startFresh) => {
+    let streamSignal;
+    streamAiMessageMock.mockImplementation(({ signal }) => new Promise((resolve) => {
+      streamSignal = signal;
+      signal.addEventListener("abort", resolve, { once: true });
+    }));
+    const { result, unmount } = renderHook(() => useAiChat({ accountKey: "buyer-1" }));
+    if (startFresh) act(() => result.current.startFreshConversation());
+    let pending;
+    await act(async () => { pending = result.current.send("Find steel"); });
+    expect(streamSignal.aborted).toBe(false);
+    unmount();
+    expect(streamSignal.aborted).toBe(true);
+    await pending;
+  });
+
   describe("draft events and confirm/cancel", () => {
     async function sendWithDraft() {
       streamAiMessageMock.mockImplementation(async ({ onEvent }) => {
@@ -747,6 +763,26 @@ describe("useAiChat", () => {
 
       expect(confirmDraftMock).toHaveBeenCalledWith("draft-1", { contactPhone: "+998900000000" });
       expect(result.current.messages[1].draft).toMatchObject({ status: "confirmed", leadId: 101, pending: false });
+    });
+
+    it("locks Confirm and Cancel together before React rerenders", async () => {
+      const result = await sendWithDraft();
+      const assistantId = result.current.messages[1].id;
+      let finish;
+      confirmDraftMock.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+      let pending;
+      await act(async () => {
+        pending = result.current.confirmDraft(assistantId, "draft-1");
+        expect(await result.current.confirmDraft(assistantId, "draft-1")).toBe(false);
+        expect(await result.current.cancelDraft(assistantId, "draft-1")).toBe(false);
+      });
+      expect(confirmDraftMock).toHaveBeenCalledTimes(1);
+      expect(cancelDraftMock).not.toHaveBeenCalled();
+      await act(async () => {
+        finish({ leadId: 101 });
+        await pending;
+      });
+      expect(result.current.messages[1].draft.status).toBe("confirmed");
     });
 
     it("cancelDraft marks the draft cancelled", async () => {

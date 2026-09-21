@@ -520,6 +520,7 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
   const historyBlockedRef = useRef(false);
   const sendLockRef = useRef(null);
   const intentActionLocksRef = useRef(new Set());
+  const draftActionLocksRef = useRef(new Set());
 
   useEffect(
     () => onAiUnauthenticated(onUnauthenticated),
@@ -597,9 +598,12 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
     }
 
     return () => {
-      if (sessionEpochRef.current === epoch) sessionEpochRef.current += 1;
+      // New Chat/history switches can advance the epoch without rerunning this effect.
+      // Always invalidate and abort the current operation when this session unmounts.
+      sessionEpochRef.current += 1;
       controller.abort();
-      if (operationAbortRef.current === controller) operationAbortRef.current = null;
+      operationAbortRef.current?.abort();
+      operationAbortRef.current = null;
     };
   }, [hydrateConversation, normalizedAccountKey]);
 
@@ -781,7 +785,9 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
   const confirmDraft = useCallback(async (messageId, draftId, overrides) => {
     const epoch = sessionEpochRef.current;
     const capturedAccountKey = renderedAccountKeyRef.current;
-    if (!capturedAccountKey) return false;
+    const lockKey = `${epoch}:${draftId}`;
+    if (!capturedAccountKey || !draftId || draftActionLocksRef.current.has(lockKey)) return false;
+    draftActionLocksRef.current.add(lockKey);
     dispatch({ type: "DRAFT_ACTION_START", assistantId: messageId });
     try {
       const result = await confirmDraftRequest(draftId, overrides);
@@ -798,13 +804,17 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
         dispatch({ type: "DRAFT_ACTION_ERROR", assistantId: messageId, error: error.message });
       }
       return false;
+    } finally {
+      draftActionLocksRef.current.delete(lockKey);
     }
   }, [isCurrentSession]);
 
   const cancelDraft = useCallback(async (messageId, draftId) => {
     const epoch = sessionEpochRef.current;
     const capturedAccountKey = renderedAccountKeyRef.current;
-    if (!capturedAccountKey) return false;
+    const lockKey = `${epoch}:${draftId}`;
+    if (!capturedAccountKey || !draftId || draftActionLocksRef.current.has(lockKey)) return false;
+    draftActionLocksRef.current.add(lockKey);
     dispatch({ type: "DRAFT_ACTION_START", assistantId: messageId });
     try {
       await cancelDraftRequest(draftId);
@@ -817,6 +827,8 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
         dispatch({ type: "DRAFT_ACTION_ERROR", assistantId: messageId, error: error.message });
       }
       return false;
+    } finally {
+      draftActionLocksRef.current.delete(lockKey);
     }
   }, [isCurrentSession]);
 
