@@ -760,7 +760,6 @@ function normalizeChatDateValue(value) {
     const [year, month, day, hour = 0, minute = 0, second = 0, nano = 0] = value;
     if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
       const ms = Math.floor(Number(nano) / 1_000_000);
-      const date = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second), ms);
       const pad = (num) => String(num).padStart(2, "0");
       const msPart = ms ? `.${String(ms).padStart(3, "0")}` : "";
       return `${Number(year)}-${pad(Number(month))}-${pad(Number(day))}T${pad(Number(hour))}:${pad(Number(minute))}:${pad(Number(second))}${msPart}`;

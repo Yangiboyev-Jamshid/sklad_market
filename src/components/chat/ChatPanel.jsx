@@ -79,12 +79,6 @@ function formatTime(iso) {
   return `${day}.${month}.${year} ${hours}:${minutes}`;
 }
 
-function getMessageSentAt(message) {
-  if (!message) return null;
-  const raw = message.sent_at ?? message.sentAt ?? message.created_at ?? message.createdAt ?? message.last_message_at ?? message.lastMessageAt ?? message.timestamp ?? null;
-  return parseChatDate(raw) ? raw : null;
-}
-
 function sameUserId(a, b) {
   if (a == null || b == null) return a == null && b == null;
   return Number(a) === Number(b);

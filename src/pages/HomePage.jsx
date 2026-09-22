@@ -13,7 +13,6 @@ import { usePublicBanners } from "../hooks/usePublicBanners";
 import { getPublicCompanyExtras } from "../utils/companyExtras";
 import { useAuth } from "../context/AuthContext";
 import DashboardAiAssistant from "../components/ai/DashboardAiAssistant";
-import { shouldShowAiBanner } from "../utils/aiOnboarding";
 import DashboardAiSearchPanel from "../components/ai/DashboardAiSearchPanel";
 
 function levenshtein(a, b) {
@@ -70,7 +69,6 @@ function normalizeProduct(p, imageMap, companyMap, t) {
 export default function HomePage() {
   const { t } = useTranslation();
   const { user, isLoggedIn } = useAuth();
-  const [aiBannerVisible, setAiBannerVisible] = useState(() => shouldShowAiBanner(user, isLoggedIn));
   const [isOpen, setIsOpen] = useState(false);
   const [saleType, setSaleType] = useState("wholesale");
   const [query, setQuery] = useState("");
@@ -235,12 +233,9 @@ export default function HomePage() {
           )}
         </div>
 
-        {aiBannerVisible && (
-          <div className="mb-6 sm:mb-8 relative z-1">
-            <DashboardAiAssistant user={user} isLoggedIn={isLoggedIn} onDismiss={() => setAiBannerVisible(false)} />
-          </div>
-        )}
-
+        <div className="mb-6 sm:mb-8 relative z-1">
+          <DashboardAiAssistant user={user} />
+        </div>
         <div className="mb-6 sm:mb-8 overflow-x-auto relative z-1">
           <PillToggle
             options={[
