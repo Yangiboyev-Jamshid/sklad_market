@@ -736,6 +736,8 @@
     "noConversations": "Hozircha suhbatlar yo'q",
     "placeholder": "Savolingizni yozing...",
     "thinking": "Yozmoqda...",
+    "showMore": "Ko'proq",
+    "showLess": "Kamroq",
     "deleteConversation": "Suhbatni o'chirish",
     "deleteConversationConfirm": "Ushbu suhbat o'chirilsinmi?",
     "errorGeneric": "Xatolik yuz berdi. Qayta urinib ko'ring",

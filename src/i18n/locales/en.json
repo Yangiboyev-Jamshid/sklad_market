@@ -736,6 +736,8 @@
     "noConversations": "No conversations yet",
     "placeholder": "Type your question...",
     "thinking": "Typing...",
+    "showMore": "Show more",
+    "showLess": "Show less",
     "deleteConversation": "Delete conversation",
     "deleteConversationConfirm": "Delete this conversation?",
     "errorGeneric": "Something went wrong. Please try again",

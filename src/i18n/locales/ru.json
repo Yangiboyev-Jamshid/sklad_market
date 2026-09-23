@@ -736,6 +736,8 @@
     "noConversations": "Пока нет чатов",
     "placeholder": "Напишите свой вопрос...",
     "thinking": "Печатает...",
+    "showMore": "Показать больше",
+    "showLess": "Свернуть",
     "deleteConversation": "Удалить чат",
     "deleteConversationConfirm": "Удалить этот чат?",
     "errorGeneric": "Произошла ошибка. Попробуйте снова",

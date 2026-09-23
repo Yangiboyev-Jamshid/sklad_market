@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Add, Trash, MessageQuestion, HamburgerMenu, CloseCircle, TickCircle, Building3, Box1 } from "iconsax-reactjs";
+import { Send, Add, Trash, MessageQuestion, HamburgerMenu, CloseCircle, TickCircle, Building3, Box1, ArrowDown2 } from "iconsax-reactjs";
 import { useTranslation } from "react-i18next";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import AppShell from "../components/layout/AppShell";
 import AiDraftModal from "../components/ai/AiDraftModal";
 import AiRequestsNavLink from "../components/ai/AiRequestsNavLink";
@@ -40,6 +42,110 @@ function parseToolPayload(message) {
 function draftIdFromToolPayload(message) {
   const parsed = parseToolPayload(message);
   return parsed?.draftRef?.draftId ?? parsed?.draftId ?? parsed?.draft_id ?? null;
+}
+
+const RESULT_PREVIEW_COUNT = 6;
+
+function InternalLink({ href, children }) {
+  const navigate = useNavigate();
+  const isInternal = typeof href === "string" && href.startsWith("/");
+
+  if (!isInternal) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className="text-brand-600 dark:text-brand-400 underline">
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <a
+      href={href}
+      onClick={(e) => {
+        e.preventDefault();
+        navigate(href);
+      }}
+      className="text-brand-600 dark:text-brand-400 underline"
+    >
+      {children}
+    </a>
+  );
+}
+
+const MARKDOWN_COMPONENTS = {
+  a: InternalLink,
+  p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+  ul: ({ children }) => <ul className="mb-1.5 last:mb-0 list-disc pl-4 space-y-0.5">{children}</ul>,
+  ol: ({ children }) => <ol className="mb-1.5 last:mb-0 list-decimal pl-4 space-y-0.5">{children}</ol>,
+  li: ({ children }) => <li>{children}</li>,
+  hr: () => null,
+};
+
+function MessageBody({ message, items }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
+  const content = message.content;
+  const hasItems = items.length > 0;
+  const showToggle = items.length > RESULT_PREVIEW_COUNT;
+  const visibleItems = expanded ? items : items.slice(0, RESULT_PREVIEW_COUNT);
+
+  return (
+    <div>
+      <div className="text-sm leading-relaxed">
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+          {content}
+        </ReactMarkdown>
+      </div>
+
+      {hasItems && (
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {visibleItems.map((it) => (
+            <button
+              key={`${it.type}-${it.id}`}
+              type="button"
+              onClick={() => navigate(it.type === "COMPANY" ? `/company/${it.slug}` : `/product/${it.slug}`)}
+              className="flex flex-col gap-1.5 text-left bg-ink-50 dark:bg-[#171717] border border-ink-100 dark:border-[#1C1C1C] rounded-xl p-2 hover:border-brand-300 dark:hover:border-brand-500 transition-colors"
+            >
+              <div className="w-full aspect-square rounded-lg overflow-hidden bg-[#EBEBEB] dark:bg-[#2A2A2A] flex items-center justify-center">
+                {it.image ? (
+                  <img src={it.image} alt="" className="w-full h-full object-cover" />
+                ) : it.type === "COMPANY" ? (
+                  <Building3 size={20} className="text-ink-400" />
+                ) : (
+                  <ProductThumb />
+                )}
+              </div>
+              <p className="text-xs font-medium text-ink-900 dark:text-white line-clamp-2">{it.name}</p>
+              <p className="text-[11px] text-ink-400 dark:text-ink-500 flex items-center gap-1">
+                {it.type === "COMPANY" ? (
+                  <>
+                    <Building3 size={11} /> {it.productCount ?? 0} {t("ai.productsLabel")}
+                  </>
+                ) : (
+                  <>
+                    <Box1 size={11} /> {Number(it.price ?? 0).toLocaleString()} {it.currency}
+                  </>
+                )}
+              </p>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {showToggle && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-1.5 flex items-center gap-1 text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline"
+        >
+          {expanded ? t("ai.showLess") : t("ai.showMore")}
+          <ArrowDown2 size={12} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </button>
+      )}
+    </div>
+  );
 }
 
 function resultItemsFromToolPayload(message) {
@@ -466,47 +572,10 @@ export default function AiAgentPage() {
                                   <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.15s]" />
                                   <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" />
                                 </span>
-                              ) : (
+                              ) : isMine ? (
                                 m.content
-                              )}
-
-                              {!isMine && m.resultSets?.length > 0 && (
-                                <div className="flex flex-col gap-2 mt-3">
-                                  {m.resultSets.map((items, si) => (
-                                    <div key={si} className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                      {items.map((it) => (
-                                        <button
-                                          key={`${it.type}-${it.id}`}
-                                          type="button"
-                                          onClick={() => navigate(it.type === "COMPANY" ? `/company/${it.slug}` : `/product/${it.slug}`)}
-                                          className="flex flex-col gap-1.5 text-left bg-ink-50 dark:bg-[#171717] border border-ink-100 dark:border-[#1C1C1C] rounded-xl p-2 hover:border-brand-300 dark:hover:border-brand-500 transition-colors"
-                                        >
-                                          <div className="w-full aspect-square rounded-lg overflow-hidden bg-[#EBEBEB] dark:bg-[#2A2A2A] flex items-center justify-center">
-                                            {it.image ? (
-                                              <img src={it.image} alt="" className="w-full h-full object-cover" />
-                                            ) : it.type === "COMPANY" ? (
-                                              <Building3 size={20} className="text-ink-400" />
-                                            ) : (
-                                              <ProductThumb />
-                                            )}
-                                          </div>
-                                          <p className="text-xs font-medium text-ink-900 dark:text-white line-clamp-2">{it.name}</p>
-                                          <p className="text-[11px] text-ink-400 dark:text-ink-500 flex items-center gap-1">
-                                            {it.type === "COMPANY" ? (
-                                              <>
-                                                <Building3 size={11} /> {it.productCount ?? 0} {t("ai.productsLabel")}
-                                              </>
-                                            ) : (
-                                              <>
-                                                <Box1 size={11} /> {Number(it.price ?? 0).toLocaleString()} {it.currency}
-                                              </>
-                                            )}
-                                          </p>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  ))}
-                                </div>
+                              ) : (
+                                <MessageBody message={m} items={m.resultSets?.length > 0 ? m.resultSets.flat() : []} />
                               )}
                             </div>
                             {draftId && !draftStatus && (
