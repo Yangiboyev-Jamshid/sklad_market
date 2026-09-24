@@ -59,12 +59,13 @@ export default function ProductCard({ product, index = 0 }) {
         { }
         <p className="text-[10px] sm:text-[8.25px] font-[400] text-ink-400 dark:text-[#7F7F7F]"><span translate="no" className="notranslate">{product.company}</span></p>
 
-        {product.minProduct != null && (
-          <p className="text-[10px] sm:text-[11px] font-semibold text-brand-700 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 rounded-md px-1.5 py-0.5 w-fit whitespace-nowrap">
-            {t("product.minOrder", { count: product.minProduct, unit: product.measureUnit || t("product.unitFallback") })}
-          </p>
-        )}
-
+        <div className="w-full overflow-hidden">
+          {product.minProduct != null && (
+            <p className="text-[10px] sm:text-[11px] font-semibold text-brand-700 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 rounded-md px-1.5 py-0.5 w-fit whitespace-wrap">
+              {t("product.minOrder", { count: product.minProduct, unit: product.measureUnit || t("product.unitFallback") })}
+            </p>
+          )}
+        </div>
         { }
         <div className="flex sm:flex-row flex-col items-start sm:items-center justify-between mt-3 gap-2">
           <p className="text-[10px] sm:text-[8.25px] text-ink-500 dark:text-[#7F7F7F] whitespace-nowrap">
