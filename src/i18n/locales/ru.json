@@ -666,7 +666,22 @@
     "emptyOutgoing": "Вы пока не отправляли запросов",
     "requestNumber": "Запрос №{{id}}",
     "cancel": "Отменить запрос",
-    "contactSeller": "Связаться с продавцом"
+    "contactSeller": "Связаться с продавцом",
+    "d_details": "Детали запроса",
+    "d_close": "Закрыть",
+    "d_products": "Товары",
+    "d_contact": "Контактные данные",
+    "d_name": "Имя",
+    "d_phone": "Телефон",
+    "d_sentAt": "Отправлен",
+    "d_neededDate": "Нужная дата",
+    "d_delivery": "Доставка",
+    "d_address": "Адрес",
+    "d_comment": "Комментарий",
+    "d_total": "Итого",
+    "d_qty": "Кол-во",
+    "d_price": "Цена",
+    "d_status": "Статус"
   },
   "auth": {
     "toggleTheme": "Переключить тему",

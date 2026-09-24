@@ -666,7 +666,22 @@
     "emptyOutgoing": "Siz hali hech qanday so'rov yubormadingiz",
     "requestNumber": "So'rov №{{id}}",
     "cancel": "So'rovni bekor qilish",
-    "contactSeller": "Sotuvchi bilan bog'lanish"
+    "contactSeller": "Sotuvchi bilan bog'lanish",
+    "d_details": "So'rov tafsilotlari",
+    "d_close": "Yopish",
+    "d_products": "Mahsulotlar",
+    "d_contact": "Aloqa ma'lumotlari",
+    "d_name": "Ism",
+    "d_phone": "Telefon",
+    "d_sentAt": "Yuborilgan",
+    "d_neededDate": "Kerakli sana",
+    "d_delivery": "Yetkazib berish",
+    "d_address": "Manzil",
+    "d_comment": "Izoh",
+    "d_total": "Jami",
+    "d_qty": "Miqdor",
+    "d_price": "Narx",
+    "d_status": "Holat"
   },
   "auth": {
     "toggleTheme": "Mavzuni almashtirish",

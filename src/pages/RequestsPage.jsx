@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import { Modal } from "antd";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Box, Calendar, Moneys, Call, Message, Clock } from "iconsax-reactjs";
+import { Box, Calendar, Moneys, Call, Message, Clock, Location, User } from "iconsax-reactjs";
 import { IoIosClose } from "react-icons/io";
 import { BsCheck } from "react-icons/bs";
 import AppShell from "../components/layout/AppShell";
@@ -49,6 +50,7 @@ export default function RequestsPage() {
   const [error, setError] = useState("");
   const [actionId, setActionId] = useState(null);
   const [tab, setTab] = useState(isSeller ? "incoming" : "outgoing");
+  const [selectedId, setSelectedId] = useState(null);
   const submittingIdsRef = useRef(new Set());
 
   useEffect(() => {
@@ -130,6 +132,64 @@ export default function RequestsPage() {
     }
   };
 
+  const selected = leads.find((l) => l.id === selectedId) ?? null;
+
+  const renderDetails = (lead) => {
+    const items = lead.items ?? [];
+    const total = items.reduce((sum, it) => sum + (it.priceSnapshot ?? 0) * (it.quantity ?? 0), 0);
+    const sentAt = formatDateTime(lead.createdDate ?? lead.createdAt ?? lead.created_at);
+    const rows = [
+      [User, t("requests.d_name"), lead.contactName],
+      [Call, t("requests.d_phone"), lead.contactPhone],
+      [Clock, t("requests.d_sentAt"), sentAt],
+      [Calendar, t("requests.d_neededDate"), lead.neededDate],
+      [Box, t("requests.d_delivery"), lead.deliveryMethod],
+      [Location, t("requests.d_address"), lead.deliveryAddress],
+      [Message, t("requests.d_comment"), lead.comment ?? lead.note ?? lead.message],
+    ].filter(([, , v]) => v);
+    let n = 0;
+    const delay = () => ({ animationDelay: `${120 + n++ * 55}ms` });
+    return (
+      <div className="flex flex-col gap-5 pt-2">
+        {rows.length > 0 && (
+          <div className="flex flex-col">
+            {rows.map(([Icon, label, value]) => (
+              <div key={label} style={delay()} className="req-item flex items-center gap-3 py-3 border-b border-ink-100 dark:border-[#1C1C1C]">
+                <Icon size={16} className="text-brand-500 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-ink-400">{label}</p>
+                  <p className="text-sm text-ink-900 dark:text-white break-words">{value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {items.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-ink-500 dark:text-ink-400 mb-2">{t("requests.d_products")}</p>
+            <div className="flex flex-col gap-2">
+              {items.map((it, i) => (
+                <div key={it.id ?? i} style={delay()} className="req-item flex items-start justify-between gap-3 rounded-xl border border-ink-100 dark:border-[#1C1C1C] p-3">
+                  <p className="text-sm text-ink-900 dark:text-white min-w-0 break-words">{it.productNameSnapshot}</p>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-ink-500 dark:text-ink-400">{it.quantity} × {(it.priceSnapshot ?? 0).toLocaleString()}</p>
+                    <p className="text-sm font-semibold text-ink-900 dark:text-white">{((it.priceSnapshot ?? 0) * (it.quantity ?? 0)).toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {total > 0 && (
+              <div style={delay()} className="req-item flex items-center justify-between mt-3 px-1">
+                <span className="text-sm text-ink-500 dark:text-ink-400">{t("requests.d_total")}</span>
+                <span className="text-base font-bold text-brand-600 dark:text-brand-400">{total.toLocaleString()}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const visibleLeads = isSeller ? leads.filter((l) => l.direction === tab) : leads;
 
   return (
@@ -190,7 +250,8 @@ export default function RequestsPage() {
               const sentAt = formatDateTime(lead.createdDate ?? lead.createdAt ?? lead.created_at);
               return (
                 <div
-                  key={lead.id}
+                  key={`${lead.direction}-${lead.id}`}
+                  onClick={() => setSelectedId(lead.id)}
                   className={`cursor-pointer relative overflow-hidden bg-white dark:bg-[#0D0D0D] border border-ink-100 dark:border-[#1C1C1C] rounded-xl p-4 sm:p-5 shadow-sm transition-all hover:shadow-md hover:border-ink-200 dark:hover:border-[#2A2A2A] ${busy ? "opacity-50" : ""}`}
                 >
                   <span className={`absolute left-0 top-0 bottom-0 w-1 rounded-full ${ACCENT_CLS[lead.status] ?? "bg-ink-200"}`} />
@@ -242,7 +303,7 @@ export default function RequestsPage() {
                     </div>
 
                     {lead.direction === "incoming" && (
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:shrink-0">
+                      <div onClick={(e) => e.stopPropagation()} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:shrink-0">
                         {lead.status === "NEW" && (
                           <>
                             <button
@@ -271,7 +332,7 @@ export default function RequestsPage() {
                       </div>
                     )}
                     {lead.direction !== "incoming" && (
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:shrink-0">
+                      <div onClick={(e) => e.stopPropagation()} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:shrink-0">
                         {lead.status === "NEW" && (
                           <button
                             disabled={busy}
@@ -297,6 +358,25 @@ export default function RequestsPage() {
           </div>
         )}
       </div>
+      <Modal
+        open={!!selected}
+        onCancel={() => setSelectedId(null)}
+        footer={null}
+        centered
+        destroyOnHidden
+        width={520}
+        transitionName="ant-zoom"
+        maskTransitionName="ant-fade"
+        title={selected && (
+          <div className="flex items-center gap-2 flex-wrap pr-6">
+            <span className="text-lg font-bold">{t("requests.requestNumber", { id: selected.id })}</span>
+            {badge(selected.status, t)}
+          </div>
+        )}
+        styles={{ body: { maxHeight: "70dvh", overflowY: "auto" } }}
+      >
+        {selected && renderDetails(selected)}
+      </Modal>
     </AppShell>
   );
 }

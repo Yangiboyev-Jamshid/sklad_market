@@ -666,7 +666,22 @@
     "emptyOutgoing": "You haven't sent any requests yet",
     "requestNumber": "Request #{{id}}",
     "cancel": "Cancel request",
-    "contactSeller": "Contact seller"
+    "contactSeller": "Contact seller",
+    "d_details": "Request details",
+    "d_close": "Close",
+    "d_products": "Products",
+    "d_contact": "Contact info",
+    "d_name": "Name",
+    "d_phone": "Phone",
+    "d_sentAt": "Sent",
+    "d_neededDate": "Needed by",
+    "d_delivery": "Delivery",
+    "d_address": "Address",
+    "d_comment": "Comment",
+    "d_total": "Total",
+    "d_qty": "Qty",
+    "d_price": "Price",
+    "d_status": "Status"
   },
   "auth": {
     "toggleTheme": "Toggle theme",
