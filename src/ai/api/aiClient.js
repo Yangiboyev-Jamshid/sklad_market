@@ -28,8 +28,19 @@ function acceptLanguageHeader() {
   return { "Accept-Language": aiLocaleToAcceptLanguage(getAiLocale()) };
 }
 
-export async function createConversation(title, { signal } = {}) {
-  return unwrapAi(aiHttp.post("/ai/conversations", title ? { title } : {}, { signal }));
+export async function createConversation(title, { signal, requestId } = {}) {
+  return unwrapAi(aiHttp.post("/ai/conversations", { ...(title ? { title } : {}), ...(requestId ? { requestId } : {}) }, { signal }));
+}
+
+export async function getLatestConversation({ signal } = {}) {
+  try {
+    return await unwrapAi(aiHttp.get("/ai/conversations/latest", { signal }));
+  } catch (error) {
+    if (![404, 405].includes(error?.status ?? error?.response?.status)) throw error;
+    // Rolling deployments: the previous backend has no /latest endpoint.
+    const response = await listConversations({ page: 1, per_page: 15, signal });
+    return (Array.isArray(response) ? response : response?.items)?.[0] ?? null;
+  }
 }
 
 export async function listConversations({ page = 1, per_page = 20, signal } = {}) {
@@ -38,8 +49,26 @@ export async function listConversations({ page = 1, per_page = 20, signal } = {}
 
 export async function getConversationMessages(
   conversationId,
-  { page = 1, per_page = 20, signal } = {}
+  { page = 1, per_page = 20, signal, recent = false } = {}
 ) {
+  if (recent) {
+    try {
+      const items = await unwrapAi(aiHttp.get(`/ai/conversations/${conversationId}/messages/recent`, { signal }));
+      return { items: Array.isArray(items) ? items : items?.items ?? [] };
+    } catch (error) {
+      if (![404, 405].includes(error?.status ?? error?.response?.status)) throw error;
+      // Bounded compatibility read; never crawl an entire old conversation.
+      const first = await getConversationMessages(conversationId, { per_page: 100, signal });
+      const pages = Math.max(1, Number(first?.meta?.total_pages) || 1);
+      if (pages === 1) return first;
+      const items = [];
+      for (let tailPage = Math.max(2, pages - 1); tailPage <= pages; tailPage += 1) {
+        const tail = await getConversationMessages(conversationId, { page: tailPage, per_page: 100, signal });
+        items.push(...(Array.isArray(tail) ? tail : tail?.items ?? []));
+      }
+      return { items: pages === 2 ? [...(first?.items ?? []), ...items] : items };
+    }
+  }
   return unwrapAi(
     aiHttp.get(`/ai/conversations/${conversationId}/messages`, {
       params: { page, per_page },
@@ -172,7 +201,7 @@ export async function deleteListingImage(imageId) {
   return unwrapAi(aiHttp.delete(`/attach/delete/${encodeURIComponent(normalized)}`));
 }
 
-function fetchStream(conversationId, content, signal) {
+function fetchStream(conversationId, content, signal, requestId) {
   let token;
   try {
     token = localStorage.getItem("access_token");
@@ -187,7 +216,7 @@ function fetchStream(conversationId, content, signal) {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...acceptLanguageHeader(),
     },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, ...(requestId ? { requestId } : {}) }),
     signal,
   });
 }
@@ -280,7 +309,7 @@ async function httpStreamError(response) {
 
 // Streams one assistant turn. Authentication is refreshed at most once, 404 is kept distinct so
 // the hook can replace a stale conversation, and success requires a terminal done/error event.
-export async function streamAiMessage({ conversationId, content, onEvent, signal }) {
+export async function streamAiMessage({ conversationId, content, onEvent, signal, requestId }) {
   const timeoutController = new AbortController();
   const combined = mergeSignals(signal, timeoutController.signal);
   let timeoutId;
@@ -308,7 +337,7 @@ export async function streamAiMessage({ conversationId, content, onEvent, signal
     let response;
     armReadTimeout();
     try {
-      response = await fetchStream(conversationId, content, combined.signal);
+      response = await fetchStream(conversationId, content, combined.signal, requestId);
     } catch (error) {
       if (signal?.aborted) throw new AiStreamError("cancelled", error.message);
       if (timedOut || error.name === "AbortError") {
@@ -331,7 +360,7 @@ export async function streamAiMessage({ conversationId, content, onEvent, signal
 
       armReadTimeout();
       try {
-        response = await fetchStream(conversationId, content, combined.signal);
+        response = await fetchStream(conversationId, content, combined.signal, requestId);
       } catch (error) {
         if (signal?.aborted) throw new AiStreamError("cancelled", error.message);
         if (timedOut || error.name === "AbortError") {

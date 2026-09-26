@@ -38,6 +38,7 @@ vi.mock("../api/aiClient", async (importOriginal) => {
   return {
     ...actual,
     createConversation: createConversationMock,
+    getLatestConversation: vi.fn().mockResolvedValue(null),
     listConversations: listConversationsMock,
     getConversationMessages: getConversationMessagesMock,
     streamAiMessage: streamAiMessageMock,

@@ -6,6 +6,7 @@ import { notifyAiUnauthenticated } from "../../api/aiHttp";
 
 const {
   createConversationMock,
+  getLatestConversationMock,
   getConversationMessagesMock,
   getDraftDetailsMock,
   streamAiMessageMock,
@@ -15,6 +16,7 @@ const {
   closeBuyingIntentMock,
 } = vi.hoisted(() => ({
   createConversationMock: vi.fn(),
+  getLatestConversationMock: vi.fn(),
   getConversationMessagesMock: vi.fn(),
   getDraftDetailsMock: vi.fn(),
   streamAiMessageMock: vi.fn(),
@@ -29,6 +31,7 @@ vi.mock("../../api/aiClient", async (importOriginal) => {
   return {
     ...actual,
     createConversation: createConversationMock,
+    getLatestConversation: getLatestConversationMock,
     getConversationMessages: getConversationMessagesMock,
     getDraftDetails: getDraftDetailsMock,
     streamAiMessage: streamAiMessageMock,
@@ -43,6 +46,7 @@ describe("useAiChat", () => {
   beforeEach(() => {
     localStorage.clear();
     createConversationMock.mockReset();
+    getLatestConversationMock.mockReset().mockResolvedValue(null);
     getConversationMessagesMock.mockReset().mockResolvedValue({
       items: [],
       meta: { total_pages: 1 },
@@ -340,7 +344,7 @@ describe("useAiChat", () => {
     ]);
     expect(getConversationMessagesMock).toHaveBeenCalledWith(
       "saved-conv",
-      expect.objectContaining({ page: 1, per_page: 100 })
+      expect.objectContaining({ recent: true })
     );
     expect(createConversationMock).not.toHaveBeenCalled();
   });
@@ -559,7 +563,7 @@ describe("useAiChat", () => {
     expect(result.current.messages[0]).toMatchObject({ text: "restored history" });
     expect(getConversationMessagesMock).toHaveBeenLastCalledWith(
       "hidden-old-conv",
-      expect.objectContaining({ page: 1 })
+      expect.objectContaining({ recent: true })
     );
     expect(localStorage.getItem("skladx_ai_conversation_id:buyer-1")).toBe("hidden-old-conv");
   });
@@ -589,21 +593,72 @@ describe("useAiChat", () => {
     expect(localStorage.getItem("skladx_ai_conversation_id:buyer-1")).toBe("conv-1");
   });
 
-  it("caps oversized history and hydrates the newest bounded page window", async () => {
+  it("loads recent history once and retains only 15 complete exchanges", async () => {
     localStorage.setItem("skladx_ai_conversation_id:buyer-1", "large-conv");
-    getConversationMessagesMock.mockImplementation((_conversationId, { page }) => ({
-      items: [{ id: `m-${page}`, role: "assistant", content: `page-${page}` }],
-      meta: { total_pages: 25 },
-    }));
+    getConversationMessagesMock.mockResolvedValue({ items: Array.from({ length: 40 }, (_, i) => (
+      { id: `m-${i}`, role: i % 2 ? "assistant" : "user", content: `message-${i}` }
+    )) });
 
     const { result } = renderHook(() => useAiChat({ accountKey: "buyer-1" }));
 
     await waitFor(() => expect(result.current.status).toBe("idle"));
-    const requestedPages = getConversationMessagesMock.mock.calls.map((call) => call[1].page);
-    expect(requestedPages).toEqual([1, ...Array.from({ length: 20 }, (_, index) => index + 6)]);
-    expect(result.current.messages).toHaveLength(20);
-    expect(result.current.messages[0].text).toBe("page-6");
-    expect(result.current.messages.at(-1).text).toBe("page-25");
+    expect(getConversationMessagesMock).toHaveBeenCalledTimes(1);
+    expect(result.current.messages).toHaveLength(30);
+    expect(result.current.messages[0].text).toBe("message-10");
+    expect(result.current.messages.at(-1).text).toBe("message-39");
+  });
+
+  it("resumes the latest server chat on another browser without creating a session", async () => {
+    getLatestConversationMock.mockResolvedValue({ id: "server-chat" });
+    const { result } = renderHook(() => useAiChat({ accountKey: "buyer-1" }));
+    await waitFor(() => expect(result.current.status).toBe("idle"));
+    expect(result.current.activeConversationId).toBe("server-chat");
+    expect(createConversationMock).not.toHaveBeenCalled();
+    await act(async () => result.current.send("follow up"));
+    expect(createConversationMock).not.toHaveBeenCalled();
+    expect(streamAiMessageMock).toHaveBeenCalledWith(expect.objectContaining({ conversationId: "server-chat" }));
+  });
+
+  it("keeps live messages bounded while continuing the same session", async () => {
+    streamAiMessageMock.mockImplementation(async ({ onEvent }) => {
+      onEvent({ event: "done", data: {} });
+    });
+    const { result } = renderHook(() => useAiChat({ accountKey: "buyer-1" }));
+    for (let i = 0; i < 20; i += 1) await act(async () => result.current.send(`question ${i}`));
+    expect(result.current.messages).toHaveLength(30);
+    expect(result.current.messages[0].text).toBe("question 5");
+    expect(createConversationMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("reuses request IDs after an uncertain network failure", async () => {
+    streamAiMessageMock.mockRejectedValueOnce(new AiStreamError("network", "connection lost"));
+    const { result } = renderHook(() => useAiChat({ accountKey: "buyer-1" }));
+    await act(async () => result.current.send("hello"));
+    await act(async () => result.current.retryLast());
+    expect(streamAiMessageMock.mock.calls[1][0].requestId).toBe(streamAiMessageMock.mock.calls[0][0].requestId);
+    expect(createConversationMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not create a chat when latest-session lookup fails and allows a safe retry", async () => {
+    getLatestConversationMock.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce({ id: "existing" });
+    const { result } = renderHook(() => useAiChat({ accountKey: "buyer-1" }));
+    await waitFor(() => expect(result.current.status).toBe("error"));
+    await act(async () => result.current.send("do not create duplicates"));
+    expect(createConversationMock).not.toHaveBeenCalled();
+    await act(async () => result.current.retryHistory());
+    expect(result.current.activeConversationId).toBe("existing");
+    expect(result.current.status).toBe("idle");
+  });
+
+  it("falls back to the latest accessible chat when the stored session expired", async () => {
+    localStorage.setItem("skladx_ai_conversation_id:buyer-1", "expired");
+    getConversationMessagesMock.mockRejectedValueOnce(Object.assign(new Error("gone"), { status: 404 }))
+      .mockResolvedValueOnce({ items: [] });
+    getLatestConversationMock.mockResolvedValue({ id: "latest" });
+    const { result } = renderHook(() => useAiChat({ accountKey: "buyer-1" }));
+    await waitFor(() => expect(result.current.status).toBe("idle"));
+    expect(result.current.activeConversationId).toBe("latest");
+    expect(createConversationMock).not.toHaveBeenCalled();
   });
 
   it("recreates a stale conversation once and does not duplicate the optimistic user message", async () => {

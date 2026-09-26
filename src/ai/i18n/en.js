@@ -18,6 +18,7 @@ export default {
   history: {
     title: "Recent chats",
     limitNote: "Last 15 sessions",
+    retentionNote: "History keeps 15 recent chats and 15 exchanges per chat. The AI uses only recent context. Pending confirmations are kept until they expire.",
     newChat: "New chat",
     show: "Show chat history",
     hide: "Hide chat history",
@@ -65,6 +66,8 @@ export default {
     invalid_input: "The message is too long or invalid.",
     unauthenticated: "Your session expired. Please log in again to continue.",
     network: "Can't reach the server. Check your connection and try again.",
+    conversation_busy: "A reply is already being generated in this chat. Wait for it to finish, then reload history.",
+    request_recorded: "This message was already received. Reload history to see its response.",
     history_unavailable: "The saved conversation could not be loaded. Retry it or explicitly start a fresh chat; the saved server conversation was not deleted.",
     continueFresh: "Continue fresh",
     retryHistory: "Retry history",

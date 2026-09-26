@@ -335,7 +335,11 @@ function RealAiAgentPage() {
             <AiRateLimitAdminPanel role={user?.role} />
 
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
-              {chat.messages.length === 0 ? (
+              {chat.status === "hydrating" ? (
+                <div role="status" className="flex flex-1 items-center justify-center p-8 text-sm text-ink-500 dark:text-ink-400">
+                  {t("history.loading")}
+                </div>
+              ) : chat.messages.length === 0 ? (
                 <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden rounded-3xl border border-ink-100 bg-gradient-to-b from-white to-brand-50/35 px-4 py-10 text-center dark:border-[#1C1C1C] dark:from-[#0D0D0D] dark:to-[#10172A]/60 sm:px-8">
                   <div className="pointer-events-none absolute -top-24 h-48 w-48 rounded-full bg-brand-300/20 blur-3xl dark:bg-brand-500/10" />
                   <div className="relative w-full max-w-3xl">
@@ -368,7 +372,8 @@ function RealAiAgentPage() {
               <ErrorCard
                 error={chat.error}
                 onRetry={
-                  chat.error.code === "history_unavailable" ? chat.retryHistory : chat.retryLast
+                  ["history_unavailable", "conversation_busy", "request_recorded"].includes(chat.error.code)
+                    ? chat.retryHistory : chat.retryLast
                 }
                 onStartFresh={
                   chat.error.code === "history_unavailable"
@@ -378,6 +383,9 @@ function RealAiAgentPage() {
               />
             )}
 
+            <p className="px-1 py-2 text-xs text-ink-400 dark:text-ink-500">
+              {t("history.retentionNote")}
+            </p>
             <ChatInput
               value={input}
               onChange={setInput}

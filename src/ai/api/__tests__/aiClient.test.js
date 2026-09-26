@@ -16,10 +16,40 @@ import {
   AiStreamError,
   STREAM_READ_TIMEOUT_MS,
   streamAiMessage,
+  createConversation,
+  getLatestConversation,
+  getConversationMessages,
 } from "../aiClient";
+import aiHttp from "../aiHttp";
 import { setAiLocale } from "../../i18n";
 
 const encoder = new TextEncoder();
+
+describe("bounded chat memory API", () => {
+  beforeEach(() => { aiHttp.get.mockReset(); aiHttp.post.mockReset(); });
+
+  it("sends the same supplied creation key without changing other clients", async () => {
+    aiHttp.post.mockResolvedValue({ id: "chat" });
+    await createConversation(undefined, { requestId: "stable-key" });
+    expect(aiHttp.post).toHaveBeenCalledWith("/ai/conversations", { requestId: "stable-key" }, expect.any(Object));
+  });
+
+  it("uses the owner-scoped latest endpoint", async () => {
+    aiHttp.get.mockResolvedValue({ id: "latest" });
+    expect(await getLatestConversation()).toEqual({ id: "latest" });
+    expect(aiHttp.get).toHaveBeenCalledWith("/ai/conversations/latest", expect.any(Object));
+  });
+
+  it("reads only the tail of legacy history during a rolling deployment", async () => {
+    aiHttp.get.mockRejectedValueOnce(Object.assign(new Error("old server"), { status: 404 }))
+      .mockResolvedValueOnce({ items: [{ id: "first" }], meta: { total_pages: 500 } })
+      .mockResolvedValueOnce({ items: [{ id: "recent-1" }] })
+      .mockResolvedValueOnce({ items: [{ id: "recent-2" }] });
+    const response = await getConversationMessages("chat", { recent: true });
+    expect(response.items.map((item) => item.id)).toEqual(["recent-1", "recent-2"]);
+    expect(aiHttp.get.mock.calls.slice(1).map((call) => call[1].params.page)).toEqual([1, 499, 500]);
+  });
+});
 
 function streamingResponse(chunks, { status = 200, neverFinish = false } = {}) {
   let index = 0;

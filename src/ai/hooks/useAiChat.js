@@ -1,6 +1,7 @@
 import { useReducer, useRef, useCallback, useEffect, useLayoutEffect } from "react";
 import {
   createConversation,
+  getLatestConversation,
   getConversationMessages,
   getDraftDetails,
   streamAiMessage,
@@ -11,6 +12,7 @@ import {
   AiStreamError,
 } from "../api/aiClient";
 import { onAiUnauthenticated } from "../api/aiHttp";
+import { recentChatMessages, newChatRequestId } from "../lib/chatMemory";
 import {
   normalizeResultSet,
   normalizeResultSets,
@@ -18,9 +20,6 @@ import {
 } from "../lib/resultSets";
 
 const CONVERSATION_STORAGE_PREFIX = "skladx_ai_conversation_id:";
-const HISTORY_PAGE_SIZE = 100;
-const HISTORY_MAX_PAGES = 20;
-const HISTORY_MAX_MESSAGES = HISTORY_PAGE_SIZE * HISTORY_MAX_PAGES;
 const HISTORY_LOAD_TIMEOUT_MS = 30_000;
 const HISTORY_MAX_DRAFT_REFS = 20;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -42,7 +41,7 @@ function reducer(state, action) {
     case "HYDRATE_START":
       return { ...initialState, status: "hydrating" };
     case "HYDRATE_SUCCESS":
-      return { ...initialState, messages: action.messages };
+      return { ...initialState, messages: recentChatMessages(action.messages) };
     case "HYDRATE_FAILURE":
       return {
         ...initialState,
@@ -55,7 +54,7 @@ function reducer(state, action) {
         status: "streaming",
         error: null,
         lastText: action.text,
-        messages: [
+        messages: recentChatMessages([
           ...state.messages,
           {
             id: action.userId,
@@ -71,7 +70,7 @@ function reducer(state, action) {
             resultSets: [],
             streaming: true,
           },
-        ],
+        ]),
       };
     case "TOKEN":
       return {
@@ -428,6 +427,7 @@ function hydrateHistoryMessages(rawMessages, pendingDrafts = new Map()) {
       const draftRef = historicalDraftRef(envelope);
       const resolvedDraft = draftRef ? pendingDrafts.get(draftRef.draftId) : null;
       if (resolvedDraft) {
+        if (pendingDraft) flushOrphanedResults();
         pendingDraft = resolvedDraft;
         pendingSourceId = rawMessage.id ?? pendingSourceId;
       }
@@ -462,35 +462,9 @@ async function loadHistory(conversationId, signal) {
     controller.abort();
   }, HISTORY_LOAD_TIMEOUT_MS);
   const rawMessages = [];
-  let page = 1;
-  let totalPages;
-  let firstPage = true;
-
   try {
-    do {
-      const response = await getConversationMessages(conversationId, {
-        page,
-        per_page: HISTORY_PAGE_SIZE,
-        signal: controller.signal,
-      });
-      const items = Array.isArray(response) ? response : response?.items ?? [];
-      const rawTotalPages = Number(response?.meta?.total_pages);
-      const reportedTotalPages =
-        Number.isSafeInteger(rawTotalPages) && rawTotalPages >= 1 ? rawTotalPages : 1;
-      totalPages = reportedTotalPages;
-
-      if (firstPage && reportedTotalPages > HISTORY_MAX_PAGES) {
-        // The API is oldest-first. Page one is useful to learn the total, but when the history is
-        // capped we discard it and jump to the newest bounded page window.
-        rawMessages.length = 0;
-        page = reportedTotalPages - HISTORY_MAX_PAGES + 1;
-      } else {
-        const remaining = HISTORY_MAX_MESSAGES - rawMessages.length;
-        if (remaining > 0) rawMessages.push(...items.slice(0, remaining));
-        page += 1;
-      }
-      firstPage = false;
-    } while (page <= totalPages);
+    const response = await getConversationMessages(conversationId, { recent: true, signal: controller.signal });
+    rawMessages.push(...(Array.isArray(response) ? response : response?.items ?? []).slice(-1000));
 
     const pendingDrafts = await loadPendingHistoricalDrafts(rawMessages, controller.signal);
     return hydrateHistoryMessages(rawMessages, pendingDrafts);
@@ -521,6 +495,8 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
   const sendLockRef = useRef(null);
   const intentActionLocksRef = useRef(new Set());
   const draftActionLocksRef = useRef(new Set());
+  const creationRequestRef = useRef(null);
+  const lastSendRef = useRef(null);
 
   useEffect(
     () => onAiUnauthenticated(onUnauthenticated),
@@ -528,10 +504,21 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
   );
 
   const hydrateConversation = useCallback(
-    (conversationId, capturedAccountKey, epoch, controller) => {
+    (conversationId, capturedAccountKey, epoch, controller, restoreLatest = false) => {
       historyBlockedRef.current = false;
       dispatch({ type: "HYDRATE_START" });
+      let restoredId = conversationId;
       const hydration = loadHistory(conversationId, controller.signal)
+        .catch(async (error) => {
+          if (restoreLatest && error?.status === 404 && !controller.signal.aborted) {
+            const latest = await getLatestConversation({ signal: controller.signal });
+            if (latest?.id && latest.id !== conversationId) {
+              restoredId = latest.id;
+              return loadHistory(restoredId, controller.signal);
+            }
+          }
+          throw error;
+        })
         .then((messages) => {
           if (
             sessionEpochRef.current === epoch &&
@@ -539,6 +526,11 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
             !controller.signal.aborted
           ) {
             historyBlockedRef.current = false;
+            if (restoredId !== conversationId) {
+              conversationIdRef.current = restoredId;
+              setActiveConversationId(restoredId);
+              storeConversationId(capturedAccountKey, restoredId);
+            }
             dispatch({ type: "HYDRATE_SUCCESS", messages });
           }
         })
@@ -576,6 +568,8 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
 
   useLayoutEffect(() => {
     renderedAccountKeyRef.current = normalizedAccountKey;
+    creationRequestRef.current = null;
+    lastSendRef.current = null;
     activateAccountKey(normalizedAccountKey);
     const epoch = sessionEpochRef.current + 1;
     sessionEpochRef.current = epoch;
@@ -591,10 +585,26 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
     historyBlockedRef.current = false;
     dispatch({ type: "RESET" });
 
-    if (!storedConversationId) {
+    if (!storedConversationId && normalizedAccountKey) {
+      dispatch({ type: "HYDRATE_START" });
+      hydrationPromiseRef.current = getLatestConversation({ signal: controller.signal }).then((latest) => {
+        if (controller.signal.aborted || sessionEpochRef.current !== epoch) return;
+        if (latest?.id) {
+          conversationIdRef.current = latest.id;
+          setActiveConversationId(latest.id);
+          storeConversationId(normalizedAccountKey, latest.id);
+          return hydrateConversation(latest.id, normalizedAccountKey, epoch, controller);
+        }
+        dispatch({ type: "HYDRATE_SUCCESS", messages: [] });
+      }).catch((error) => {
+        if (controller.signal.aborted || sessionEpochRef.current !== epoch) return;
+        historyBlockedRef.current = true;
+        dispatch({ type: "HYDRATE_FAILURE", message: error?.message });
+      });
+    } else if (!storedConversationId) {
       hydrationPromiseRef.current = Promise.resolve();
     } else {
-      hydrateConversation(storedConversationId, normalizedAccountKey, epoch, controller);
+      hydrateConversation(storedConversationId, normalizedAccountKey, epoch, controller, true);
     }
 
     return () => {
@@ -617,7 +627,8 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
   const ensureConversation = useCallback(
     async (epoch, capturedAccountKey, signal) => {
       if (conversationIdRef.current) return conversationIdRef.current;
-      const conversation = await createConversation(undefined, { signal });
+      creationRequestRef.current ??= newChatRequestId();
+      const conversation = await createConversation(undefined, { signal, requestId: creationRequestRef.current });
       if (!isCurrentSession(epoch, capturedAccountKey) || signal.aborted) {
         throw new AiStreamError("cancelled", "Account changed");
       }
@@ -631,7 +642,7 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
   );
 
   const send = useCallback(
-    async (text) => {
+    async (text, { retry = false } = {}) => {
       const trimmed = (text ?? "").trim();
       if (!trimmed || !normalizedAccountKey || sendLockRef.current) return false;
 
@@ -645,6 +656,9 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
       try {
         await hydrationPromiseRef.current;
         if (!isCurrentSession(epoch, capturedAccountKey) || historyBlockedRef.current) return false;
+        const requestId = retry && lastSendRef.current?.text === trimmed
+          ? lastSendRef.current.requestId : newChatRequestId();
+        lastSendRef.current = { text: trimmed, requestId };
 
         const userId = nextId();
         assistantId = nextId();
@@ -733,6 +747,7 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
           streamAiMessage({
             conversationId,
             content: trimmed,
+            requestId,
             signal: controller.signal,
             onEvent,
           });
@@ -751,6 +766,7 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
               setActiveConversationId(undefined);
             }
             removeStoredConversationId(capturedAccountKey, conversationId);
+            creationRequestRef.current = null;
             conversationId = await ensureConversation(
               epoch,
               capturedAccountKey,
@@ -766,6 +782,10 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
         if (!isCurrentSession(epoch, capturedAccountKey) || isCancelled(error)) return false;
         const streamCode = error instanceof AiStreamError ? error.code : "network";
         const code = streamCode === "conversation_not_found" ? "network" : streamCode;
+        if (code === "request_recorded" && conversationIdRef.current) {
+          await hydrateConversation(conversationIdRef.current, capturedAccountKey, epoch, controller);
+          return false;
+        }
         dispatch({
           type: "FAILURE",
           assistantId,
@@ -779,7 +799,7 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
         }
       }
     },
-    [ensureConversation, isCurrentSession, normalizedAccountKey]
+    [ensureConversation, hydrateConversation, isCurrentSession, normalizedAccountKey]
   );
 
   const confirmDraft = useCallback(async (messageId, draftId, overrides) => {
@@ -883,25 +903,47 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
   const retryLast = useCallback(() => {
     const text = state.lastText;
     dispatch({ type: "CLEAR_ERROR" });
-    if (text) return send(text);
+    if (text) return send(text, { retry: ["network", "timeout"].includes(state.error?.code) });
     return false;
-  }, [state.lastText, send]);
+  }, [state.lastText, state.error?.code, send]);
 
   const retryHistory = useCallback(() => {
     const capturedAccountKey = renderedAccountKeyRef.current;
     const conversationId = conversationIdRef.current;
-    if (!capturedAccountKey || !conversationId) return false;
+    if (!capturedAccountKey) return false;
 
     operationAbortRef.current?.abort();
     const controller = new AbortController();
     operationAbortRef.current = controller;
+    if (!conversationId) {
+      const epoch = sessionEpochRef.current;
+      dispatch({ type: "HYDRATE_START" });
+      const recovery = getLatestConversation({ signal: controller.signal }).then((latest) => {
+        if (controller.signal.aborted || !isCurrentSession(epoch, capturedAccountKey)) return;
+        if (latest?.id) {
+          conversationIdRef.current = latest.id;
+          setActiveConversationId(latest.id);
+          storeConversationId(capturedAccountKey, latest.id);
+          return hydrateConversation(latest.id, capturedAccountKey, epoch, controller);
+        }
+        historyBlockedRef.current = false;
+        dispatch({ type: "HYDRATE_SUCCESS", messages: [] });
+      }).catch((error) => {
+        if (!controller.signal.aborted && isCurrentSession(epoch, capturedAccountKey)) {
+          historyBlockedRef.current = true;
+          dispatch({ type: "HYDRATE_FAILURE", message: error?.message });
+        }
+      });
+      hydrationPromiseRef.current = recovery;
+      return recovery;
+    }
     return hydrateConversation(
       conversationId,
       capturedAccountKey,
       sessionEpochRef.current,
       controller
     );
-  }, [hydrateConversation]);
+  }, [hydrateConversation, isCurrentSession]);
 
   const selectConversation = useCallback((conversationId) => {
     const capturedAccountKey = renderedAccountKeyRef.current;
@@ -924,6 +966,8 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
     const controller = new AbortController();
     operationAbortRef.current = controller;
     conversationIdRef.current = normalizedConversationId;
+    creationRequestRef.current = null;
+    lastSendRef.current = null;
     setActiveConversationId(normalizedConversationId);
     storeConversationId(capturedAccountKey, normalizedConversationId);
     dispatch({ type: "RESET" });
@@ -936,6 +980,8 @@ export function useAiChat({ accountKey, onUnauthenticated } = {}) {
   }, [hydrateConversation]);
 
   const resetConversation = useCallback(() => {
+    creationRequestRef.current = null;
+    lastSendRef.current = null;
     sessionEpochRef.current += 1;
     operationAbortRef.current?.abort();
     operationAbortRef.current = null;

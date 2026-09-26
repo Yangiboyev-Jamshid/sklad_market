@@ -17,7 +17,7 @@ describe("DashboardAiAssistant", () => {
     setAiLocale("en");
   });
 
-  it("welcomes the logged-in user and opens one empty AI chat", () => {
+  it("welcomes the logged-in user and opens AI without forcing a new chat", () => {
     render(
       <MemoryRouter>
         <DashboardAiAssistant
@@ -31,7 +31,7 @@ describe("DashboardAiAssistant", () => {
     expect(screen.getByText("Hi, Alex!")).toBeInTheDocument();
     expect(screen.queryByText("Recommend suitable suppliers")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("link", { name: "Open AI assistant" }));
-    expect(screen.getByTestId("location")).toHaveTextContent("/ai-agent?new=1");
+    expect(screen.getByTestId("location").textContent).toBe("/ai-agent");
   });
 
   it("does not expose the authenticated dashboard helper to a logged-out visitor", () => {

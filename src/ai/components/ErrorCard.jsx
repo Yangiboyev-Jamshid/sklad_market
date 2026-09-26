@@ -10,11 +10,13 @@ const MESSAGE_KEYS = {
   unauthenticated: "error.unauthenticated",
   network: "error.network",
   history_unavailable: "error.history_unavailable",
+  conversation_busy: "error.conversation_busy",
+  request_recorded: "error.request_recorded",
 };
 
 export default function ErrorCard({ error, onRetry, onStartFresh }) {
   const key = MESSAGE_KEYS[error?.code] ?? "error.provider_error";
-  const historyUnavailable = error?.code === "history_unavailable";
+  const historyUnavailable = ["history_unavailable", "conversation_busy", "request_recorded"].includes(error?.code);
 
   return (
     <div className="flex items-center justify-between gap-3 bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/30 text-danger-600 rounded-xl px-4 py-3 mt-3 text-sm">

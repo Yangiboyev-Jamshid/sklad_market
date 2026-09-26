@@ -16,6 +16,7 @@ export default {
     respondedAt: "{time} da javob berildi",
   },
   history: {
+    retentionNote: "Oxirgi 15 ta chat va har birida 15 ta savol-javob saqlanadi. AI faqat so‘nggi kontekstdan foydalanadi. Tasdiq kutilayotgan so‘rovlar muddati tugaguncha saqlanadi.",
     title: "So'nggi chatlar",
     limitNote: "Oxirgi 15 ta suhbat",
     newChat: "Yangi chat",
@@ -57,6 +58,8 @@ export default {
     },
   },
   error: {
+    conversation_busy: "Bu chatda javob tayyorlanmoqda. Tugashini kuting va tarixni yangilang.",
+    request_recorded: "Xabar allaqachon qabul qilingan. Javobni ko‘rish uchun tarixni yangilang.",
     title: "Xatolik",
     rate_limited: "So'rovlar juda ko'p. Bir oz kuting va qayta urinib ko'ring.",
     budget_exceeded: "Kunlik so'rovlar limiti tugadi. Ertaga qayta urinib ko'ring.",
